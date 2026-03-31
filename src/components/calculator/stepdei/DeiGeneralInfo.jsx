@@ -178,6 +178,8 @@ const DeiGeneralInfo = () => {
     residenceYears: source.residenceYears || '40',
     insuredType: source.insuredType || 'old',
     deiCategory: source.deiCategory || 'lignite',
+    pensionMode: source.pensionMode || 'full',
+    reducedYears: source.reducedYears || '',
     differentCategoryMode: getInitialDifferentCategoryMode(source),
 
     outsideBefore2014Years:
@@ -238,6 +240,21 @@ const DeiGeneralInfo = () => {
     }));
   };
 
+  const handlePensionModeChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      pensionMode: value,
+      reducedYears: value === 'reduced' ? prev.reducedYears : ''
+    }));
+  };
+
+  const handleReducedYearsChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      reducedYears: value
+    }));
+  };
+
   const handleNextStep = () => {
     setErrorMessage('');
 
@@ -272,18 +289,8 @@ const DeiGeneralInfo = () => {
     }
 
     if (ageAtPension < 50) {
-      setErrorMessage('Η ηλικία συνταξιοδότησης πρέπει να είναι τουλάχιστον 50 ετών.');
+      setErrorMessage('Η φόρμα δεν υπολογίζει σύνταξη για ηλικία κάτω των 50 ετών.');
       return;
-    }
-
-    if (ageAtPension >= 50 && ageAtPension < 55) {
-      const userWantsToProceed = window.confirm(
-        `Προσοχή: Η ηλικία που προκύπτει είναι ${ageAtPension} ετών.\n\nΠιθανότατα δεν ανήκει στα επιτρεπτά όρια συνταξιοδότησης. Αν συνεχίσετε, ο υπολογισμός θα είναι ενδεικτικός.\n\nΘέλετε να προχωρήσετε στο επόμενο βήμα;`
-      );
-
-      if (!userWantsToProceed) {
-        return;
-      }
     }
 
     const currentYear = new Date().getFullYear();
@@ -338,6 +345,11 @@ const DeiGeneralInfo = () => {
       return;
     }
 
+    if (formData.pensionMode === 'reduced' && !formData.reducedYears) {
+      setErrorMessage('Επιλέξτε πόσα έτη πρόωρης εξόδου θα χρησιμοποιηθούν για τη μειωμένη σύνταξη.');
+      return;
+    }
+
     const outsideBefore2014TotalMonths =
       (parseIntegerOrZero(formData.outsideBefore2014Years) * 12) + outsideBefore2014MonthsNum;
 
@@ -371,6 +383,8 @@ const DeiGeneralInfo = () => {
       residenceYears: String(residenceYearsNum),
       insuredType: formData.insuredType,
       deiCategory: formData.deiCategory,
+      pensionMode: formData.pensionMode,
+      reducedYears: formData.pensionMode === 'reduced' ? String(formData.reducedYears) : '',
 
       yearsOutsideDeiBefore2014: String(parseIntegerOrZero(formData.outsideBefore2014Years)),
       monthsOutsideDeiBefore2014: String(outsideBefore2014MonthsNum),
@@ -396,8 +410,6 @@ const DeiGeneralInfo = () => {
   if (previewBirthDate && previewPensionDate && previewPensionDate > previewBirthDate) {
     currentAge = getAgeAtDate(formData.birthDate, formData.pensionDate);
   }
-
-  const showAgeWarning = currentAge !== null && currentAge >= 50 && currentAge <= 54;
 
   return (
     <div className="dei-info-wrapper">
@@ -553,6 +565,47 @@ const DeiGeneralInfo = () => {
                   />
                 </div>
               </div>
+
+              <div className="dei-info-extra-box">
+                <h3 className="dei-info-title">Πλήρης ή Μειωμένη</h3>
+
+                <div className="dei-radio-group">
+                  <label className="dei-radio-label">
+                    <input
+                      type="radio"
+                      checked={formData.pensionMode === 'full'}
+                      onChange={() => handlePensionModeChange('full')}
+                    />
+                    <span>Πλήρης</span>
+                  </label>
+
+                  <label className="dei-radio-label">
+                    <input
+                      type="radio"
+                      checked={formData.pensionMode === 'reduced'}
+                      onChange={() => handlePensionModeChange('reduced')}
+                    />
+                    <span>Μειωμένη</span>
+                  </label>
+                </div>
+
+                <div className={`dei-reduced-years-box ${formData.pensionMode !== 'reduced' ? 'is-disabled' : ''}`}>
+                  <label className="dei-info-label">Έτη πρόωρης εξόδου</label>
+                  <div className="dei-radio-group dei-radio-group-years">
+                    {[1, 2, 3, 4, 5].map((year) => (
+                      <label key={year} className="dei-radio-label">
+                        <input
+                          type="radio"
+                          checked={formData.reducedYears === String(year)}
+                          onChange={() => handleReducedYearsChange(String(year))}
+                          disabled={formData.pensionMode !== 'reduced'}
+                        />
+                        <span>{year}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -682,10 +735,6 @@ const DeiGeneralInfo = () => {
 
           {errorMessage ? (
             <div className="dei-error-message">{errorMessage}</div>
-          ) : showAgeWarning ? (
-            <div className="dei-error-message" style={{ color: '#fbbf24' }}>
-              Προσοχή: Η ηλικία ({currentAge} ετών) είναι κάτω των 55. Ο υπολογισμός είναι ενδεικτικός.
-            </div>
           ) : null}
 
           <button
