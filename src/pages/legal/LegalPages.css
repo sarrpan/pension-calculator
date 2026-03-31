@@ -1,0 +1,63 @@
+.legal-page {
+  padding: 4rem 0;
+  background-color: var(--bg-light);
+}
+
+.legal-header {
+  background: var(--white);
+  padding: 3rem;
+  border-radius: var(--radius);
+  margin-bottom: 3rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.legal-tag {
+  display: inline-block;
+  background: #fef2f2;
+  color: var(--accent);
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.legal-header h1 {
+  color: var(--primary);
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.legal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.legal-card {
+  background: var(--white);
+  padding: 2rem;
+  border-radius: var(--radius);
+  border-top: 5px solid var(--accent); /* Διακριτική λεπτομέρεια με το χρώμα σου */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+}
+
+.card-num {
+  color: var(--accent);
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.legal-card h3 {
+  color: var(--primary);
+  margin-bottom: 1rem;
+}
+
+.legal-card p {
+  color: var(--text-muted);
+  line-height: 1.6;
+}

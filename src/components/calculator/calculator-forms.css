@@ -1,0 +1,1003 @@
+/* -------------------- EXISTING GENERIC FORM STYLES -------------------- */
+
+.calc-form {
+  width: 100%;
+  color: var(--text-light);
+}
+
+.calc-form__card {
+  background: #13181d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+  padding: 20px;
+}
+
+.calc-form__title {
+  margin: 0 0 14px;
+  font-size: 1.2rem;
+  line-height: 1.15;
+  font-weight: 800;
+  color: #f5f7f8;
+}
+
+.calc-form__title--dei {
+  color: #f3cf6b;
+}
+
+.calc-form__layout {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+
+.calc-form__layout--two {
+  grid-template-columns: minmax(280px, 0.82fr) minmax(640px, 1.78fr);
+}
+
+.calc-panel {
+  min-width: 0;
+}
+
+.calc-panel__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.calc-box {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.calc-box--action {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calc-box__title {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #f5f7f8;
+}
+
+.calc-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.calc-grid--two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.calc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.calc-field--group {
+  margin-top: 2px;
+}
+
+.calc-label {
+  font-size: 0.82rem;
+  line-height: 1.3;
+  color: #afb7bf;
+  font-weight: 500;
+}
+
+.calc-label--mini {
+  font-size: 0.75rem;
+}
+
+.calc-input {
+  width: 100%;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #33404a;
+  background: #0b1015;
+  color: #f5f7f8;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.calc-input:focus {
+  border-color: rgba(165, 70, 20, 0.9);
+  box-shadow: 0 0 0 3px rgba(165, 70, 20, 0.16);
+}
+
+.calc-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.calc-radio-group--compact {
+  gap: 8px;
+}
+
+.calc-radio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid #33404a;
+  background: #0b1015;
+  color: #f5f7f8;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.calc-radio-chip input {
+  margin: 0;
+}
+
+.calc-partial-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.calc-years {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.calc-years__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.calc-years__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #f5f7f8;
+}
+
+.calc-years__grid {
+  display: grid;
+  gap: 10px;
+  max-height: 640px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.calc-years__grid--wide {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.calc-year-card {
+  background: #0f1419;
+  border: 1px solid #303a43;
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.calc-year-card__year {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #6a7cff;
+}
+
+.calc-year-card__fields {
+  display: grid;
+  gap: 8px;
+}
+
+.calc-year-input {
+  width: 100%;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid #33404a;
+  background: #0a0f14;
+  color: #f5f7f8;
+  outline: none;
+  font-size: 0.84rem;
+}
+
+.calc-year-input:focus {
+  border-color: rgba(165, 70, 20, 0.9);
+  box-shadow: 0 0 0 3px rgba(165, 70, 20, 0.16);
+}
+
+.calc-button {
+  width: 100%;
+  min-height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #13b67d 0%, #0d9e6d 100%);
+  color: #ffffff;
+  font-size: 0.96rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(19, 182, 125, 0.2);
+}
+
+.calc-button:hover {
+  filter: brightness(1.03);
+}
+
+.calc-error {
+  margin: 0;
+  color: #ff9a9a;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.calc-results-bar {
+  margin-top: 18px;
+  background: linear-gradient(180deg, #12233d 0%, #0d1a30 100%);
+  border: 1px solid rgba(87, 124, 255, 0.16);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.calc-results-bar__grid {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.calc-result-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+}
+
+.calc-result-item--net {
+  background: rgba(75, 224, 139, 0.08);
+  border: 1px solid rgba(75, 224, 139, 0.18);
+}
+
+.calc-result-label {
+  font-size: 0.82rem;
+  color: #b8c3cf;
+  line-height: 1.25;
+}
+
+.calc-result-value {
+  font-size: 0.94rem;
+  font-weight: 800;
+  line-height: 1.15;
+  word-break: break-word;
+}
+
+.calc-result-value--blue {
+  color: #3fc3ff;
+}
+
+.calc-result-value--gold {
+  color: #f3c53c;
+}
+
+.calc-result-value--green {
+  color: #4be08b;
+}
+
+.calc-result-value--red {
+  color: #ff7d7d;
+}
+
+.calc-net__label {
+  font-size: 0.8rem;
+  color: #71df9d;
+  font-weight: 700;
+}
+
+.calc-net__value {
+  font-size: 1.08rem;
+  line-height: 1.05;
+  font-weight: 900;
+  color: #4be08b;
+}
+
+/* -------------------- DEI FORM -------------------- */
+
+.dei-form__card {
+  padding: 16px;
+}
+
+.dei-form__title {
+  margin: 0 0 10px;
+  font-size: 0.96rem;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #f3cf6b;
+}
+
+.dei-form__layout {
+  display: grid;
+  grid-template-columns: minmax(255px, 300px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.dei-form__left,
+.dei-form__right {
+  min-width: 0;
+}
+
+.dei-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 10px;
+}
+
+.dei-form__left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dei-card--action {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dei-card--years {
+  height: 100%;
+}
+
+.dei-card__title {
+  margin: 0 0 7px;
+  font-size: 0.86rem;
+  line-height: 1.15;
+  font-weight: 800;
+  color: #f5f7f8;
+}
+
+.dei-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.dei-grid--two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.dei-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dei-field--group {
+  margin-top: 0;
+}
+
+.dei-label {
+  font-size: 0.66rem;
+  line-height: 1.2;
+  color: #afb7bf;
+  font-weight: 500;
+}
+
+.dei-label--mini {
+  font-size: 0.62rem;
+}
+
+.dei-input {
+  width: 100%;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid #33404a;
+  background: #0b1015;
+  color: #f5f7f8;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-size: 0.78rem;
+}
+
+.dei-input:focus,
+.dei-year-input:focus {
+  border-color: rgba(165, 70, 20, 0.9);
+  box-shadow: 0 0 0 3px rgba(165, 70, 20, 0.16);
+}
+
+.dei-input[type="number"]::-webkit-outer-spin-button,
+.dei-input[type="number"]::-webkit-inner-spin-button,
+.dei-year-input[type="number"]::-webkit-outer-spin-button,
+.dei-year-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.dei-input[type="number"],
+.dei-year-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.dei-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.dei-radio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid #33404a;
+  background: #0b1015;
+  color: #f5f7f8;
+  cursor: pointer;
+  font-size: 0.74rem;
+  line-height: 1;
+}
+
+.dei-radio-chip input {
+  margin: 0;
+}
+
+.dei-partial-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dei-button {
+  width: 100%;
+  min-height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #13b67d 0%, #0d9e6d 100%);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(19, 182, 125, 0.2);
+}
+
+.dei-button:hover {
+  filter: brightness(1.03);
+}
+
+.dei-error {
+  margin: 0;
+  color: #ff9a9a;
+  font-size: 0.76rem;
+  line-height: 1.3;
+}
+
+.dei-years__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.dei-years__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(98px, 1fr));
+  gap: 8px;
+  max-height: 690px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.dei-year-card {
+  background: #0f1419;
+  border: 1px solid #303a43;
+  border-radius: 12px;
+  padding: 7px;
+}
+
+.dei-year-card__year {
+  display: inline-block;
+  margin-bottom: 5px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #6a7cff;
+}
+
+.dei-year-card__fields {
+  display: grid;
+  gap: 5px;
+}
+
+.dei-year-input {
+  width: 100%;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 7px;
+  border-radius: 7px;
+  border: 1px solid #33404a;
+  background: #0a0f14;
+  color: #f5f7f8;
+  outline: none;
+  font-size: 0.74rem;
+}
+
+.dei-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.dei-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #12233d 0%, #0d1a30 100%);
+  border: 1px solid rgba(87, 124, 255, 0.16);
+}
+
+.dei-summary-item--net {
+  background: rgba(75, 224, 139, 0.08);
+  border: 1px solid rgba(75, 224, 139, 0.18);
+}
+
+.dei-summary-label {
+  font-size: 0.68rem;
+  color: #b8c3cf;
+  line-height: 1.15;
+}
+
+.dei-summary-value {
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.dei-summary-value--blue {
+  color: #3fc3ff;
+}
+
+.dei-summary-value--gold {
+  color: #f3c53c;
+}
+
+.dei-summary-value--green {
+  color: #4be08b;
+}
+
+.dei-debug-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.dei-debug-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 7px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 9px;
+}
+
+.dei-debug-label {
+  font-size: 0.66rem;
+  color: #b8c3cf;
+  line-height: 1.15;
+}
+
+.dei-debug-value {
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.05;
+  word-break: break-word;
+}
+
+.dei-debug-value--blue {
+  color: #3fc3ff;
+}
+
+.dei-debug-value--red {
+  color: #ff7d7d;
+}
+
+/* -------------------- IKA FORM -------------------- */
+
+.ika-form__card {
+  padding: 16px;
+}
+
+.ika-form__title {
+  margin: 0 0 10px;
+  font-size: 0.96rem;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #f5f7f8;
+}
+
+.ika-form__layout {
+  display: grid;
+  grid-template-columns: minmax(255px, 300px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.ika-form__left,
+.ika-form__right {
+  min-width: 0;
+}
+
+.ika-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 10px;
+}
+
+.ika-form__left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ika-card--action {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ika-card--years {
+  height: 100%;
+}
+
+.ika-card__title {
+  margin: 0 0 7px;
+  font-size: 0.86rem;
+  line-height: 1.15;
+  font-weight: 800;
+  color: #f5f7f8;
+}
+
+.ika-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.ika-grid--two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.ika-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ika-field--group {
+  margin-top: 0;
+}
+
+.ika-label {
+  font-size: 0.66rem;
+  line-height: 1.2;
+  color: #afb7bf;
+  font-weight: 500;
+}
+
+.ika-label--mini {
+  font-size: 0.62rem;
+}
+
+.ika-input {
+  width: 100%;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid #33404a;
+  background: #0b1015;
+  color: #f5f7f8;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-size: 0.78rem;
+}
+
+.ika-input:focus,
+.ika-year-input:focus {
+  border-color: rgba(165, 70, 20, 0.9);
+  box-shadow: 0 0 0 3px rgba(165, 70, 20, 0.16);
+}
+
+.ika-input[type="number"]::-webkit-outer-spin-button,
+.ika-input[type="number"]::-webkit-inner-spin-button,
+.ika-year-input[type="number"]::-webkit-outer-spin-button,
+.ika-year-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.ika-input[type="number"],
+.ika-year-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.ika-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.ika-radio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid #33404a;
+  background: #0b1015;
+  color: #f5f7f8;
+  cursor: pointer;
+  font-size: 0.74rem;
+  line-height: 1;
+}
+
+.ika-radio-chip input {
+  margin: 0;
+}
+
+.ika-partial-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ika-button {
+  width: 100%;
+  min-height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #13b67d 0%, #0d9e6d 100%);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(19, 182, 125, 0.2);
+}
+
+.ika-button:hover {
+  filter: brightness(1.03);
+}
+
+.ika-error {
+  margin: 0;
+  color: #ff9a9a;
+  font-size: 0.76rem;
+  line-height: 1.3;
+}
+
+.ika-years__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.ika-years__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(98px, 1fr));
+  gap: 8px;
+  max-height: 690px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ika-year-card {
+  background: #0f1419;
+  border: 1px solid #303a43;
+  border-radius: 12px;
+  padding: 7px;
+}
+
+.ika-year-card__year {
+  display: inline-block;
+  margin-bottom: 5px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #6a7cff;
+}
+
+.ika-year-card__fields {
+  display: grid;
+  gap: 5px;
+}
+
+.ika-year-input {
+  width: 100%;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 7px;
+  border-radius: 7px;
+  border: 1px solid #33404a;
+  background: #0a0f14;
+  color: #f5f7f8;
+  outline: none;
+  font-size: 0.74rem;
+}
+
+.ika-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.ika-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #12233d 0%, #0d1a30 100%);
+  border: 1px solid rgba(87, 124, 255, 0.16);
+}
+
+.ika-summary-item--net {
+  background: rgba(75, 224, 139, 0.08);
+  border: 1px solid rgba(75, 224, 139, 0.18);
+}
+
+.ika-summary-label {
+  font-size: 0.68rem;
+  color: #b8c3cf;
+  line-height: 1.15;
+}
+
+.ika-summary-value {
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.ika-summary-value--blue {
+  color: #3fc3ff;
+}
+
+.ika-summary-value--gold {
+  color: #f3c53c;
+}
+
+.ika-summary-value--green {
+  color: #4be08b;
+}
+
+.ika-debug-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.ika-debug-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 7px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 9px;
+}
+
+.ika-debug-label {
+  font-size: 0.66rem;
+  color: #b8c3cf;
+  line-height: 1.15;
+}
+
+.ika-debug-value {
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.05;
+  word-break: break-word;
+}
+
+.ika-debug-value--blue {
+  color: #3fc3ff;
+}
+
+.ika-debug-value--red {
+  color: #ff7d7d;
+}
+
+@media (max-width: 1400px) {
+  .dei-form__layout,
+  .ika-form__layout {
+    grid-template-columns: minmax(245px, 285px) minmax(0, 1fr);
+  }
+
+  .dei-years__grid,
+  .ika-years__grid {
+    grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .dei-form__layout,
+  .ika-form__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dei-years__grid,
+  .ika-years__grid {
+    max-height: 500px;
+  }
+}
+
+@media (max-width: 760px) {
+  .calc-form__card,
+  .dei-form__card,
+  .ika-form__card {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .dei-grid--two,
+  .dei-summary-grid,
+  .dei-debug-grid,
+  .ika-grid--two,
+  .ika-summary-grid,
+  .ika-debug-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dei-radio-group,
+  .ika-radio-group {
+    flex-direction: column;
+  }
+
+  .dei-radio-chip,
+  .ika-radio-chip {
+    border-radius: 12px;
+    min-height: 38px;
+  }
+
+  .dei-years__grid,
+  .ika-years__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 380px;
+  }
+}
+
+@media (max-width: 520px) {
+  .dei-years__grid,
+  .ika-years__grid {
+    grid-template-columns: 1fr;
+  }
+}

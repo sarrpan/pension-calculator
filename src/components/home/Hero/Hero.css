@@ -1,0 +1,243 @@
+.hero-section {
+  width: 100%;
+  padding: 80px 0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  display: block;
+}
+
+/* Νέα κάθετη διάταξη */
+.hero-vertical-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.hero-content-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 800px; /* Κρατάει το κείμενο μαζεμένο να διαβάζεται εύκολα */
+}
+
+.hero-content-centered h1 {
+  font-size: clamp(2rem, 5vw, 2.4rem);
+  color: var(--primary);
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+  font-weight: 800;
+}
+
+.hero-content-centered p {
+  font-size: clamp(1.08rem, 1.5vw, 1.25rem);
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  line-height: 1.7;
+  text-align: justify;
+}
+
+.trust-badge {
+  background: #e2e8f0;
+  color: var(--primary);
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hero-stats span {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  color: var(--primary);
+  font-size: 0.95rem;
+}
+
+/* Διάταξη καρτών δίπλα-δίπλα */
+.hero-cards-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch; /* Κάνει τις κάρτες να έχουν το ίδιο ύψος */
+  justify-content: center;
+  gap: 2rem;
+  width: 100%;
+  max-width: 1000px;
+  margin-top: 4rem;
+}
+
+.hero-plus-between {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: transparent;
+}
+
+.option-card {
+  background: var(--white, #ffffff);
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius, 12px);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+  position: relative;
+  flex: 1; /* Αναγκάζει τις κάρτες να έχουν ακριβώς το ίδιο πλάτος */
+  display: flex;
+  flex-direction: column;
+  text-align: left; /* Επαναφέρει την αριστερή στοίχιση μέσα στις κάρτες */
+}
+
+.option-card:hover {
+  transform: translateY(-6px);
+}
+
+.option-card.premium {
+  border: 2px solid var(--accent, #f97316);
+}
+
+.recommended-tag {
+  position: absolute;
+  top: -16px;
+  right: 24px;
+  background: var(--accent, #f97316);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.card-header h3 {
+  margin: 0;
+  color: var(--primary, #0f172a);
+  font-size: 1.5rem;
+  line-height: 1.3;
+  padding-right: 1rem;
+}
+
+.price-tag {
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: var(--primary, #0f172a);
+}
+
+.price-tag.free-tag {
+  font-size: 1.2rem;
+  color: #10b981;
+}
+
+.option-intro {
+  color: var(--text-muted, #64748b);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  min-height: 3rem; /* Βοηθάει στην ευθυγράμμιση */
+}
+
+.option-card ul {
+  list-style: none;
+  margin-bottom: 2rem;
+  padding: 0;
+  flex-grow: 1; /* Σπρώχνει τα κουμπιά στο κάτω μέρος */
+}
+
+.option-card li {
+  font-size: 0.95rem;
+  margin-bottom: 0.8rem;
+  color: var(--text-muted, #64748b);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+}
+
+.option-card li::before {
+  content: "✓";
+  color: #10b981;
+  margin-right: 10px;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  margin-top: auto; /* Εξασφαλίζει ότι τα κουμπιά ευθυγραμμίζονται στο κάτω μέρος */
+}
+
+.btn-primary {
+  background: var(--accent, #f97316);
+  color: white;
+}
+
+.btn-secondary {
+  background: var(--primary, #0f172a);
+  color: white;
+}
+
+.btn-primary:hover,
+.btn-secondary:hover {
+  opacity: 0.92;
+  transform: scale(1.02);
+}
+
+/* Mobile Responsive */
+@media (max-width: 900px) {
+  .hero-cards-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .option-card {
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .hero-plus-between {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 50px 0;
+  }
+
+  .hero-content-centered h1 {
+    font-size: clamp(2.1rem, 8vw, 2.8rem);
+  }
+}

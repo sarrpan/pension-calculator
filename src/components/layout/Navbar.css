@@ -1,0 +1,88 @@
+.navbar {
+  height: 80px;
+  background: var(--white);
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between; 
+  align-items: center;
+  width: 100%;
+}
+
+.logo {
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--primary);
+}
+
+.nav-links {
+  display: flex;
+  gap: 22px;
+  list-style: none;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--text-main); 
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  position: relative;
+  padding: 4px 0;
+}
+
+.nav-links a:hover {
+  color: var(--primary); 
+}
+
+.nav-links a.active {
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+}
+
+/* Υπογράμμιση στο hover ΜΟΝΟ για τα απλά links (εξαιρούμε ρητά το track-btn) */
+.nav-links a:not(.active):not(.track-btn):hover::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--primary); 
+  border-radius: 2px;
+}
+
+/* --- Ghost Button (Διαφανές) για την Παρακολούθηση Αίτησης --- */
+.nav-links a.track-btn {
+  background-color: #f1f5f9; /* Πολύ απαλό γκρι-γαλάζιο φόντο */
+  color: var(--primary); /* Το κανονικό σκούρο χρώμα του μενού */
+  padding: 8px 18px;
+  border-radius: 8px; /* Απαλές, στρογγυλεμένες γωνίες */
+  border: none; /* Τέρμα οι γραμμές */
+  font-weight: 600;
+  display: inline-block;
+  transition: all 0.2s ease;
+}
+
+/* Στο hover γεμίζει με το χρώμα */
+.nav-links a.track-btn:hover {
+  background-color: #e2e8f0; /* Γίνεται ένα κλικ πιο σκούρο */
+  color: var(--primary);
+}
+
+/* Όταν ο χρήστης βρίσκεται ήδη στη σελίδα παρακολούθησης */
+.nav-links a.track-btn.active {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-bottom: none;
+}

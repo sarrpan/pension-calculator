@@ -1,0 +1,46 @@
+.footer {
+  background-color: #0f172a;
+  color: white;
+  padding: 50px 0 0 0;
+  margin-top: 60px;
+  border-top: 1px solid #1e293b;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 40px;
+  padding-bottom: 40px;
+}
+
+/* ΠΟΡΤΟΚΑΛΙ ΤΙΤΛΟΙ */
+.footer-brand h4, .footer-links h5 {
+  color: #ff6b00; /* Το πορτοκαλί σου */
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.footer-links a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+/* ΓΑΛΑΖΙΟ PREMIUM */
+.footer-links a.premium-accent {
+  color: #38bdf8 !important; /* Φωτεινό γαλάζιο */
+  font-weight: 800;
+}
+
+.footer-links a.premium-accent:hover {
+  color: white !important;
+  text-decoration: underline;
+}
+
+.footer-bottom {
+  background-color: #020617;
+  padding: 20px 0;
+  text-align: center;
+}

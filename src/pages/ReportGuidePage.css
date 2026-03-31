@@ -1,0 +1,621 @@
+/* =========================================
+   Βασικό Layout & Container
+   ========================================= */
+.report-guide-page {
+  min-height: 70vh;
+  padding: 72px 20px 88px;
+  background: #f7f7f4;
+}
+
+.report-guide-container {
+  max-width: 1000px; 
+  margin: 0 auto;
+}
+
+.report-guide-hero,
+.report-guide-section {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 14px 34px rgba(20, 33, 61, 0.05);
+  margin-bottom: 24px;
+}
+
+/* =========================================
+   Hero Section
+   ========================================= */
+.report-guide-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.report-guide-hero-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.report-guide-hero h1 {
+  margin: 0 0 10px;
+  font-size: clamp(1.6rem, 2.5vw, 2.1rem); 
+  line-height: 1.18;
+  color: #14213d;
+}
+
+.report-guide-scroll-prompt {
+  display: inline-block;
+  margin-top: 16px;
+  color: #5f6b7a;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* =========================================
+   Τυπογραφία & Γενικά
+   ========================================= */
+.report-guide-page h2 {
+  margin: 0 0 14px;
+  font-size: clamp(1.65rem, 2vw, 2.15rem);
+  line-height: 1.18;
+  color: #14213d;
+}
+
+.report-guide-page h3 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  color: #14213d;
+}
+
+.report-guide-lead,
+.report-guide-section-head-simple p,
+.report-guide-header-content p,
+.report-guide-copy p,
+.report-guide-card p,
+.report-guide-panel p,
+.report-guide-cta-text p,
+.report-guide-list li,
+.report-process-card p,       
+.report-guide-side-card p {    
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #4f5b6a;
+}
+
+.report-guide-lead {
+  margin: 0;
+  max-width: 720px;
+  color: #5f6b7a;
+  font-size: 1.1rem;
+  line-height: 1.82;
+}
+
+.report-guide-section-head-simple {
+  max-width: 820px;
+}
+
+/* =========================================
+   Header με Badges (Τι περιλαμβάνει)
+   ========================================= */
+.report-guide-header-with-image {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 28px;
+}
+
+.report-guide-header-content {
+  flex: 1;
+  max-width: 650px;
+}
+
+.report-guide-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.report-guide-header-badges .report-guide-price-badge {
+  margin-bottom: 0;
+  padding: 8px 16px; 
+  font-size: 1.05rem; 
+  min-width: auto;
+  box-shadow: 0 4px 12px rgba(243, 127, 44, 0.15); 
+}
+
+.report-guide-header-badges .report-guide-chip {
+  margin-bottom: 0;
+  padding: 8px 16px; 
+  font-size: 0.9rem;
+  background: #f1f5f9; 
+}
+
+/* =========================================
+   Διαδικασία & Πληρωμή 
+   ========================================= */
+.report-process-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(250px, 0.7fr);
+  gap: 36px; 
+  align-items: center; 
+}
+
+.report-process-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-content: start;
+}
+
+.report-process-card {
+  border-radius: 16px;
+  padding: 22px; 
+  border: 1px solid #edf1f5;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  text-align: left; 
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.report-process-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(20, 33, 61, 0.05);
+}
+
+.process-tone-1 { background: #fffaf3; border-color: #f4dfc2; }
+.process-tone-2 { background: #f4f8ff; border-color: #d7e5ff; }
+.process-tone-3 { background: #f3fbf5; border-color: #d6ecd9; }
+.process-tone-4 { background: #fff5f6; border-color: #f4d7dc; }
+
+.report-guide-side-card {
+  border-radius: 20px;
+  padding: 24px; 
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  display: flex;
+  flex-direction: column;
+}
+
+.report-guide-emphasis-card {
+  background: linear-gradient(180deg, #fff8ef 0%, #fffdf9 100%);
+  border-color: #f4dfc2;
+}
+
+.report-guide-side-label {
+  display: inline-block;
+  align-self: flex-start;
+  margin-bottom: 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(20, 33, 61, 0.06);
+  color: #14213d;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.report-guide-side-divider {
+  height: 1px;
+  background: #ecd8bf;
+  margin: 18px 0;
+}
+
+.report-guide-emphasis-line {
+  margin: 0;
+  color: #7c4a16;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.report-process-number {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f37f2c; 
+  margin-bottom: 10px; 
+}
+
+.report-process-content h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  color: #14213d;
+  line-height: 1.3;
+}
+
+.report-process-content p {
+  margin: 0;
+  color: #4f5b6a;
+  line-height: 1.6;
+}
+
+/* =========================================
+   Κάρτες, Grids & UI Στοιχεία
+   ========================================= */
+.report-guide-card-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.report-guide-card-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.report-guide-card-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.report-guide-card {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid #edf1f5;
+  background: #fbfbfc;
+}
+
+.tone-1 { background: #fffaf3; border-color: #f4dfc2; }
+.tone-2 { background: #f4f8ff; border-color: #d7e5ff; }
+.tone-3 { background: #f3fbf5; border-color: #d6ecd9; }
+.tone-4 { background: #fff5f6; border-color: #f4d7dc; }
+
+.report-guide-badge,
+.report-guide-chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.report-guide-badge {
+  margin-bottom: 10px;
+  background: rgba(243, 127, 44, 0.12);
+  color: #f37f2c;
+}
+
+.report-guide-chip {
+  margin-bottom: 14px;
+  background: rgba(20, 33, 61, 0.06);
+  color: #14213d;
+}
+
+.report-guide-price-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #f37f2c;
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(243, 127, 44, 0.18);
+}
+
+.report-guide-kicker {
+  margin-bottom: 8px;
+  color: #f37f2c;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-guide-kicker-light {
+  color: #f8b27d;
+}
+
+/* =========================================
+   Λοιπά Layouts (Split, Panels)
+   ========================================= */
+.report-guide-section-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 340px);
+  gap: 36px;
+  align-items: stretch; 
+}
+
+.report-guide-panel {
+  border-radius: 20px;
+  padding: 22px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.report-guide-panel-dark {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #0d1830 0%, #14213d 100%);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.report-guide-panel-dark::after {
+  content: '';
+  position: absolute;
+  top: -68px;
+  right: -52px;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  background: rgba(243, 127, 44, 0.12);
+}
+
+.report-guide-panel-emphasis {
+  background: linear-gradient(180deg, #fff8ef 0%, #fffdf9 100%);
+  border-color: #f4dfc2;
+}
+
+.report-guide-panel-label {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #f8b27d;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.report-guide-panel-dark h3,
+.report-guide-panel-dark p,
+.report-guide-panel-dark .report-guide-panel-row-title {
+  position: relative;
+  z-index: 1;
+}
+
+.report-guide-panel-dark h3,
+.report-guide-panel-dark .report-guide-panel-row-title { color: #ffffff; }
+.report-guide-panel-dark p { color: rgba(255, 255, 255, 0.88); }
+.report-guide-panel-list { position: relative; z-index: 1; }
+
+.report-guide-panel-row-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+.report-guide-panel-row p { margin: 0; }
+.report-guide-panel-divider { height: 1px; margin: 14px 0; background: rgba(255, 255, 255, 0.12); }
+
+.report-guide-actions.report-guide-panel-actions {
+  position: relative;
+  z-index: 1;
+  margin-top: auto; 
+  padding-top: 32px; 
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.report-guide-list { margin: 0; padding-left: 20px; }
+.report-guide-list li + li { margin-top: 10px; }
+
+.report-guide-note {
+  margin-top: 18px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: #fff7ed;
+  border: 1px solid #f8d4b7;
+  color: #7c4a16;
+  line-height: 1.75;
+}
+
+.report-guide-note strong { color: #c2410c; }
+.report-guide-note-compact { margin-top: 16px; padding: 14px 16px; }
+
+.report-guide-panel-actions .report-guide-button {
+  width: 100%;
+  text-align: center;
+}
+
+.report-guide-panel-cta {
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================
+   Κουμπιά & Links
+   ========================================= */
+.report-guide-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.report-guide-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 22px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 700;
+  transition: all 0.22s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.report-guide-button:hover { transform: translateY(-2px); }
+
+.report-guide-button,
+.report-guide-button-outline-light:hover {
+  background: #f37f2c;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(243, 127, 44, 0.18);
+}
+
+.report-guide-button:hover { background: #ea580c; }
+
+.report-guide-button-light {
+  background: #ffffff;
+  color: #14213d;
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.report-guide-button-light:hover { background: #f8fafc; }
+
+.report-guide-button-outline-light {
+  background: transparent;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: none;
+}
+
+/* =========================================
+   CTA Στο τέλος (Νέο Split Layout)
+   ========================================= */
+.report-guide-cta {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: 42px 48px; 
+  background: linear-gradient(180deg, #0d1830 0%, #14213d 100%);
+  box-shadow: 0 18px 40px rgba(20, 33, 61, 0.12);
+}
+
+.report-guide-cta::after {
+  content: '';
+  position: absolute;
+  top: -45px;
+  right: -35px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: rgba(243, 127, 44, 0.16);
+  pointer-events: none;
+}
+
+.report-guide-cta-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr auto; 
+  gap: 48px;
+  align-items: center; 
+}
+
+.report-guide-cta-text {
+  max-width: 580px;
+}
+
+.report-guide-cta-text h2 { 
+  color: #ffffff; 
+}
+
+.report-guide-cta-text p { 
+  margin: 0; 
+  color: rgba(255, 255, 255, 0.85); 
+}
+
+.report-guide-cta-assurance {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 24px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.report-guide-cta-actions-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 280px; 
+}
+
+.report-guide-cta-actions-wrapper .report-guide-button {
+  width: 100%;
+  justify-content: center;
+  padding: 16px 24px; 
+  font-size: 1.05rem;
+}
+
+/* =========================================
+   Responsive Styles (Media Queries)
+   ========================================= */
+@media (max-width: 992px) {
+  .report-guide-hero,
+  .report-guide-section-split,
+  .report-process-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .report-guide-card-grid-3,
+  .report-guide-card-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .report-guide-cta-grid {
+    grid-template-columns: 1fr; 
+    gap: 36px;
+  }
+}
+
+@media (max-width: 768px) {
+  .report-guide-page {
+    padding: 56px 16px 72px;
+  }
+
+  .report-guide-hero,
+  .report-guide-section,
+  .report-guide-cta {
+    padding: 24px 20px;
+    border-radius: 20px;
+  }
+
+  .report-guide-hero h1 { font-size: 1.72rem; }
+  .report-guide-page h2 { font-size: 1.45rem; }
+
+  .report-guide-lead,
+  .report-guide-section-head-simple p,
+  .report-guide-header-content p,
+  .report-guide-copy p,
+  .report-guide-card p,
+  .report-guide-panel p,
+  .report-guide-cta-text p,
+  .report-guide-list li {
+    font-size: 0.98rem;
+  }
+
+  .report-guide-actions,
+  .report-guide-panel-actions {
+    align-items: stretch;
+  }
+
+  .report-guide-button,
+  .report-guide-button-light,
+  .report-guide-button-outline-light {
+    width: 100%;
+    text-align: center;
+  }
+
+  .report-guide-cta-assurance {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    border-radius: 16px;
+  }
+  
+  .report-guide-header-with-image {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  
+ .report-guide-header-badges {
+    margin-top: 12px;
+  }
+
+  .report-process-grid {
+    grid-template-columns: 1fr;
+  }
+}
