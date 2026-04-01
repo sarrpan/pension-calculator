@@ -1,4 +1,4 @@
-import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref as storageRef, uploadBytes } from "firebase/storage";
 import { ref as dbRef, set } from "firebase/database";
 import { storage, db } from "../../firebase";
 
@@ -10,25 +10,27 @@ const generatePin = () => {
 /**
  * Υποβάλλει το αίτημα Premium: Ανεβάζει το PDF και σώζει τα δεδομένα.
  */
-// <-- ΝΕΟ: Προστέθηκε η παράμετρος paymentIntentId
 export const submitPremiumRequest = async (email, file, paymentIntentId) => { 
   try {
     const pin = generatePin();
+    const filePath = `premium_pdfs/${pin}.pdf`; // Ορίζουμε τη διαδρομή
 
-    const fileRef = storageRef(storage, `premium_pdfs/${pin}.pdf`);
+    const fileRef = storageRef(storage, filePath);
+    // 1. Ανεβάζουμε το αρχείο
     await uploadBytes(fileRef, file);
     
-    const downloadUrl = await getDownloadURL(fileRef);
+    // ΑΦΑΙΡΕΘΗΚΕ: const downloadUrl = await getDownloadURL(fileRef);
 
     const requestData = {
       pin: pin,
       email: email,
-      pdfUrl: downloadUrl,
-      status: "Pending Payment", // Το έκανα Αγγλικά για να ταιριάζει με το Admin Panel σου
+      pdfUrl: filePath, // ΑΛΛΑΓΗ: Αποθηκεύουμε το Path, όχι το πλήρες URL
+      status: "Pending Payment", 
       createdAt: Date.now(),
-      paymentIntentId: paymentIntentId // <-- ΝΕΟ: Αποθηκεύουμε τον κωδικό του Stripe στη βάση
+      paymentIntentId: paymentIntentId 
     };
 
+    // 2. Αποθηκεύουμε τα στοιχεία στη βάση
     await set(dbRef(db, `premium_requests/${pin}`), requestData);
 
     return { success: true, pin: pin };
