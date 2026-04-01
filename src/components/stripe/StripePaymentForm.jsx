@@ -1,20 +1,28 @@
 import React, { useState } from 'react';
-import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 const StripePaymentForm = ({ onFileSubmit }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [paymentError, setPaymentError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // States για να παρακολουθούμε αν συμπληρώθηκαν σωστά τα πεδία
+  const [isCardNumberComplete, setIsCardNumberComplete] = useState(false);
+  const [isCardExpiryComplete, setIsCardExpiryComplete] = useState(false);
+  const [isCardCvcComplete, setIsCardCvcComplete] = useState(false);
+
+  // Το κουμπί είναι ενεργό ΜΟΝΟ αν και τα τρία πεδία είναι πλήρη (true)
+  const isFormComplete = isCardNumberComplete && isCardExpiryComplete && isCardCvcComplete;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!stripe || !elements) {
+    if (!stripe || !elements || !isFormComplete) {
       return;
     }
 
-    setIsProcessing(true);
+    setIsProcessing(true); // Ξεκινάει το loading και ΔΕΝ το σταματάμε εμείς!
     setPaymentError(null);
 
     try {
@@ -28,7 +36,7 @@ const StripePaymentForm = ({ onFileSubmit }) => {
         throw new Error(data.error);
       }
 
-      const cardElement = elements.getElement(CardElement);
+      const cardElement = elements.getElement(CardNumberElement);
       const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
         payment_method: {
           card: cardElement,
@@ -37,55 +45,100 @@ const StripePaymentForm = ({ onFileSubmit }) => {
 
       if (error) {
         setPaymentError(error.message);
+        setIsProcessing(false); // Σταματάμε το loading ΜΟΝΟ αν υπάρξει σφάλμα στην κάρτα
       } else if (paymentIntent.status === "requires_capture" || paymentIntent.status === "succeeded") {
-        // ΤΕΛΕΙΑ! Στέλνουμε το ID της δέσμευσης (π.χ. pi_3Mtw...) στην κεντρική φόρμα
-        onFileSubmit(paymentIntent.id); // <-- ΝΕΟ: Προστέθηκε το paymentIntent.id
+        // Καλούμε την κεντρική συνάρτηση για να ανεβάσει το PDF. 
+        // ΔΕΝ κάνουμε setIsProcessing(false) εδώ, το αφήνουμε να γυρίζει μέχρι να βγει το PIN!
+        await onFileSubmit(paymentIntent.id); 
       }
     } catch (err) {
       console.error("Σφάλμα:", err);
       setPaymentError("Υπήρξε πρόβλημα με την επικοινωνία. Δοκιμάστε ξανά.");
+      setIsProcessing(false); // Σταματάμε το loading αν "σκάσει" το fetch
     }
+  };
 
-    setIsProcessing(false);
+  // Κοινό στυλ για όλα τα πεδία της κάρτας
+  const ELEMENT_OPTIONS = {
+    style: {
+      base: {
+        fontSize: '16px',
+        color: '#334155',
+        fontFamily: 'sans-serif',
+        '::placeholder': { color: '#94a3b8' },
+      },
+      invalid: { color: '#b91c1c' },
+    },
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginTop: '20px', padding: '15px', border: '1px solid #e0e0e0', borderRadius: '8px', backgroundColor: '#fff' }}>
-      <label style={{ fontWeight: 'bold', display: 'block', margin: '0 0 15px 0', color: '#334155' }}>
-        Στοιχεία Κάρτας (Δέσμευση 10€)
+    <form onSubmit={handleSubmit} style={{ marginTop: '20px', padding: '20px', border: '1px solid #e2e8f0', borderRadius: '12px', backgroundColor: '#f8fafc', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+      <label style={{ fontWeight: '600', display: 'block', margin: '0 0 20px 0', color: '#1e293b', fontSize: '1.1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
+        💳 Στοιχεία Κάρτας (Δέσμευση 10€)
       </label>
       
-      <div style={{ padding: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', marginBottom: '15px', backgroundColor: '#f8fafc' }}>
-        <CardElement options={{
-          style: {
-            base: {
-              fontSize: '16px',
-              color: '#334155',
-              fontFamily: 'sans-serif',
-              '::placeholder': { color: '#94a3b8' },
-            },
-            invalid: { color: '#b91c1c' },
-          },
-        }} />
+      {/* Πεδίο: Αριθμός Κάρτας */}
+      <div style={{ marginBottom: '15px' }}>
+        <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: '#475569', fontWeight: '500' }}>Αριθμός Κάρτας</label>
+        <div style={{ padding: '14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#ffffff', transition: 'border-color 0.2s' }}>
+          <CardNumberElement 
+            options={ELEMENT_OPTIONS} 
+            onChange={(e) => setIsCardNumberComplete(e.complete)} 
+          />
+        </div>
+      </div>
+
+      {/* Δίπλα-δίπλα: Ημερομηνία & CVC */}
+      <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+        <div style={{ flex: 1 }}>
+          <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: '#475569', fontWeight: '500' }}>Λήξη (ΜΜ/ΕΕ)</label>
+          <div style={{ padding: '14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#ffffff' }}>
+            <CardExpiryElement 
+              options={ELEMENT_OPTIONS} 
+              onChange={(e) => setIsCardExpiryComplete(e.complete)}
+            />
+          </div>
+        </div>
+        
+        <div style={{ flex: 1 }}>
+          <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: '#475569', fontWeight: '500' }}>CVC</label>
+          <div style={{ padding: '14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#ffffff' }}>
+            <CardCvcElement 
+              options={ELEMENT_OPTIONS} 
+              onChange={(e) => setIsCardCvcComplete(e.complete)}
+            />
+          </div>
+        </div>
       </div>
 
       {paymentError && (
-        <div style={{ color: '#b91c1c', backgroundColor: '#fef2f2', padding: '10px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px', fontWeight: 'bold', border: '1px solid #fee2e2' }}>
-          {paymentError}
+        <div style={{ color: '#b91c1c', backgroundColor: '#fef2f2', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px', border: '1px solid #f87171' }}>
+          ⚠️ {paymentError}
         </div>
       )}
 
       <button 
         type="submit" 
-        disabled={!stripe || isProcessing}
+        disabled={!stripe || isProcessing || !isFormComplete}
         className="submit-btn" 
-        style={{ width: '100%', opacity: (!stripe || isProcessing) ? 0.7 : 1 }}
+        style={{ 
+          width: '100%', 
+          padding: '14px',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          backgroundColor: (!stripe || isProcessing || !isFormComplete) ? '#cbd5e1' : '#f97316',
+          color: (!stripe || isProcessing || !isFormComplete) ? '#64748b' : '#ffffff',
+          cursor: (!stripe || isProcessing || !isFormComplete) ? 'not-allowed' : 'pointer',
+          border: 'none',
+          borderRadius: '8px',
+          transition: 'all 0.3s ease'
+        }}
       >
-        {isProcessing ? 'Επεξεργασία...' : 'Έγκριση Δέσμευσης & Υποβολή'}
+        {isProcessing ? 'Επεξεργασία & Ανέβασμα Αρχείου... ⏳' : 'Έγκριση Δέσμευσης & Υποβολή'}
       </button>
       
-      <p style={{ fontSize: '13px', color: '#64748b', marginTop: '15px', textAlign: 'center', lineHeight: '1.4' }}>
-        🔒 Η πληρωμή είναι ασφαλής μέσω <strong>Stripe</strong>. Τα χρήματα θα δεσμευτούν στην κάρτα σας και θα χρεωθούν οριστικά <strong>μόνο</strong> μετά την παράδοση του Report.
+      <p style={{ fontSize: '13px', color: '#64748b', marginTop: '16px', textAlign: 'center', lineHeight: '1.5' }}>
+        🔒 Η πληρωμή είναι απολύτως ασφαλής μέσω <strong>Stripe</strong>. <br/> Τα χρήματα θα δεσμευτούν και θα χρεωθούν οριστικά <strong>μόνο</strong> μετά την παράδοση του Report.
       </p>
     </form>
   );
