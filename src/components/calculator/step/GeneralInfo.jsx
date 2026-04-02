@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './GeneralInfo.css';
-import generalInfoMockData from './generalInfoMockData';
+import GeneralInfoMockData from './GeneralInfoMockData';
 
 const sanitizeDisplayDate = (value) => {
   let cleaned = value.replace(/[^\d]/g, '').slice(0, 8);
@@ -15,10 +15,27 @@ const sanitizeDisplayDate = (value) => {
   return cleaned;
 };
 
-const isValidDisplayDate = (value) => {
-  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return false;
+const normalizeYearPart = (yearPart) => {
+  if (!/^\d{2}$|^\d{4}$/.test(yearPart)) return null;
 
-  const [day, month, year] = value.split('/').map(Number);
+  if (yearPart.length === 4) {
+    return Number(yearPart);
+  }
+
+  const yy = Number(yearPart);
+  return yy <= 29 ? 2000 + yy : 1900 + yy;
+};
+
+const isValidDisplayDate = (value) => {
+  if (!/^\d{2}\/\d{2}\/(\d{2}|\d{4})$/.test(value)) return false;
+
+  const [dayStr, monthStr, yearStr] = value.split('/');
+  const day = Number(dayStr);
+  const month = Number(monthStr);
+  const year = normalizeYearPart(yearStr);
+
+  if (!year) return false;
+
   const date = new Date(year, month - 1, day);
 
   return (
@@ -31,22 +48,23 @@ const isValidDisplayDate = (value) => {
 const displayToIso = (value) => {
   if (!isValidDisplayDate(value)) return '';
 
-  const [day, month, year] = value.split('/');
-  return `${year}-${month}-${day}`;
+  const [day, month, yearStr] = value.split('/');
+  const year = normalizeYearPart(yearStr);
+
+  if (!year) return '';
+
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 };
 
 const isoToDisplay = (value) => {
   if (!value) return '';
-
   const [year, month, day] = value.split('-');
   if (!year || !month || !day) return '';
-
   return `${day}/${month}/${year}`;
 };
 
 const sanitizeIntegerInput = (value, max = null) => {
   const digitsOnly = value.replace(/[^\d]/g, '');
-
   if (digitsOnly === '') return '';
 
   let normalized = String(parseInt(digitsOnly, 10));
@@ -60,7 +78,7 @@ const sanitizeIntegerInput = (value, max = null) => {
 
 const parseIntegerOrZero = (value) => {
   if (value === '' || value === null || value === undefined) return 0;
-  return Number.parseInt(value, 10);
+  return Number.parseInt(value, 10) || 0;
 };
 
 const parseIsoDate = (value) => {
@@ -106,714 +124,604 @@ const isOlderThanOneYearFromToday = (isoDate) => {
   const today = new Date();
   const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const oneYearAgo = new Date(todayOnly);
-
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
   return date < oneYearAgo;
 };
 
-const inputErrorStyle = {
-  borderColor: '#d93025',
-  boxShadow: '0 0 0 1px rgba(217, 48, 37, 0.2)'
+const getInitialDifferentCategoryMode = (source) => {
+  if (source.differentCategoryMode === 'yes' || source.differentCategoryMode === 'no') {
+    return source.differentCategoryMode;
+  }
+
+  if (
+    source.hasDifferentDeiCategoryAfter2015 === true ||
+    source.hasDifferentDeiCategoryAfter2015 === 'yes'
+  ) {
+    return 'yes';
+  }
+
+  if (
+    source.hasDifferentDeiCategoryAfter2015 === false ||
+    source.hasDifferentDeiCategoryAfter2015 === 'no'
+  ) {
+    return 'no';
+  }
+
+  if (
+    source.differentDeiCategoryAfter2015Years ||
+    source.differentDeiCategoryAfter2015Months
+  ) {
+    return 'yes';
+  }
+
+  return 'no';
 };
 
-const fieldErrorTextStyle = {
-  marginTop: '6px',
-  color: '#d93025',
-  fontSize: '0.9rem'
-};
-
-const GeneralInfo = () => {
+const DeiGeneralInfo = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const initialGeneralInfoData = location.state?.generalInfoData || null;
-  const preservedSpecialConditionsData = location.state?.specialConditionsData || null;
-
-  const [birthDate, setBirthDate] = useState('');
-  const [pensionDate, setPensionDate] = useState('');
-  const [totalInsuranceYears, setTotalInsuranceYears] = useState('');
-  const [totalInsuranceMonths, setTotalInsuranceMonths] = useState('');
-  const [residenceYears, setResidenceYears] = useState('40');
-
-  const [insuredType, setInsuredType] = useState('new');
-  const [heavyRetirement, setHeavyRetirement] = useState('no');
-  const [heavyMode, setHeavyMode] = useState('none');
-
-  const [heavyUntil2014Years, setHeavyUntil2014Years] = useState('');
-  const [heavyUntil2014Months, setHeavyUntil2014Months] = useState('');
-  const [heavyFrom2015Years, setHeavyFrom2015Years] = useState('');
-  const [heavyFrom2015Months, setHeavyFrom2015Months] = useState('');
-
-  const [birthDateDisplay, setBirthDateDisplay] = useState('');
-  const [pensionDateDisplay, setPensionDateDisplay] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({});
+  const initialData = location.state?.generalInfoData || null;
+  const incomingSpecialConditionsData = location.state?.specialConditionsData || {};
 
   const birthDatePickerRef = useRef(null);
   const pensionDatePickerRef = useRef(null);
-  const fieldRefs = useRef({});
-  const allowBirthPickerRef = useRef(false);
-  const allowPensionPickerRef = useRef(false);
 
-  useEffect(() => {
-    if (!initialGeneralInfoData) return;
+  const mapDataToState = (source) => ({
+    birthDate: source.birthDate || '',
+    birthDateDisplay: isoToDisplay(source.birthDate || ''),
+    pensionDate: source.pensionDate || '',
+    pensionDateDisplay: isoToDisplay(source.pensionDate || ''),
+    totalInsuranceYears: source.totalInsuranceYears || '',
+    totalInsuranceMonths: source.totalInsuranceMonths || '',
+    residenceYears: source.residenceYears || '40',
+    insuredType: source.insuredType || 'old',
+    deiCategory: source.deiCategory || 'lignite',
+    pensionMode: source.pensionMode || 'full',
+    reducedYears: source.reducedYears || '',
+    differentCategoryMode: getInitialDifferentCategoryMode(source),
 
-    setBirthDate(initialGeneralInfoData.birthDate || '');
-    setPensionDate(initialGeneralInfoData.pensionDate || '');
-    setBirthDateDisplay(isoToDisplay(initialGeneralInfoData.birthDate || ''));
-    setPensionDateDisplay(isoToDisplay(initialGeneralInfoData.pensionDate || ''));
-    setTotalInsuranceYears(initialGeneralInfoData.totalInsuranceYears || '');
-    setTotalInsuranceMonths(initialGeneralInfoData.totalInsuranceMonths || '');
-    setResidenceYears(initialGeneralInfoData.residenceYears || '40');
-    setInsuredType(initialGeneralInfoData.insuredType || 'new');
-    setHeavyRetirement(initialGeneralInfoData.heavyRetirement || 'no');
-    setHeavyMode(initialGeneralInfoData.heavyMode || 'none');
-    setHeavyUntil2014Years(initialGeneralInfoData.heavyUntil2014Years || '');
-    setHeavyUntil2014Months(initialGeneralInfoData.heavyUntil2014Months || '');
-    setHeavyFrom2015Years(initialGeneralInfoData.heavyFrom2015Years || '');
-    setHeavyFrom2015Months(initialGeneralInfoData.heavyFrom2015Months || '');
-    setFieldErrors({});
-  }, [initialGeneralInfoData]);
+    outsideBefore2014Years:
+      source.yearsOutsideDeiBefore2014 ||
+      source.outsideBefore2014Years ||
+      '',
+    outsideBefore2014Months:
+      source.monthsOutsideDeiBefore2014 ||
+      source.outsideBefore2014Months ||
+      '',
 
-  const collectValues = () => ({
-    birthDate,
-    pensionDate,
-    totalInsuranceYears,
-    totalInsuranceMonths,
-    residenceYears,
-    heavyRetirement,
-    heavyMode,
-    heavyUntil2014Years,
-    heavyUntil2014Months,
-    heavyFrom2015Years,
-    heavyFrom2015Months
+    differentDeiCategoryAfter2015Years:
+      source.differentDeiCategoryAfter2015Years || '',
+    differentDeiCategoryAfter2015Months:
+      source.differentDeiCategoryAfter2015Months || ''
   });
 
-  const validateBirthDate = (values) => {
-    const birthDateObj = parseIsoDate(values.birthDate);
+  const [formData, setFormData] = useState(() => mapDataToState({}));
+  const [errorMessage, setErrorMessage] = useState('');
 
-    if (!values.birthDate || !birthDateObj) {
-      return 'Συμπληρώστε έγκυρη ημερομηνία γέννησης.';
+  useEffect(() => {
+    if (initialData) {
+      setFormData(mapDataToState(initialData));
+      setErrorMessage('');
     }
-
-    return '';
-  };
-
-  const validatePensionDate = (values) => {
-    const pensionDateObj = parseIsoDate(values.pensionDate);
-
-    if (!values.pensionDate || !pensionDateObj) {
-      return 'Συμπληρώστε έγκυρη ημερομηνία σύνταξης.';
-    }
-
-    if (isOlderThanOneYearFromToday(values.pensionDate)) {
-      return 'Η ημερομηνία σύνταξης δεν μπορεί να είναι παλαιότερη από 1 χρόνο πριν από σήμερα.';
-    }
-
-    const birthDateObj = parseIsoDate(values.birthDate);
-    if (birthDateObj) {
-      const ageAtPension = getAgeAtDate(values.birthDate, values.pensionDate);
-      if (ageAtPension !== null && ageAtPension < 50) {
-        return 'Η ηλικία κατά την ημερομηνία σύνταξης πρέπει να είναι τουλάχιστον 50 ετών.';
-      }
-    }
-
-    return '';
-  };
-
-  const validateTotalInsurance = (values) => {
-    const totalInsuranceYearsNum = parseIntegerOrZero(values.totalInsuranceYears);
-    const totalInsuranceMonthsNum = parseIntegerOrZero(values.totalInsuranceMonths);
-
-    if (values.totalInsuranceYears === '') {
-      return 'Συμπληρώστε τα συνολικά έτη ασφάλισης.';
-    }
-
-    if (totalInsuranceMonthsNum < 0 || totalInsuranceMonthsNum > 11) {
-      return 'Οι μήνες του συνολικού ασφαλιστικού βίου πρέπει να είναι από 0 έως 11.';
-    }
-
-    const totalInsuranceInYears = totalInsuranceYearsNum + totalInsuranceMonthsNum / 12;
-    if (totalInsuranceInYears < 15) {
-      return 'Για να προχωρήσετε απαιτούνται τουλάχιστον 15 έτη ασφάλισης.';
-    }
-
-    return '';
-  };
-
-  const validateResidenceYears = (values) => {
-    const residenceYearsNum = parseIntegerOrZero(values.residenceYears);
-
-    if (values.residenceYears === '') {
-      return 'Συμπληρώστε τα έτη διαμονής στην Ελλάδα.';
-    }
-
-    if (residenceYearsNum < 0 || residenceYearsNum > 40) {
-      return 'Τα έτη διαμονής στην Ελλάδα πρέπει να είναι από 0 έως 40.';
-    }
-
-    return '';
-  };
-
-  const validateHeavyPartial = (values) => {
-    if (values.heavyMode !== 'partial') {
-      return '';
-    }
-
-    const totalInsuranceError = validateTotalInsurance(values);
-    if (totalInsuranceError) {
-      return 'Συμπληρώστε πρώτα σωστά τον συνολικό ασφαλιστικό βίο.';
-    }
-
-    const heavyUntil2014YearsNum = parseIntegerOrZero(values.heavyUntil2014Years);
-    const heavyUntil2014MonthsNum = parseIntegerOrZero(values.heavyUntil2014Months);
-    const heavyFrom2015YearsNum = parseIntegerOrZero(values.heavyFrom2015Years);
-    const heavyFrom2015MonthsNum = parseIntegerOrZero(values.heavyFrom2015Months);
-    const totalInsuranceInYears =
-      parseIntegerOrZero(values.totalInsuranceYears) +
-      parseIntegerOrZero(values.totalInsuranceMonths) / 12;
-
-    if (heavyUntil2014MonthsNum < 0 || heavyUntil2014MonthsNum > 11) {
-      return 'Οι μήνες βαρέων έως το 2014 πρέπει να είναι από 0 έως 11.';
-    }
-
-    if (heavyFrom2015MonthsNum < 0 || heavyFrom2015MonthsNum > 11) {
-      return 'Οι μήνες βαρέων από το 2015 και μετά πρέπει να είναι από 0 έως 11.';
-    }
-
-    const totalHeavyInYears =
-      heavyUntil2014YearsNum +
-      heavyUntil2014MonthsNum / 12 +
-      heavyFrom2015YearsNum +
-      heavyFrom2015MonthsNum / 12;
-
-    if (totalHeavyInYears <= 0) {
-      return 'Στα μερικώς βαρέα πρέπει να συμπληρωθεί τουλάχιστον ένας χρόνος ή μήνας βαρέων.';
-    }
-
-    if (totalHeavyInYears > totalInsuranceInYears) {
-      return 'Ο συνολικός χρόνος βαρέων δεν μπορεί να ξεπερνά τον συνολικό ασφαλιστικό βίο.';
-    }
-
-    if (totalHeavyInYears < 12) {
-      return 'Στα μερικώς βαρέα το άθροισμα πριν το 2014 και από το 2015 και μετά πρέπει να είναι τουλάχιστον 12 έτη.';
-    }
-
-    return '';
-  };
-
-  const runAllValidations = (values) => {
-    return {
-      birthDate: validateBirthDate(values),
-      pensionDate: validatePensionDate(values),
-      totalInsurance: validateTotalInsurance(values),
-      residenceYears: validateResidenceYears(values),
-      heavyPartial: validateHeavyPartial(values)
-    };
-  };
-
-  const getFirstErrorFocusName = (errors, values) => {
-    if (errors.birthDate) return 'birthDate';
-    if (errors.pensionDate) return 'pensionDate';
-    if (errors.totalInsurance) return 'totalInsuranceYears';
-    if (errors.residenceYears) return 'residenceYears';
-    if (errors.heavyPartial && values.heavyMode === 'partial') return 'heavyUntil2014Years';
-    return null;
-  };
-
-  const focusField = (fieldName) => {
-    const ref = fieldRefs.current[fieldName];
-    if (ref?.focus) {
-      setTimeout(() => ref.focus(), 0);
-    }
-  };
-
-  const handleBirthDateTextChange = (value) => {
-    const formatted = sanitizeDisplayDate(value);
-    setBirthDateDisplay(formatted);
-    setBirthDate(displayToIso(formatted));
-    setFieldErrors((prev) => ({ ...prev, birthDate: '', pensionDate: '' }));
-  };
-
-  const handlePensionDateTextChange = (value) => {
-    const formatted = sanitizeDisplayDate(value);
-    setPensionDateDisplay(formatted);
-    setPensionDate(displayToIso(formatted));
-    setFieldErrors((prev) => ({ ...prev, pensionDate: '' }));
-  };
-
-  const handleBirthDatePickerChange = (value) => {
-    setBirthDate(value);
-    setBirthDateDisplay(isoToDisplay(value));
-    setFieldErrors((prev) => ({ ...prev, birthDate: '', pensionDate: '' }));
-  };
-
-  const handlePensionDatePickerChange = (value) => {
-    setPensionDate(value);
-    setPensionDateDisplay(isoToDisplay(value));
-    setFieldErrors((prev) => ({ ...prev, pensionDate: '' }));
-  };
-
-  const openBirthDatePicker = () => {
-    if (birthDatePickerRef.current?.showPicker) {
-      birthDatePickerRef.current.showPicker();
-    } else if (birthDatePickerRef.current) {
-      birthDatePickerRef.current.click();
-    }
-  };
-
-  const openPensionDatePicker = () => {
-    if (pensionDatePickerRef.current?.showPicker) {
-      pensionDatePickerRef.current.showPicker();
-    } else if (pensionDatePickerRef.current) {
-      pensionDatePickerRef.current.click();
-    }
-  };
-
-  const handleIntegerFieldChange = (setter, errorKey, max = null) => (e) => {
-    setter(sanitizeIntegerInput(e.target.value, max));
-    if (errorKey) {
-      setFieldErrors((prev) => ({ ...prev, [errorKey]: '' }));
-    }
-  };
-
-  const validateOnBlur = (errorKey, focusFieldName, allowRef = null) => {
-    if (errorKey === 'heavyPartial') {
-      return;
-    }
-
-    const values = collectValues();
-    const errors = runAllValidations(values);
-    const message = errors[errorKey] || '';
-
-    setFieldErrors((prev) => ({
-      ...prev,
-      [errorKey]: message
-    }));
-
-    if (message) {
-      const shouldSkipRefocus = allowRef?.current === true;
-      if (allowRef) allowRef.current = false;
-      if (!shouldSkipRefocus) {
-        focusField(focusFieldName);
-      }
-      return;
-    }
-
-    if (allowRef) allowRef.current = false;
-  };
-
-  const handleHeavyModeChange = (nextMode) => {
-    setHeavyMode(nextMode);
-    setFieldErrors((prev) => ({ ...prev, heavyPartial: '' }));
-
-    if (nextMode !== 'partial') {
-      setHeavyUntil2014Years('');
-      setHeavyUntil2014Months('');
-      setHeavyFrom2015Years('');
-      setHeavyFrom2015Months('');
-    }
-  };
+  }, [initialData]);
 
   const handleFillTestData = () => {
-    setBirthDate(generalInfoMockData.birthDate || '');
-    setPensionDate(generalInfoMockData.pensionDate || '');
-    setBirthDateDisplay(isoToDisplay(generalInfoMockData.birthDate || ''));
-    setPensionDateDisplay(isoToDisplay(generalInfoMockData.pensionDate || ''));
-    setTotalInsuranceYears(generalInfoMockData.totalInsuranceYears || '');
-    setTotalInsuranceMonths(generalInfoMockData.totalInsuranceMonths || '');
-    setResidenceYears(generalInfoMockData.residenceYears || '40');
-    setInsuredType(generalInfoMockData.insuredType || 'new');
-    setHeavyRetirement(generalInfoMockData.heavyRetirement || 'no');
-    setHeavyMode(generalInfoMockData.heavyMode || 'none');
-    setHeavyUntil2014Years(generalInfoMockData.heavyUntil2014Years || '');
-    setHeavyUntil2014Months(generalInfoMockData.heavyUntil2014Months || '');
-    setHeavyFrom2015Years(generalInfoMockData.heavyFrom2015Years || '');
-    setHeavyFrom2015Months(generalInfoMockData.heavyFrom2015Months || '');
-    setFieldErrors({});
+    setFormData(mapDataToState(deiGeneralInfoMockData));
+    setErrorMessage('');
+  };
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleIntChange = (field, max = null) => (e) => {
+    handleChange(field, sanitizeIntegerInput(e.target.value, max));
+  };
+
+  const handleDateDisplayChange = (fieldIso, fieldDisplay, value) => {
+    const sanitized = sanitizeDisplayDate(value);
+    handleChange(fieldDisplay, sanitized);
+    handleChange(fieldIso, displayToIso(sanitized));
+  };
+
+  const handleNativeDateChange = (fieldIso, fieldDisplay, value) => {
+    handleChange(fieldIso, value);
+    handleChange(fieldDisplay, isoToDisplay(value));
+  };
+
+  const handleDifferentCategoryModeChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      differentCategoryMode: value,
+      differentDeiCategoryAfter2015Years: value === 'yes' ? prev.differentDeiCategoryAfter2015Years : '',
+      differentDeiCategoryAfter2015Months: value === 'yes' ? prev.differentDeiCategoryAfter2015Months : ''
+    }));
+  };
+
+  const handlePensionModeChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      pensionMode: value,
+      reducedYears: value === 'reduced' ? prev.reducedYears : ''
+    }));
+  };
+
+  const handleReducedYearsChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      reducedYears: value
+    }));
   };
 
   const handleNextStep = () => {
-    const values = collectValues();
-    const errors = runAllValidations(values);
-    setFieldErrors(errors);
+    setErrorMessage('');
 
-    const firstErrorField = getFirstErrorFocusName(errors, values);
-    if (firstErrorField) {
-      focusField(firstErrorField);
+    const birthDateObj = parseIsoDate(formData.birthDate);
+    const pensionDateObj = parseIsoDate(formData.pensionDate);
+
+    if (!formData.birthDate || !birthDateObj) {
+      setErrorMessage('Παρακαλώ συμπληρώστε έγκυρη Ημερομηνία Γέννησης.');
       return;
     }
 
-    const totalInsuranceYearsNum = parseIntegerOrZero(totalInsuranceYears);
-    const totalInsuranceMonthsNum = parseIntegerOrZero(totalInsuranceMonths);
-    const residenceYearsNum = parseIntegerOrZero(residenceYears);
-    const heavyUntil2014YearsNum = parseIntegerOrZero(heavyUntil2014Years);
-    const heavyUntil2014MonthsNum = parseIntegerOrZero(heavyUntil2014Months);
-    const heavyFrom2015YearsNum = parseIntegerOrZero(heavyFrom2015Years);
-    const heavyFrom2015MonthsNum = parseIntegerOrZero(heavyFrom2015Months);
+    if (!formData.pensionDate || !pensionDateObj) {
+      setErrorMessage('Παρακαλώ συμπληρώστε έγκυρη Ημερομηνία Σύνταξης.');
+      return;
+    }
 
-    const generalInfoData = {
-      birthDate,
-      pensionDate,
+    if (pensionDateObj <= birthDateObj) {
+      setErrorMessage('Η Ημερομηνία Σύνταξης πρέπει να είναι μεταγενέστερη από την Ημερομηνία Γέννησης.');
+      return;
+    }
+
+    if (isOlderThanOneYearFromToday(formData.pensionDate)) {
+      setErrorMessage('Η ημερομηνία σύνταξης δεν μπορεί να είναι παλαιότερη από 1 χρόνο πριν από σήμερα.');
+      return;
+    }
+
+    const ageAtPension = getAgeAtDate(formData.birthDate, formData.pensionDate);
+
+    if (ageAtPension === null) {
+      setErrorMessage('Δεν ήταν δυνατός ο έλεγχος της ηλικίας συνταξιοδότησης.');
+      return;
+    }
+
+    if (ageAtPension < 50) {
+      setErrorMessage('Η φόρμα δεν υπολογίζει σύνταξη για ηλικία κάτω των 50 ετών.');
+      return;
+    }
+
+    const currentYear = new Date().getFullYear();
+    const maxAllowedYear = currentYear + 2;
+
+    if (pensionDateObj.getFullYear() > maxAllowedYear) {
+      setErrorMessage(`Η εφαρμογή δεν κάνει υπολογισμό σύνταξης μετά το ${maxAllowedYear}, απαιτείται η υπηρεσία Premium Report.`);
+      return;
+    }
+
+    if (!formData.totalInsuranceYears && !formData.totalInsuranceMonths) {
+      setErrorMessage('Παρακαλώ συμπληρώστε τον Συνολικό Ασφαλιστικό Βίο (Έτη / Μήνες).');
+      return;
+    }
+
+    const totalInsuranceYearsNum = parseIntegerOrZero(formData.totalInsuranceYears);
+    const totalInsuranceMonthsNum = parseIntegerOrZero(formData.totalInsuranceMonths);
+
+    if (totalInsuranceMonthsNum < 0 || totalInsuranceMonthsNum > 11) {
+      setErrorMessage('Οι μήνες του συνολικού ασφαλιστικού βίου πρέπει να είναι από 0 έως 11.');
+      return;
+    }
+
+    const expectedTotalInMonths = (totalInsuranceYearsNum * 12) + totalInsuranceMonthsNum;
+
+    if (expectedTotalInMonths < 180) {
+      setErrorMessage('Ο ελάχιστος απαιτούμενος συνολικός χρόνος ασφάλισης για συνταξιοδότηση είναι τα 15 έτη.');
+      return;
+    }
+
+    if (formData.residenceYears === '') {
+      setErrorMessage('Παρακαλώ συμπληρώστε τα Έτη διαμονής στην Ελλάδα.');
+      return;
+    }
+
+    const residenceYearsNum = parseIntegerOrZero(formData.residenceYears);
+
+    if (residenceYearsNum < 0 || residenceYearsNum > 40) {
+      setErrorMessage('Τα έτη διαμονής στην Ελλάδα πρέπει να είναι από 0 έως 40.');
+      return;
+    }
+
+    const outsideBefore2014MonthsNum = parseIntegerOrZero(formData.outsideBefore2014Months);
+    if (outsideBefore2014MonthsNum < 0 || outsideBefore2014MonthsNum > 11) {
+      setErrorMessage('Οι μήνες του χρόνου εκτός της κατηγορίας ενσήμων που επιλέξατε έως 2014 πρέπει να είναι από 0 έως 11.');
+      return;
+    }
+
+    const differentCategoryAfter2015MonthsNum = parseIntegerOrZero(formData.differentDeiCategoryAfter2015Months);
+    if (differentCategoryAfter2015MonthsNum < 0 || differentCategoryAfter2015MonthsNum > 11) {
+      setErrorMessage('Οι μήνες του χρόνου σε διαφορετική κατηγορία πρέπει να είναι από 0 έως 11.');
+      return;
+    }
+
+    if (formData.pensionMode === 'reduced' && !formData.reducedYears) {
+      setErrorMessage('Επιλέξτε πόσα έτη πρόωρης εξόδου θα χρησιμοποιηθούν για τη μειωμένη σύνταξη.');
+      return;
+    }
+
+    const outsideBefore2014TotalMonths =
+      (parseIntegerOrZero(formData.outsideBefore2014Years) * 12) + outsideBefore2014MonthsNum;
+
+    const differentCategoryAfter2015TotalMonths =
+      formData.differentCategoryMode === 'yes'
+        ? (parseIntegerOrZero(formData.differentDeiCategoryAfter2015Years) * 12) + differentCategoryAfter2015MonthsNum
+        : 0;
+
+    if (formData.differentCategoryMode === 'yes' && differentCategoryAfter2015TotalMonths === 0) {
+      setErrorMessage('Συμπληρώστε τον χρόνο σε διαφορετική κατηγορία από το 2015 και μετά ή επιλέξτε "Όχι".');
+      return;
+    }
+
+    const totalDeclaredMonths = outsideBefore2014TotalMonths + differentCategoryAfter2015TotalMonths;
+
+    if (totalDeclaredMonths > expectedTotalInMonths) {
+      const calcY = Math.floor(totalDeclaredMonths / 12);
+      const calcM = totalDeclaredMonths % 12;
+
+      setErrorMessage(
+        `Αναντιστοιχία χρόνου: Ο συνολικός βίος είναι ${totalInsuranceYearsNum} έτη και ${totalInsuranceMonthsNum} μήνες, αλλά ο δηλωμένος ειδικός χρόνος βγαίνει ${calcY} έτη και ${calcM} μήνες.`
+      );
+      return;
+    }
+
+    const data = {
+      birthDate: formData.birthDate,
+      pensionDate: formData.pensionDate,
       totalInsuranceYears: String(totalInsuranceYearsNum),
       totalInsuranceMonths: String(totalInsuranceMonthsNum),
       residenceYears: String(residenceYearsNum),
-      insuredType,
-      heavyRetirement,
-      heavyMode,
-      heavyUntil2014Years: String(heavyUntil2014YearsNum),
-      heavyUntil2014Months: String(heavyUntil2014MonthsNum),
-      heavyFrom2015Years: String(heavyFrom2015YearsNum),
-      heavyFrom2015Months: String(heavyFrom2015MonthsNum)
+      insuredType: formData.insuredType,
+      deiCategory: formData.deiCategory,
+      pensionMode: formData.pensionMode,
+      reducedYears: formData.pensionMode === 'reduced' ? String(formData.reducedYears) : '',
+
+      yearsOutsideDeiBefore2014: String(parseIntegerOrZero(formData.outsideBefore2014Years)),
+      monthsOutsideDeiBefore2014: String(outsideBefore2014MonthsNum),
+
+      differentCategoryMode: formData.differentCategoryMode,
+      hasDifferentDeiCategoryAfter2015: formData.differentCategoryMode,
+      differentDeiCategoryAfter2015Years: String(parseIntegerOrZero(formData.differentDeiCategoryAfter2015Years)),
+      differentDeiCategoryAfter2015Months: String(differentCategoryAfter2015MonthsNum)
     };
 
-    navigate('/calculator/misthotoi/sc', {
+    navigate('/calculator/dei/sc', {
       state: {
-        generalInfoData,
-        specialConditionsData: preservedSpecialConditionsData
+        generalInfoData: data,
+        specialConditionsData: incomingSpecialConditionsData
       }
     });
   };
 
-  const hasError = (key) => Boolean(fieldErrors[key]);
+  let currentAge = null;
+  const previewBirthDate = parseIsoDate(formData.birthDate);
+  const previewPensionDate = parseIsoDate(formData.pensionDate);
+
+  if (previewBirthDate && previewPensionDate && previewPensionDate > previewBirthDate) {
+    currentAge = getAgeAtDate(formData.birthDate, formData.pensionDate);
+  }
 
   return (
-    <div className="gen-info-wrapper">
-      <div className="gen-info-header">
-        <h2>Μισθωτοί</h2>
-        <p>Συμπληρώστε τις βασικές πληροφορίες του ασφαλιστικού σας βίου</p>
+    <div className="ika-info-wrapper">
+      <div className="ika-info-header">
+        <h2>Ασφάλιση Μισθωτών (ΙΚΑ - ΤΕΑΜ)</h2>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-        <button
-          type="button"
-          onClick={handleFillTestData}
-          className="step-button step-button-back"
-        >
+      <div className="ika-info-top-actions">
+        <button type="button" onClick={handleFillTestData} className="step-button step-button-back">
           Γέμισε δοκιμαστικά στοιχεία
         </button>
       </div>
 
-      <div className="gen-info-main-panel">
-        <div className="gen-info-two-columns">
-          <div className="gen-info-col-left">
-            <div className="gen-info-section">
-              <div className="gen-info-grid">
-                <div className="gen-info-field">
-                  <label className="gen-info-label">Ημερομηνία γέννησης</label>
-                  <div className="gen-info-date-wrap">
+      <div className="ika-info-form-panel ika-info-main-panel">
+        <div className="ika-info-two-columns">
+          <div className="ika-info-col-left">
+            <div className="ika-info-section">
+              <div className="ika-info-grid">
+                <div className="ika-info-field">
+                  <label className="ika-info-label">Ημερομηνία γέννησης</label>
+                  <div className="ika-info-date-wrap">
                     <input
-                      ref={(el) => {
-                        fieldRefs.current.birthDate = el;
-                      }}
                       type="text"
-                      className="gen-info-input date-gr"
-                      style={hasError('birthDate') ? inputErrorStyle : undefined}
+                      className="ika-info-input"
                       placeholder="dd/mm/yyyy"
-                      inputMode="numeric"
-                      value={birthDateDisplay}
-                      onChange={(e) => handleBirthDateTextChange(e.target.value)}
-                      onBlur={() => validateOnBlur('birthDate', 'birthDate', allowBirthPickerRef)}
+                      value={formData.birthDateDisplay}
+                      onChange={(e) => handleDateDisplayChange('birthDate', 'birthDateDisplay', e.target.value)}
                     />
                     <button
                       type="button"
-                      className="gen-info-date-button"
-                      onMouseDown={() => {
-                        allowBirthPickerRef.current = true;
+                      className="ika-info-date-button"
+                      onClick={() => {
+                        if (birthDatePickerRef.current?.showPicker) {
+                          birthDatePickerRef.current.showPicker();
+                        } else {
+                          birthDatePickerRef.current?.click();
+                        }
                       }}
-                      onClick={openBirthDatePicker}
-                      aria-label="Άνοιγμα ημερολογίου"
                     >
-                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path
-                          d="M8 2V5M16 2V5M3 9H21M7 5H17C19.2091 5 21 6.79086 21 9V18C21 20.2091 19.2091 22 17 22H7C4.79086 22 3 20.2091 3 18V9C3 6.79086 4.79086 5 7 5Z"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M8 2V5M16 2V5M3 9H21M7 5H17C19.2 5 21 6.8 21 9V18C21 20.2 19.2 22 17 22H7C4.8 22 3 20.2 3 18V9C3 6.8 4.8 5 7 5Z" stroke="currentColor" strokeWidth="1.8" />
                       </svg>
                     </button>
                     <input
                       ref={birthDatePickerRef}
                       type="date"
-                      className="gen-info-native-date"
-                      value={birthDate}
-                      onChange={(e) => handleBirthDatePickerChange(e.target.value)}
-                      tabIndex={-1}
-                      aria-hidden="true"
+                      className="ika-info-native-date"
+                      value={formData.birthDate}
+                      onChange={(e) => handleNativeDateChange('birthDate', 'birthDateDisplay', e.target.value)}
                     />
                   </div>
-                  {fieldErrors.birthDate && <div style={fieldErrorTextStyle}>{fieldErrors.birthDate}</div>}
                 </div>
 
-                <div className="gen-info-field">
-                  <label className="gen-info-label">Ημερομηνία σύνταξης</label>
-                  <div className="gen-info-date-wrap">
+                <div className="ika-info-field">
+                  <label className="ika-info-label">Ημερομηνία σύνταξης</label>
+                  <div className="ika-info-date-wrap">
                     <input
-                      ref={(el) => {
-                        fieldRefs.current.pensionDate = el;
-                      }}
                       type="text"
-                      className="gen-info-input date-gr"
-                      style={hasError('pensionDate') ? inputErrorStyle : undefined}
+                      className="ika-info-input"
                       placeholder="dd/mm/yyyy"
-                      inputMode="numeric"
-                      value={pensionDateDisplay}
-                      onChange={(e) => handlePensionDateTextChange(e.target.value)}
-                      onBlur={() => validateOnBlur('pensionDate', 'pensionDate', allowPensionPickerRef)}
+                      value={formData.pensionDateDisplay}
+                      onChange={(e) => handleDateDisplayChange('pensionDate', 'pensionDateDisplay', e.target.value)}
                     />
                     <button
                       type="button"
-                      className="gen-info-date-button"
-                      onMouseDown={() => {
-                        allowPensionPickerRef.current = true;
+                      className="ika-info-date-button"
+                      onClick={() => {
+                        if (pensionDatePickerRef.current?.showPicker) {
+                          pensionDatePickerRef.current.showPicker();
+                        } else {
+                          pensionDatePickerRef.current?.click();
+                        }
                       }}
-                      onClick={openPensionDatePicker}
-                      aria-label="Άνοιγμα ημερολογίου"
                     >
-                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path
-                          d="M8 2V5M16 2V5M3 9H21M7 5H17C19.2091 5 21 6.79086 21 9V18C21 20.2091 19.2091 22 17 22H7C4.79086 22 3 20.2091 3 18V9C3 6.79086 4.79086 5 7 5Z"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M8 2V5M16 2V5M3 9H21M7 5H17C19.2 5 21 6.8 21 9V18C21 20.2 19.2 22 17 22H7C4.8 22 3 20.2 3 18V9C3 6.8 4.8 5 7 5Z" stroke="currentColor" strokeWidth="1.8" />
                       </svg>
                     </button>
                     <input
                       ref={pensionDatePickerRef}
                       type="date"
-                      className="gen-info-native-date"
-                      value={pensionDate}
-                      onChange={(e) => handlePensionDatePickerChange(e.target.value)}
-                      tabIndex={-1}
-                      aria-hidden="true"
+                      className="ika-info-native-date"
+                      value={formData.pensionDate}
+                      onChange={(e) => handleNativeDateChange('pensionDate', 'pensionDateDisplay', e.target.value)}
                     />
                   </div>
-                  {fieldErrors.pensionDate && <div style={fieldErrorTextStyle}>{fieldErrors.pensionDate}</div>}
                 </div>
               </div>
             </div>
 
-            <div className="gen-info-section">
-              <div className="gen-info-field">
-                <label className="gen-info-label">Συνολικός ασφαλιστικός βίος</label>
-                <div className="gen-info-grid gen-info-grid-inner">
-                  <div className="gen-info-field gen-info-field-small">
-                    <label className="gen-info-sub-label">Έτη</label>
+            <div className="ika-info-section">
+              <div className="ika-info-field">
+                <label className="ika-info-label">Συνολικός ασφαλιστικός βίος</label>
+                <div className="ika-info-grid ika-info-grid-inner">
+                  <div className="ika-info-field ika-info-field-small">
+                    <label className="ika-info-sub-label">Έτη</label>
                     <input
-                      ref={(el) => {
-                        fieldRefs.current.totalInsuranceYears = el;
-                      }}
                       type="text"
                       inputMode="numeric"
-                      className="gen-info-input"
-                      style={hasError('totalInsurance') ? inputErrorStyle : undefined}
-                      value={totalInsuranceYears}
-                      onChange={handleIntegerFieldChange(setTotalInsuranceYears, 'totalInsurance')}
-                      onBlur={() => validateOnBlur('totalInsurance', 'totalInsuranceYears')}
+                      className="ika-info-input"
+                      value={formData.totalInsuranceYears}
+                      onChange={handleIntChange('totalInsuranceYears')}
                     />
                   </div>
-                  <div className="gen-info-field gen-info-field-small">
-                    <label className="gen-info-sub-label">Μήνες</label>
+
+                  <div className="ika-info-field ika-info-field-small">
+                    <label className="ika-info-sub-label">Μήνες</label>
                     <input
-                      ref={(el) => {
-                        fieldRefs.current.totalInsuranceMonths = el;
-                      }}
                       type="text"
                       inputMode="numeric"
-                      className="gen-info-input"
-                      style={hasError('totalInsurance') ? inputErrorStyle : undefined}
-                      value={totalInsuranceMonths}
-                      onChange={handleIntegerFieldChange(setTotalInsuranceMonths, 'totalInsurance', 11)}
-                      onBlur={() => validateOnBlur('totalInsurance', 'totalInsuranceYears')}
+                      className="ika-info-input"
+                      value={formData.totalInsuranceMonths}
+                      onChange={handleIntChange('totalInsuranceMonths', 11)}
                     />
                   </div>
                 </div>
-                {fieldErrors.totalInsurance && <div style={fieldErrorTextStyle}>{fieldErrors.totalInsurance}</div>}
               </div>
             </div>
 
-            <div className="gen-info-section" style={{ borderBottom: 'none', paddingBottom: 0 }}>
-              <div className="gen-info-field gen-info-field-last">
-                <label className="gen-info-label">Έτη διαμονής στην Ελλάδα</label>
-                <input
-                  ref={(el) => {
-                    fieldRefs.current.residenceYears = el;
-                  }}
-                  type="text"
-                  inputMode="numeric"
-                  className="gen-info-input"
-                  style={hasError('residenceYears') ? inputErrorStyle : undefined}
-                  value={residenceYears}
-                  onChange={handleIntegerFieldChange(setResidenceYears, 'residenceYears', 40)}
-                  onBlur={() => validateOnBlur('residenceYears', 'residenceYears')}
-                />
-                {fieldErrors.residenceYears && <div style={fieldErrorTextStyle}>{fieldErrors.residenceYears}</div>}
+            <div className="ika-info-section ika-info-section-last">
+              <div className="ika-compact-fields-row">
+                <div className="ika-info-field">
+                  <h3 className="ika-info-title">Πρώτη ασφάλιση πριν 1/1/1993</h3>
+                  <div className="ika-radio-group">
+                    <label className="ika-radio-label">
+                      <input
+                        type="radio"
+                        checked={formData.insuredType === 'old'}
+                        onChange={() => handleChange('insuredType', 'old')}
+                      />
+                      <span>Ναι</span>
+                    </label>
+
+                    <label className="ika-radio-label">
+                      <input
+                        type="radio"
+                        checked={formData.insuredType === 'new'}
+                        onChange={() => handleChange('insuredType', 'new')}
+                      />
+                      <span>Όχι</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="ika-info-field ika-info-field-last">
+                  <label className="ika-info-label">Έτη διαμονής στην Ελλάδα</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="ika-info-input"
+                    value={formData.residenceYears}
+                    onChange={handleIntChange('residenceYears', 40)}
+                  />
+                </div>
+              </div>
+
+              <div className="ika-info-extra-box">
+                <h3 className="ika-info-title">Πλήρης ή Μειωμένη</h3>
+
+                <div className="ika-radio-group">
+                  <label className="ika-radio-label">
+                    <input
+                      type="radio"
+                      checked={formData.pensionMode === 'full'}
+                      onChange={() => handlePensionModeChange('full')}
+                    />
+                    <span>Πλήρης</span>
+                  </label>
+
+                  <label className="ika-radio-label">
+                    <input
+                      type="radio"
+                      checked={formData.pensionMode === 'reduced'}
+                      onChange={() => handlePensionModeChange('reduced')}
+                    />
+                    <span>Μειωμένη</span>
+                  </label>
+                </div>
+
+                <div className={`ika-reduced-years-box ${formData.pensionMode !== 'reduced' ? 'is-disabled' : ''}`}>
+                  <label className="ika-info-label">Έτη πρόωρης εξόδου</label>
+                  <div className="ika-radio-group ika-radio-group-years">
+                    {[1, 2, 3, 4, 5].map((year) => (
+                      <label key={year} className="ika-radio-label">
+                        <input
+                          type="radio"
+                          checked={formData.reducedYears === String(year)}
+                          onChange={() => handleReducedYearsChange(String(year))}
+                          disabled={formData.pensionMode !== 'reduced'}
+                        />
+                        <span>{year}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="gen-info-col-right">
-            <div className="gen-info-section">
-              <h3 className="gen-info-title">Πρώτη ασφάλιση πριν 1/1/1993</h3>
-              <div className="classic-radio-group">
-                <label className="classic-radio">
+          <div className="ika-info-col-right">
+            <div className="ika-info-section">
+              <h3 className="ika-info-title">Κατηγορία Ενσήμων</h3>
+              <p className="ika-info-helper">
+                Επιλέξτε την κατηγορία με την οποία θεμελιώνετε δικαίωμα, όχι απαραίτητα την τελευταία σας εργασία.
+              </p>
+              <div className="ika-radio-group ika-radio-group-category">
+                <label className="ika-radio-label">
                   <input
                     type="radio"
-                    checked={insuredType === 'old'}
-                    onChange={() => setInsuredType('old')}
+                    checked={formData.deiCategory === 'simple'}
+                    onChange={() => handleChange('deiCategory', 'simple')}
+                  />
+                  <span>Απλά</span>
+                </label>
+
+                <label className="ika-radio-label">
+                  <input
+                    type="radio"
+                    checked={formData.deiCategory === 'heavy'}
+                    onChange={() => handleChange('deiCategory', 'heavy')}
+                  />
+                  <span>Βαρέα (εισφορά 3,6%)</span>
+                </label>
+
+                <label className="ika-radio-label">
+                  <input
+                    type="radio"
+                    checked={formData.deiCategory === 'lignite'}
+                    onChange={() => handleChange('deiCategory', 'lignite')}
+                  />
+                  <span>ΥΒΑΕ (εισφορά 7%)</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="ika-info-section">
+              <h3 className="ika-info-title">Χρόνος εκτός της κατηγορίας ενσήμων που επιλέξατε έως 2014</h3>
+              <div className="ika-info-grid ika-info-grid-inner">
+                <div className="ika-info-field ika-info-field-small">
+                  <label className="ika-info-sub-label">Έτη</label>
+                  <input
+                    type="text"
+                    className="ika-info-input"
+                    inputMode="numeric"
+                    value={formData.outsideBefore2014Years}
+                    onChange={handleIntChange('outsideBefore2014Years')}
+                  />
+                </div>
+
+                <div className="ika-info-field ika-info-field-small">
+                  <label className="ika-info-sub-label">Μήνες</label>
+                  <input
+                    type="text"
+                    className="ika-info-input"
+                    inputMode="numeric"
+                    value={formData.outsideBefore2014Months}
+                    onChange={handleIntChange('outsideBefore2014Months', 11)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="ika-info-section ika-info-section-last">
+              <h3 className="ika-info-title">Από το 2015 και μετά υπήρξαν χρόνια σε διαφορετική κατηγορία ενσήμων;</h3>
+
+              <div className="ika-radio-group">
+                <label className="ika-radio-label">
+                  <input
+                    type="radio"
+                    checked={formData.differentCategoryMode === 'yes'}
+                    onChange={() => handleDifferentCategoryModeChange('yes')}
                   />
                   <span>Ναι</span>
                 </label>
-                <label className="classic-radio">
+
+                <label className="ika-radio-label">
                   <input
                     type="radio"
-                    checked={insuredType === 'new'}
-                    onChange={() => setInsuredType('new')}
+                    checked={formData.differentCategoryMode === 'no'}
+                    onChange={() => handleDifferentCategoryModeChange('no')}
                   />
                   <span>Όχι</span>
                 </label>
               </div>
-            </div>
 
-            <div className="gen-info-section">
-              <h3 className="gen-info-title">Αποχώρηση με καθεστώς βαρέων</h3>
-              <div className="classic-radio-group">
-                <label className="classic-radio">
-                  <input
-                    type="radio"
-                    checked={heavyRetirement === 'yes'}
-                    onChange={() => {
-                      setHeavyRetirement('yes');
-                      setFieldErrors((prev) => ({ ...prev, heavyPartial: '' }));
-                    }}
-                  />
-                  <span>Ναι</span>
-                </label>
-                <label className="classic-radio">
-                  <input
-                    type="radio"
-                    checked={heavyRetirement === 'no'}
-                    onChange={() => {
-                      setHeavyRetirement('no');
-                      setFieldErrors((prev) => ({ ...prev, heavyPartial: '' }));
-                    }}
-                  />
-                  <span>Όχι</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="gen-info-section">
-              <h3 className="gen-info-title">Βαρέα</h3>
-              <div className="classic-radio-group">
-                <label className="classic-radio">
-                  <input
-                    type="radio"
-                    checked={heavyMode === 'none'}
-                    onChange={() => handleHeavyModeChange('none')}
-                  />
-                  <span>Καθόλου βαρέα</span>
-                </label>
-                <label className="classic-radio">
-                  <input
-                    type="radio"
-                    checked={heavyMode === 'all'}
-                    onChange={() => handleHeavyModeChange('all')}
-                  />
-                  <span>Όλα βαρέα</span>
-                </label>
-                <label className="classic-radio">
-                  <input
-                    type="radio"
-                    checked={heavyMode === 'partial'}
-                    onChange={() => handleHeavyModeChange('partial')}
-                  />
-                  <span>Μερικώς βαρέα</span>
-                </label>
-              </div>
-            </div>
-
-            <div
-              className={`gen-info-section ${heavyMode !== 'partial' ? 'section-disabled' : ''}`}
-              style={{ borderBottom: 'none', paddingBottom: 0 }}
-            >
-              <h3 className="gen-info-title">Χρόνος βαρέων ανά περίοδο</h3>
-
-              <div className="gen-info-field" style={{ marginBottom: '16px' }}>
-                <label className="gen-info-label">Έως 2014</label>
-                <div className="gen-info-grid gen-info-grid-inner">
-                  <div className="gen-info-field gen-info-field-small">
-                    <label className="gen-info-sub-label">Έτη</label>
+              <div className={`ika-inline-period-box ${formData.differentCategoryMode !== 'yes' ? 'is-disabled' : ''}`}>
+                <label className="ika-info-label">Χρόνος σε διαφορετική κατηγορία ενσήμων</label>
+                <div className="ika-info-grid ika-info-grid-inner">
+                  <div className="ika-info-field ika-info-field-small">
+                    <label className="ika-info-sub-label">Έτη</label>
                     <input
-                      ref={(el) => {
-                        fieldRefs.current.heavyUntil2014Years = el;
-                      }}
                       type="text"
                       inputMode="numeric"
-                      className="gen-info-input"
-                      style={hasError('heavyPartial') ? inputErrorStyle : undefined}
-                      value={heavyUntil2014Years}
-                      onChange={handleIntegerFieldChange(setHeavyUntil2014Years, 'heavyPartial')}
-                      disabled={heavyMode !== 'partial'}
+                      className="ika-info-input"
+                      value={formData.differentDeiCategoryAfter2015Years}
+                      onChange={handleIntChange('differentDeiCategoryAfter2015Years')}
+                      disabled={formData.differentCategoryMode !== 'yes'}
                     />
                   </div>
-                  <div className="gen-info-field gen-info-field-small">
-                    <label className="gen-info-sub-label">Μήνες</label>
+
+                  <div className="ika-info-field ika-info-field-small">
+                    <label className="ika-info-sub-label">Μήνες</label>
                     <input
-                      ref={(el) => {
-                        fieldRefs.current.heavyUntil2014Months = el;
-                      }}
                       type="text"
                       inputMode="numeric"
-                      className="gen-info-input"
-                      style={hasError('heavyPartial') ? inputErrorStyle : undefined}
-                      value={heavyUntil2014Months}
-                      onChange={handleIntegerFieldChange(setHeavyUntil2014Months, 'heavyPartial', 11)}
-                      disabled={heavyMode !== 'partial'}
+                      className="ika-info-input"
+                      value={formData.differentDeiCategoryAfter2015Months}
+                      onChange={handleIntChange('differentDeiCategoryAfter2015Months', 11)}
+                      disabled={formData.differentCategoryMode !== 'yes'}
                     />
                   </div>
                 </div>
-              </div>
-
-              <div className="gen-info-field gen-info-field-last">
-                <label className="gen-info-label">Από 2015 και μετά</label>
-                <div className="gen-info-grid gen-info-grid-inner">
-                  <div className="gen-info-field gen-info-field-small">
-                    <label className="gen-info-sub-label">Έτη</label>
-                    <input
-                      ref={(el) => {
-                        fieldRefs.current.heavyFrom2015Years = el;
-                      }}
-                      type="text"
-                      inputMode="numeric"
-                      className="gen-info-input"
-                      style={hasError('heavyPartial') ? inputErrorStyle : undefined}
-                      value={heavyFrom2015Years}
-                      onChange={handleIntegerFieldChange(setHeavyFrom2015Years, 'heavyPartial')}
-                      disabled={heavyMode !== 'partial'}
-                    />
-                  </div>
-                  <div className="gen-info-field gen-info-field-small">
-                    <label className="gen-info-sub-label">Μήνες</label>
-                    <input
-                      ref={(el) => {
-                        fieldRefs.current.heavyFrom2015Months = el;
-                      }}
-                      type="text"
-                      inputMode="numeric"
-                      className="gen-info-input"
-                      style={hasError('heavyPartial') ? inputErrorStyle : undefined}
-                      value={heavyFrom2015Months}
-                      onChange={handleIntegerFieldChange(setHeavyFrom2015Months, 'heavyPartial', 11)}
-                      disabled={heavyMode !== 'partial'}
-                    />
-                  </div>
-                </div>
-                {fieldErrors.heavyPartial && <div style={fieldErrorTextStyle}>{fieldErrors.heavyPartial}</div>}
               </div>
             </div>
           </div>
@@ -827,6 +735,11 @@ const GeneralInfo = () => {
           >
             ← Επιστροφή στις κατηγορίες
           </button>
+
+          {errorMessage ? (
+            <div className="ika-error-message">{errorMessage}</div>
+          ) : null}
+
           <button
             type="button"
             onClick={handleNextStep}
@@ -840,4 +753,4 @@ const GeneralInfo = () => {
   );
 };
 
-export default GeneralInfo;
+export default DeiGeneralInfo;

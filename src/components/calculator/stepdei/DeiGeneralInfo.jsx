@@ -611,7 +611,7 @@ const DeiGeneralInfo = () => {
 
           <div className="dei-info-col-right">
             <div className="dei-info-section">
-              <h3 className="dei-info-title">Κατηγορία ΔΕΗ</h3>
+              <h3 className="dei-info-title">Κατηγορία Ενσήμων</h3>
               <div className="dei-radio-group dei-radio-group-category">
                 <label className="dei-radio-label">
                   <input
@@ -628,7 +628,7 @@ const DeiGeneralInfo = () => {
                     checked={formData.deiCategory === 'heavy'}
                     onChange={() => handleChange('deiCategory', 'heavy')}
                   />
-                  <span>Βαρέα</span>
+                  <span>Βαρέα (εισφορά 3,6%)</span>
                 </label>
 
                 <label className="dei-radio-label">
@@ -637,7 +637,7 @@ const DeiGeneralInfo = () => {
                     checked={formData.deiCategory === 'lignite'}
                     onChange={() => handleChange('deiCategory', 'lignite')}
                   />
-                  <span>Υπερβαρέα / Λιγνιτωρύχοι</span>
+                  <span>Υπερβαρέα (εισφορά 7%)</span>
                 </label>
               </div>
             </div>
