@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './SpecialConditions.css';
-import specialConditionsMockData from './specialConditionsMockData';
+import SpecialConditionsMockData from './SpecialConditionsMockData';
 
 const sanitizeAmount = (value) => {
   let cleaned = value.replace(',', '.').replace(/[^\d.]/g, '');
@@ -39,7 +39,7 @@ const sanitizeDays = (value) => {
   return String(Math.min(parseInt(digitsOnly, 10), 300));
 };
 
-const SpecialConditions = () => {
+const DeiSpecialConditions = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -91,10 +91,10 @@ const SpecialConditions = () => {
     const nextData = buildEmptyYearsData();
 
     for (const year of years) {
-      if (specialConditionsMockData?.[year]) {
+      if (SpecialConditionsMockData?.[year]) {
         nextData[year] = {
-          amount: specialConditionsMockData[year]?.amount || '',
-          days: specialConditionsMockData[year]?.days || ''
+          amount: SpecialConditionsMockData[year]?.amount || '',
+          days: SpecialConditionsMockData[year]?.days || ''
         };
       }
     }
@@ -113,11 +113,11 @@ const SpecialConditions = () => {
       const hasDays = days !== '';
 
       if (hasAmount && !hasDays) {
-        errors.push(`Το έτος ${year} έχει απολαβές αλλά δεν έχει ένσημα.`);
+        errors.push(`Το έτος ${year} έχει απολαβές αλλά δεν έχει ημέρες.`);
       }
 
       if (!hasAmount && hasDays) {
-        errors.push(`Το έτος ${year} έχει ένσημα αλλά δεν έχει απολαβές.`);
+        errors.push(`Το έτος ${year} έχει ημέρες αλλά δεν έχει απολαβές.`);
       }
     }
 
@@ -126,18 +126,21 @@ const SpecialConditions = () => {
       return;
     }
 
-    navigate('/calculator/misthotoi/results', {
-      state: {
-        generalInfoData,
-        specialConditionsData: yearsData
-      }
-    });
+    const finalData = {
+      generalInfoData: generalInfoData,
+      specialConditionsData: yearsData
+    };
+
+    // Αποθήκευση στη μνήμη του browser για να αντέχει στο F5
+    sessionStorage.setItem('specialConditionsCalculatorState', JSON.stringify(finalData));
+
+    navigate('/calculator/misthotoi/results', { state: finalData });
   };
 
   return (
-    <div className="ika-card ika-card--years">
-      <div className="ika-years__header">
-        <h3 className="ika-card__title">Ανά έτος στοιχεία</h3>
+    <div className="ika-years-card">
+      <div className="ika-years-header">
+        <h3 className="ika-years-title">Ανά έτος στοιχεία</h3>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
@@ -150,26 +153,25 @@ const SpecialConditions = () => {
         </button>
       </div>
 
-      <div className="ika-years__grid">
+      <div className="ika-years-grid">
         {years.map((year) => (
           <div key={year} className="ika-year-card">
-            <span className="ika-year-card__year">{year}</span>
+            <span className="ika-year-label">{year}</span>
 
-            <div className="ika-year-card__fields">
+            <div className="ika-year-fields">
               <input
-                className="ika-year-input"
                 type="text"
                 inputMode="decimal"
+                className="ika-year-input"
                 placeholder="Ποσό €"
                 value={yearsData[year]?.amount || ''}
                 onChange={(e) => setYearField(year, 'amount', sanitizeAmount(e.target.value))}
               />
-
               <input
-                className="ika-year-input"
                 type="text"
                 inputMode="numeric"
-                placeholder="Ένσημα"
+                className="ika-year-input"
+                placeholder="Ημέρες"
                 value={yearsData[year]?.days || ''}
                 onChange={(e) => setYearField(year, 'days', sanitizeDays(e.target.value))}
               />
@@ -204,4 +206,4 @@ const SpecialConditions = () => {
   );
 };
 
-export default SpecialConditions;
+export default DeiSpecialConditions;

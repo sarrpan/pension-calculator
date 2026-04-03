@@ -1,4 +1,4 @@
-.dei-years-card {
+.years-card {
   background: #111827;
   border: 1px solid #1f2937;
   border-radius: 16px;
@@ -6,7 +6,7 @@
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
 }
 
-.dei-years-header {
+.years-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -14,7 +14,7 @@
   margin-bottom: 12px;
 }
 
-.dei-years-title {
+.years-title {
   margin: 0;
   font-size: 1rem;
   line-height: 1.2;
@@ -22,7 +22,7 @@
   color: #e5e7eb;
 }
 
-.dei-years-grid {
+.years-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 10px;
@@ -31,14 +31,14 @@
   padding-right: 4px;
 }
 
-.dei-year-card {
+.year-card {
   background: #0f172a;
   border: 1px solid #334155;
   border-radius: 12px;
   padding: 10px;
 }
 
-.dei-year-label {
+.year-label {
   display: inline-block;
   margin-bottom: 8px;
   color: #f37f2c;
@@ -47,12 +47,12 @@
   line-height: 1.1;
 }
 
-.dei-year-fields {
+.year-fields {
   display: grid;
   gap: 6px;
 }
 
-.dei-year-input {
+.year-input {
   width: 100%;
   height: 30px;
   box-sizing: border-box;
@@ -65,32 +65,32 @@
   outline: none;
 }
 
-.dei-year-input::placeholder {
+.year-input::placeholder {
   color: #94a3b8;
   opacity: 1;
 }
 
-.dei-year-input:focus {
+.year-input:focus {
   border-color: #f37f2c;
   box-shadow: 0 0 0 3px rgba(243, 127, 44, 0.14);
 }
 
-.dei-year-input[type="number"]::-webkit-outer-spin-button,
-.dei-year-input[type="number"]::-webkit-inner-spin-button {
+.year-input[type="number"]::-webkit-outer-spin-button,
+.year-input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.dei-year-input[type="number"] {
+.year-input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
 
-.dei-years-grid::-webkit-scrollbar {
+.years-grid::-webkit-scrollbar {
   width: 6px;
 }
 
-.dei-years-grid::-webkit-scrollbar-thumb {
+.years-grid::-webkit-scrollbar-thumb {
   background: #374151;
   border-radius: 10px;
 }
@@ -123,31 +123,31 @@
 }
 
 @media (max-width: 1100px) {
-  .dei-years-grid {
+  .years-grid {
     grid-template-columns: repeat(5, 1fr);
   }
 }
 
 @media (max-width: 900px) {
-  .dei-years-grid {
+  .years-grid {
     grid-template-columns: repeat(4, 1fr);
   }
 }
 
 @media (max-width: 760px) {
-  .dei-years-card {
+  .years-card {
     padding: 16px;
     border-radius: 14px;
   }
 
-  .dei-years-grid {
+  .years-grid {
     grid-template-columns: repeat(3, 1fr);
     max-height: 460px;
   }
 }
 
 @media (max-width: 520px) {
-  .dei-years-grid {
+  .years-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }

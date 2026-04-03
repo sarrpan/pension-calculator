@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import DeiSpecialConditions from "../../../components/calculator/stepdei/DeiSpecialConditions";
+import SpecialConditions from "../../../components/calculator/stepdei/SpecialConditions";
 import "../CalculatorPage.css";
 
-const CalculatorDeiPageSC = () => {
+const CalculatorPageSC = () => {
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: currentYear - 2002 + 1 }, (_, i) => 2002 + i);
@@ -21,7 +21,7 @@ const CalculatorDeiPageSC = () => {
   return (
     <main className="calculator-page">
       <div className="container">
-        <DeiSpecialConditions 
+        <SpecialConditions 
           years={years} 
           yearsData={yearsData} 
           setYearField={setYearField} 
@@ -31,4 +31,4 @@ const CalculatorDeiPageSC = () => {
   );
 };
 
-export default CalculatorDeiPageSC;
+export default CalculatorPageSC;

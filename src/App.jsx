@@ -19,9 +19,9 @@ import CalculatorPageGI from './pages/calculator/Efka/CalculatorPageGI';
 import CalculatorPageRP from './pages/calculator/Efka/CalculatorPageRP';
 import CalculatorPageSC from './pages/calculator/Efka/CalculatorPageSC';
 
-import CalculatorDeiPageGI from './pages/calculator/Dei/CalculatorDeiPageGI';
-import CalculatorDeiPageRP from './pages/calculator/Dei/CalculatorDeiPageRP';
-import CalculatorDeiPageSC from './pages/calculator/Dei/CalculatorDeiPageSC';
+import CalculatorDeiPageGI from './pages/calculator/Dei/CalculatorPageGI';
+import CalculatorDeiPageRP from './pages/calculator/Dei/CalculatorPageRP';
+import CalculatorDeiPageSC from './pages/calculator/Dei/CalculatorPageSC';
 
 import ReportRecoveryPage from './pages/ReportRecoveryPage';
 import ScrollToTop from './components/ScrollToTop';

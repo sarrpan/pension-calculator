@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import DeiGeneralInfo from "../../../components/calculator/stepdei/DeiGeneralInfo";
+import GeneralInfo from "../../../components/calculator/stepdei/GeneralInfo";
 import "../CalculatorPage.css";
 
-const CalculatorDeiPageGI = () => {
+const CalculatorPageGI = () => {
   const [birthDate, setBirthDate] = useState("");
   const [pensionDate, setPensionDate] = useState("");
   const [totalInsuranceYears, setTotalInsuranceYears] = useState("");
@@ -18,7 +18,7 @@ const CalculatorDeiPageGI = () => {
   return (
     <main className="calculator-page">
       <div className="container">
-        <DeiGeneralInfo 
+        <GeneralInfo 
           birthDate={birthDate} setBirthDate={setBirthDate}
           pensionDate={pensionDate} setPensionDate={setPensionDate}
           totalInsuranceYears={totalInsuranceYears} setTotalInsuranceYears={setTotalInsuranceYears}
@@ -37,4 +37,4 @@ const CalculatorDeiPageGI = () => {
   );
 };
 
-export default CalculatorDeiPageGI;
+export default CalculatorPageGI;

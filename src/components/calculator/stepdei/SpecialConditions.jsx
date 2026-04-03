@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import './DeiSpecialConditions.css';
-import deiSpecialConditionsMockData from './deiSpecialConditionsMockData';
+import './SpecialConditions.css';
+import SpecialConditionsMockData from './SpecialConditionsMockData';
 
 const sanitizeAmount = (value) => {
   let cleaned = value.replace(',', '.').replace(/[^\d.]/g, '');
@@ -91,10 +91,10 @@ const DeiSpecialConditions = () => {
     const nextData = buildEmptyYearsData();
 
     for (const year of years) {
-      if (deiSpecialConditionsMockData?.[year]) {
+      if (SpecialConditionsMockData?.[year]) {
         nextData[year] = {
-          amount: deiSpecialConditionsMockData[year]?.amount || '',
-          days: deiSpecialConditionsMockData[year]?.days || ''
+          amount: SpecialConditionsMockData[year]?.amount || '',
+          days: SpecialConditionsMockData[year]?.days || ''
         };
       }
     }
@@ -138,9 +138,9 @@ const DeiSpecialConditions = () => {
   };
 
   return (
-    <div className="dei-years-card">
-      <div className="dei-years-header">
-        <h3 className="dei-years-title">Ανά έτος στοιχεία (ΔΕΗ)</h3>
+    <div className="years-card">
+      <div className="years-header">
+        <h3 className="years-title">Ανά έτος στοιχεία</h3>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
@@ -153,16 +153,16 @@ const DeiSpecialConditions = () => {
         </button>
       </div>
 
-      <div className="dei-years-grid">
+      <div className="years-grid">
         {years.map((year) => (
-          <div key={year} className="dei-year-card">
-            <span className="dei-year-label">{year}</span>
+          <div key={year} className="year-card">
+            <span className="year-label">{year}</span>
 
-            <div className="dei-year-fields">
+            <div className="year-fields">
               <input
                 type="text"
                 inputMode="decimal"
-                className="dei-year-input"
+                className="year-input"
                 placeholder="Ποσό €"
                 value={yearsData[year]?.amount || ''}
                 onChange={(e) => setYearField(year, 'amount', sanitizeAmount(e.target.value))}
@@ -170,7 +170,7 @@ const DeiSpecialConditions = () => {
               <input
                 type="text"
                 inputMode="numeric"
-                className="dei-year-input"
+                className="year-input"
                 placeholder="Ημέρες"
                 value={yearsData[year]?.days || ''}
                 onChange={(e) => setYearField(year, 'days', sanitizeDays(e.target.value))}

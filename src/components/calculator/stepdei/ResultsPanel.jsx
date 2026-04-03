@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import "./DeiResultsPanel.css";
+import "./ResultsPanel.css";
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString("el-GR", {
@@ -9,7 +9,7 @@ function formatMoney(value) {
   });
 }
 
-const DeiResultsPanel = () => {
+const ResultsPanel = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -62,6 +62,21 @@ const DeiResultsPanel = () => {
 
       const data = await response.json();
 
+      console.log("=== PAYLOAD ===");
+      console.log(payload);
+
+      console.log("=== FULL RESPONSE ===");
+      console.log(data);
+
+      console.log("=== MAIN DEBUG ===");
+      console.log(data?.debugInfo?.main);
+
+      console.log("=== SUPPLEMENTARY DEBUG ===");
+      console.log(data?.debugInfo?.supplementary);
+
+      console.log("=== DEDUCTIONS DEBUG ===");
+      console.log(data?.debugInfo?.deductions);
+      
       if (!response.ok) {
         throw new Error(data?.error || "Αποτυχία υπολογισμού.");
       }
@@ -75,92 +90,92 @@ const DeiResultsPanel = () => {
   };
 
   return (
-    <div className="dei-results-layout">
-      <div className="dei-res-card">
-        <button className="dei-calc-btn" onClick={handleCalculate} disabled={isLoading}>
+    <div className="results-layout">
+      <div className="res-card">
+        <button className="calc-btn" onClick={handleCalculate} disabled={isLoading}>
           {isLoading ? "ΥΠΟΛΟΓΙΣΜΟΣ..." : "ΥΠΟΛΟΓΙΣΜΟΣ ΔΕΗ"}
         </button>
 
-        {validationMessage && <p className="dei-err">{validationMessage}</p>}
+        {validationMessage && <p className="err">{validationMessage}</p>}
 
-        <div className="dei-top-panel-head">
-          <h3 className="dei-top-panel-title">Τελικό αποτέλεσμα</h3>
-          <p className="dei-top-panel-note">Τα ποσά αυτά ορίζονται από τα νέα πεδία αποτελεσμάτων</p>
+        <div className="top-panel-head">
+          <h3 className="top-panel-title">Τελικό αποτέλεσμα</h3>
+          <p className="top-panel-note">Τα ποσά αυτά ορίζονται από τα νέα πεδία αποτελεσμάτων</p>
         </div>
 
-        <div className="dei-top-summary-grid">
-          <div className="dei-top-summary-item dei-top-summary-item--blue">
-            <span className="dei-top-summary-label">Μεικτή ανταποδοτική</span>
-            <span className="dei-top-summary-value dei-top-summary-value--blue">
+        <div className="top-summary-grid">
+          <div className="top-summary-item top-summary-item--blue">
+            <span className="top-summary-label">Μεικτή ανταποδοτική</span>
+            <span className="top-summary-value top-summary-value--blue">
               {formatMoney(displayResults?.contributory)} €
             </span>
           </div>
 
-          <div className="dei-top-summary-item dei-top-summary-item--blue">
-            <span className="dei-top-summary-label">Εθνική σύνταξη</span>
-            <span className="dei-top-summary-value dei-top-summary-value--blue">
+          <div className="top-summary-item top-summary-item--blue">
+            <span className="top-summary-label">Εθνική σύνταξη</span>
+            <span className="top-summary-value top-summary-value--blue">
               {formatMoney(displayResults?.national)} €
             </span>
           </div>
 
-          <div className="dei-top-summary-item dei-top-summary-item--gold">
-            <span className="dei-top-summary-label">Μεικτό επικουρικό</span>
-            <span className="dei-top-summary-value dei-top-summary-value--gold">
+          <div className="top-summary-item top-summary-item--gold">
+            <span className="top-summary-label">Μεικτό επικουρικό</span>
+            <span className="top-summary-value top-summary-value--gold">
               {formatMoney(displayResults?.supplementary)} €
             </span>
           </div>
 
-          <div className="dei-top-summary-item dei-top-summary-item--green">
-            <span className="dei-top-summary-label">Μεικτή κύρια + επικουρικό</span>
-            <span className="dei-top-summary-value dei-top-summary-value--green">
+          <div className="top-summary-item top-summary-item--green">
+            <span className="top-summary-label">Μεικτή κύρια + επικουρικό</span>
+            <span className="top-summary-value top-summary-value--green">
               {formatMoney(displayResults?.grossGrandTotal)} €
             </span>
           </div>
         </div>
       </div>
 
-      <div className="dei-res-card">
-        <div className="dei-summary-grid">
-          <div className="dei-summary-item">
-            <span className="dei-summary-label">Καθαρή κύρια σύνταξη</span>
-            <span className="dei-summary-value dei-summary-value--blue">
+      <div className="res-card">
+        <div className="summary-grid">
+          <div className="summary-item">
+            <span className="summary-label">Καθαρή κύρια σύνταξη</span>
+            <span className="summary-value summary-value--blue">
               {formatMoney(displayResults?.finalMainAmount)} €
             </span>
           </div>
 
-          <div className="dei-summary-item">
-            <span className="dei-summary-label">Καθαρό επικουρικό</span>
-            <span className="dei-summary-value dei-summary-value--gold">
+          <div className="summary-item">
+            <span className="summary-label">Καθαρό επικουρικό</span>
+            <span className="summary-value summary-value--gold">
               {formatMoney(displayResults?.finalSupplementaryAmount)} €
             </span>
           </div>
 
-          <div className="dei-summary-item dei-summary-item--net">
-            <span className="dei-summary-label">Σύνολο σύνταξης</span>
-            <span className="dei-summary-value dei-summary-value--green">
+          <div className="summary-item summary-item--net">
+            <span className="summary-label">Σύνολο σύνταξης</span>
+            <span className="summary-value summary-value--green">
               {formatMoney(displayResults?.finalTotalAmount)} €
             </span>
           </div>
         </div>
 
-        <div className="dei-debug-grid">
-          <div className="dei-debug-item">
-            <span className="dei-debug-label">Κράτηση ΕΑΣ συνολική</span>
-            <span className="dei-debug-value dei-debug-value--red">
+        <div className="debug-grid">
+          <div className="debug-item">
+            <span className="debug-label">Κράτηση ΕΑΣ συνολική</span>
+            <span className="debug-value debug-value--red">
               - {formatMoney(displayResults?.easDeduction)} €
             </span>
           </div>
 
-          <div className="dei-debug-item">
-            <span className="dei-debug-label">Κράτηση υγείας συνολική</span>
-            <span className="dei-debug-value dei-debug-value--red">
+          <div className="debug-item">
+            <span className="debug-label">Κράτηση υγείας συνολική</span>
+            <span className="debug-value debug-value--red">
               - {formatMoney(displayResults?.healthDeduction)} €
             </span>
           </div>
 
-          <div className="dei-debug-item">
-            <span className="dei-debug-label">Κράτηση {"<"} 60</span>
-            <span className="dei-debug-value dei-debug-value--red">
+          <div className="debug-item">
+            <span className="debug-label">Κράτηση {"<"} 60</span>
+            <span className="debug-value debug-value--red">
               - {formatMoney(displayResults?.under60Deduction)} €
             </span>
           </div>
@@ -187,4 +202,4 @@ const DeiResultsPanel = () => {
   );
 };
 
-export default DeiResultsPanel;
+export default ResultsPanel;
