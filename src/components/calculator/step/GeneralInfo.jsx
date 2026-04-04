@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../css/GeneralInfo.css';
-import GeneralInfoMockData from './GeneralInfoMockData2';
+import GeneralInfoMockData from './GeneralInfoMockData';
 
 const sanitizeDisplayDate = (value) => {
   let cleaned = value.replace(/[^\d]/g, '').slice(0, 8);
