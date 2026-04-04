@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './SpecialConditions.css';
-import SpecialConditionsMockData from './SpecialConditionsMockData';
+import SpecialConditionsMockData from './SpecialConditionsMockData2';
 
 const sanitizeAmount = (value) => {
   let cleaned = value.replace(',', '.').replace(/[^\d.]/g, '');
