@@ -129,36 +129,6 @@ const isOlderThanOneYearFromToday = (isoDate) => {
   return date < oneYearAgo;
 };
 
-const getInitialDifferentCategoryMode = (source) => {
-  if (source.differentCategoryMode === 'yes' || source.differentCategoryMode === 'no') {
-    return source.differentCategoryMode;
-  }
-
-  if (
-    source.hasDifferentDeiCategoryAfter2015 === true ||
-    source.hasDifferentDeiCategoryAfter2015 === 'yes'
-  ) {
-    return 'yes';
-  }
-
-  if (
-    source.hasDifferentDeiCategoryAfter2015 === false ||
-    source.hasDifferentDeiCategoryAfter2015 === 'no'
-  ) {
-    return 'no';
-  }
-
-  if (
-    source.differentDeiCategoryAfter2015Years ||
-    source.differentDeiCategoryAfter2015Months ||
-    source.differentDeiCategoryAfter2015Days
-  ) {
-    return 'yes';
-  }
-
-  return 'no';
-};
-
 const getInitialInsuranceInputMode = (source) => {
   if (source.insuranceInputMode === 'days' || source.insuranceInputMode === 'yearsMonths') {
     return source.insuranceInputMode;
@@ -224,7 +194,6 @@ const DeiGeneralInfo = () => {
     deiCategory: source.deiCategory || 'lignite',
     pensionMode: source.pensionMode || 'full',
     reducedYears: source.reducedYears || '',
-    differentCategoryMode: getInitialDifferentCategoryMode(source),
 
     outsideBefore2014InputMode: getInitialPeriodInputMode(
       source,
@@ -242,21 +211,6 @@ const DeiGeneralInfo = () => {
     outsideBefore2014Days:
       source.outsideBefore2014Days ||
       source.daysOutsideDeiBefore2014 ||
-      '',
-
-    differentCategoryAfter2015InputMode: getInitialPeriodInputMode(
-      source,
-      'differentCategoryAfter2015InputMode',
-      'differentDeiCategoryAfter2015Days'
-    ),
-    differentDeiCategoryAfter2015Years:
-      source.differentDeiCategoryAfter2015Years ||
-      '',
-    differentDeiCategoryAfter2015Months:
-      source.differentDeiCategoryAfter2015Months ||
-      '',
-    differentDeiCategoryAfter2015Days:
-      source.differentDeiCategoryAfter2015Days ||
       ''
   });
 
@@ -294,16 +248,6 @@ const DeiGeneralInfo = () => {
     handleChange(fieldDisplay, isoToDisplay(value));
   };
 
-  const handleDifferentCategoryModeChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      differentCategoryMode: value,
-      differentDeiCategoryAfter2015Years: value === 'yes' ? prev.differentDeiCategoryAfter2015Years : '',
-      differentDeiCategoryAfter2015Months: value === 'yes' ? prev.differentDeiCategoryAfter2015Months : '',
-      differentDeiCategoryAfter2015Days: value === 'yes' ? prev.differentDeiCategoryAfter2015Days : ''
-    }));
-  };
-
   const handlePensionModeChange = (value) => {
     setFormData((prev) => ({
       ...prev,
@@ -332,9 +276,9 @@ const DeiGeneralInfo = () => {
       }
 
       if (value === 'yearsMonths' && (!prev.totalInsuranceYears && !prev.totalInsuranceMonths) && prev.totalInsuranceDays) {
-        const converted = convertDaysToYearsMonths(prev.totalInsuranceDays);
-        nextState.totalInsuranceYears = converted.years ? String(converted.years) : '';
-        nextState.totalInsuranceMonths = converted.months ? String(converted.months) : '';
+        const convertedInsuranceTime = convertDaysToYearsMonths(prev.totalInsuranceDays);
+        nextState.totalInsuranceYears = convertedInsuranceTime.years ? String(convertedInsuranceTime.years) : '';
+        nextState.totalInsuranceMonths = convertedInsuranceTime.months ? String(convertedInsuranceTime.months) : '';
       }
 
       return nextState;
@@ -490,32 +434,6 @@ const DeiGeneralInfo = () => {
       }
     }
 
-    const isDifferentCategoryAfter2015InDaysMode = formData.differentCategoryAfter2015InputMode === 'days';
-    let differentCategoryAfter2015YearsNum = 0;
-    let differentCategoryAfter2015MonthsNum = 0;
-    let differentCategoryAfter2015DaysNum = 0;
-
-    if (formData.differentCategoryMode === 'yes') {
-      if (isDifferentCategoryAfter2015InDaysMode) {
-        differentCategoryAfter2015DaysNum = parseIntegerOrZero(formData.differentDeiCategoryAfter2015Days);
-        const convertedDifferentCategoryAfter2015 = convertDaysToYearsMonths(formData.differentDeiCategoryAfter2015Days);
-        differentCategoryAfter2015YearsNum = convertedDifferentCategoryAfter2015.years;
-        differentCategoryAfter2015MonthsNum = convertedDifferentCategoryAfter2015.months;
-      } else {
-        differentCategoryAfter2015YearsNum = parseIntegerOrZero(formData.differentDeiCategoryAfter2015Years);
-        differentCategoryAfter2015MonthsNum = parseIntegerOrZero(formData.differentDeiCategoryAfter2015Months);
-        differentCategoryAfter2015DaysNum = convertYearsMonthsToDays(
-          differentCategoryAfter2015YearsNum,
-          differentCategoryAfter2015MonthsNum
-        );
-
-        if (differentCategoryAfter2015MonthsNum < 0 || differentCategoryAfter2015MonthsNum > 11) {
-          setErrorMessage('Οι μήνες του χρόνου σε διαφορετική κατηγορία πρέπει να είναι από 0 έως 11.');
-          return;
-        }
-      }
-    }
-
     if (formData.pensionMode === 'reduced' && !formData.reducedYears) {
       setErrorMessage('Επιλέξτε πόσα έτη πρόωρης εξόδου θα χρησιμοποιηθούν για τη μειωμένη σύνταξη.');
       return;
@@ -524,17 +442,7 @@ const DeiGeneralInfo = () => {
     const outsideBefore2014TotalMonths =
       (outsideBefore2014YearsNum * 12) + outsideBefore2014MonthsNum;
 
-    const differentCategoryAfter2015TotalMonths =
-      formData.differentCategoryMode === 'yes'
-        ? (differentCategoryAfter2015YearsNum * 12) + differentCategoryAfter2015MonthsNum
-        : 0;
-
-    if (formData.differentCategoryMode === 'yes' && differentCategoryAfter2015TotalMonths === 0) {
-      setErrorMessage('Συμπληρώστε τον χρόνο σε διαφορετική κατηγορία από το 2015 και μετά ή επιλέξτε "Όχι".');
-      return;
-    }
-
-    const totalDeclaredMonths = outsideBefore2014TotalMonths + differentCategoryAfter2015TotalMonths;
+    const totalDeclaredMonths = outsideBefore2014TotalMonths;
 
     if (totalDeclaredMonths > expectedTotalInMonths) {
       const calcY = Math.floor(totalDeclaredMonths / 12);
@@ -565,14 +473,7 @@ const DeiGeneralInfo = () => {
       outsideBefore2014Years: String(outsideBefore2014YearsNum),
       outsideBefore2014Months: String(outsideBefore2014MonthsNum),
       outsideBefore2014Days: String(outsideBefore2014DaysNum),
-      daysOutsideDeiBefore2014: String(outsideBefore2014DaysNum),
-
-      differentCategoryMode: formData.differentCategoryMode,
-      hasDifferentDeiCategoryAfter2015: formData.differentCategoryMode,
-      differentCategoryAfter2015InputMode: formData.differentCategoryAfter2015InputMode,
-      differentDeiCategoryAfter2015Years: String(differentCategoryAfter2015YearsNum),
-      differentDeiCategoryAfter2015Months: String(differentCategoryAfter2015MonthsNum),
-      differentDeiCategoryAfter2015Days: String(differentCategoryAfter2015DaysNum)
+      daysOutsideDeiBefore2014: String(outsideBefore2014DaysNum)
     };
 
     navigate('/calculator/dei/sc', {
@@ -963,118 +864,6 @@ const DeiGeneralInfo = () => {
                       inputMode="numeric"
                       value={formData.outsideBefore2014Months}
                       onChange={handleIntChange('outsideBefore2014Months', 11)}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="info-card info-card-neutral">
-            <div className="info-card-header">
-              <div>
-                <h3 className="info-card-title">Διαφορετική κατηγορία από το 2015 και μετά</h3>
-                <p className="info-card-text">Το επιπλέον πεδίο ανοίγει μόνο αν υπήρξε χρόνος σε άλλη κατηγορία ενσήμων.</p>
-              </div>
-            </div>
-
-            <div className="radio-group">
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  checked={formData.differentCategoryMode === 'yes'}
-                  onChange={() => handleDifferentCategoryModeChange('yes')}
-                />
-                <span>Ναι</span>
-              </label>
-
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  checked={formData.differentCategoryMode === 'no'}
-                  onChange={() => handleDifferentCategoryModeChange('no')}
-                />
-                <span>Όχι</span>
-              </label>
-            </div>
-
-            <div className={`inline-period-box ${formData.differentCategoryMode !== 'yes' ? 'is-disabled' : ''}`}>
-              <label className="info-label ">Χρόνος σε διαφορετική κατηγορία ενσήμων</label>
-              <p className="info-helper info-field-helper">
-                Αν δεν υπάρχει τέτοιος χρόνος, αφήστε επιλεγμένο το «Όχι».
-              </p>
-
-              <div className="radio-group radio-group-inline-cards">
-                <label className="radio-label radio-label-card">
-                  <input
-                    type="radio"
-                    checked={formData.differentCategoryAfter2015InputMode === 'yearsMonths'}
-                    onChange={() => handlePeriodInputModeChange({
-                      modeField: 'differentCategoryAfter2015InputMode',
-                      yearsField: 'differentDeiCategoryAfter2015Years',
-                      monthsField: 'differentDeiCategoryAfter2015Months',
-                      daysField: 'differentDeiCategoryAfter2015Days',
-                      value: 'yearsMonths'
-                    })}
-                    disabled={formData.differentCategoryMode !== 'yes'}
-                  />
-                  <span>Έτη και μήνες</span>
-                </label>
-
-                <label className="radio-label radio-label-card">
-                  <input
-                    type="radio"
-                    checked={formData.differentCategoryAfter2015InputMode === 'days'}
-                    onChange={() => handlePeriodInputModeChange({
-                      modeField: 'differentCategoryAfter2015InputMode',
-                      yearsField: 'differentDeiCategoryAfter2015Years',
-                      monthsField: 'differentDeiCategoryAfter2015Months',
-                      daysField: 'differentDeiCategoryAfter2015Days',
-                      value: 'days'
-                    })}
-                    disabled={formData.differentCategoryMode !== 'yes'}
-                  />
-                  <span>Ημέρες</span>
-                </label>
-              </div>
-
-              {formData.differentCategoryAfter2015InputMode === 'days' ? (
-                <div className="info-grid info-grid-single info-grid-inner">
-                  <div className="info-field info-field-small">
-                    <label className="info-sub-label">Ημέρες</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      className="info-input"
-                      value={formData.differentDeiCategoryAfter2015Days}
-                      onChange={handleIntChange('differentDeiCategoryAfter2015Days')}
-                      disabled={formData.differentCategoryMode !== 'yes'}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="info-grid info-grid-inner">
-                  <div className="info-field info-field-small">
-                    <label className="info-sub-label">Έτη</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      className="info-input"
-                      value={formData.differentDeiCategoryAfter2015Years}
-                      onChange={handleIntChange('differentDeiCategoryAfter2015Years')}
-                      disabled={formData.differentCategoryMode !== 'yes'}
-                    />
-                  </div>
-
-                  <div className="info-field info-field-small">
-                    <label className="info-sub-label">Μήνες</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      className="info-input"
-                      value={formData.differentDeiCategoryAfter2015Months}
-                      onChange={handleIntChange('differentDeiCategoryAfter2015Months', 11)}
-                      disabled={formData.differentCategoryMode !== 'yes'}
                     />
                   </div>
                 </div>
