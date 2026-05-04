@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import './SpecialConditions.css';
-import SpecialConditionsMockData from './SpecialConditionsMockData';
+import '../css/AnnualEarningsForm.css';
+import annualEarningsMockData from "../categories/dei/AnnualEarningsMockData";
 
 const sanitizeAmount = (value) => {
   let cleaned = value.replace(',', '.').replace(/[^\d.]/g, '');
@@ -39,12 +39,12 @@ const sanitizeDays = (value) => {
   return String(Math.min(parseInt(digitsOnly, 10), 300));
 };
 
-const DeiSpecialConditions = () => {
+const AnnualEarningsForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const generalInfoData = location.state?.generalInfoData || {};
-  const incomingSpecialConditionsData = location.state?.specialConditionsData || {};
+  const incomingAnnualEarningsData = location.state?.annualEarningsData || {};
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -64,10 +64,10 @@ const DeiSpecialConditions = () => {
     const emptyData = buildEmptyYearsData();
 
     for (const year of years) {
-      if (incomingSpecialConditionsData?.[year]) {
+      if (incomingAnnualEarningsData?.[year]) {
         emptyData[year] = {
-          amount: incomingSpecialConditionsData[year]?.amount || '',
-          days: incomingSpecialConditionsData[year]?.days || ''
+          amount: incomingAnnualEarningsData[year]?.amount || '',
+          days: incomingAnnualEarningsData[year]?.days || ''
         };
       }
     }
@@ -91,10 +91,10 @@ const DeiSpecialConditions = () => {
     const nextData = buildEmptyYearsData();
 
     for (const year of years) {
-      if (SpecialConditionsMockData?.[year]) {
+      if (annualEarningsMockData?.[year]) {
         nextData[year] = {
-          amount: SpecialConditionsMockData[year]?.amount || '',
-          days: SpecialConditionsMockData[year]?.days || ''
+          amount: annualEarningsMockData[year]?.amount || '',
+          days: annualEarningsMockData[year]?.days || ''
         };
       }
     }
@@ -125,22 +125,22 @@ const DeiSpecialConditions = () => {
       window.alert(errors.join('\n'));
       return;
     }
-
+console.log("YEARS DATA BEFORE FINAL:", yearsData);
     const finalData = {
       generalInfoData: generalInfoData,
-      specialConditionsData: yearsData
+      yearsData: yearsData
     };
 
     // Αποθήκευση στη μνήμη του browser για να αντέχει στο F5
-    sessionStorage.setItem('specialConditionsCalculatorState', JSON.stringify(finalData));
+    sessionStorage.setItem('deiCalculatorState', JSON.stringify(finalData));
 
-    navigate('/calculator/misthotoi/results', { state: finalData });
+    navigate('/calculator/dei/results', { state: finalData });
   };
 
   return (
-    <div className="ika-years-card">
-      <div className="ika-years-header">
-        <h3 className="ika-years-title">Ανά έτος στοιχεία</h3>
+    <div className="years-card">
+      <div className="years-header">
+        <h3 className="years-title">Ανά έτος στοιχεία</h3>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
@@ -153,16 +153,16 @@ const DeiSpecialConditions = () => {
         </button>
       </div>
 
-      <div className="ika-years-grid">
+      <div className="years-grid">
         {years.map((year) => (
-          <div key={year} className="ika-year-card">
-            <span className="ika-year-label">{year}</span>
+          <div key={year} className="year-card">
+            <span className="year-label">{year}</span>
 
-            <div className="ika-year-fields">
+            <div className="year-fields">
               <input
                 type="text"
                 inputMode="decimal"
-                className="ika-year-input"
+                className="year-input"
                 placeholder="Ποσό €"
                 value={yearsData[year]?.amount || ''}
                 onChange={(e) => setYearField(year, 'amount', sanitizeAmount(e.target.value))}
@@ -170,7 +170,7 @@ const DeiSpecialConditions = () => {
               <input
                 type="text"
                 inputMode="numeric"
-                className="ika-year-input"
+                className="year-input"
                 placeholder="Ημέρες"
                 value={yearsData[year]?.days || ''}
                 onChange={(e) => setYearField(year, 'days', sanitizeDays(e.target.value))}
@@ -183,10 +183,10 @@ const DeiSpecialConditions = () => {
       <div className="step-navigation">
         <button
           type="button"
-          onClick={() => navigate('/calculator/misthotoi', {
+          onClick={() => navigate('/calculator/dei', {
             state: {
               generalInfoData,
-              specialConditionsData: yearsData
+              annualEarningsData: yearsData
             }
           })}
           className="step-button step-button-back"
@@ -206,4 +206,4 @@ const DeiSpecialConditions = () => {
   );
 };
 
-export default DeiSpecialConditions;
+export default AnnualEarningsForm;

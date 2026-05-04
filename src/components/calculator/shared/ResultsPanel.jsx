@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import "./ResultsPanel.css";
+import "../css/ResultsPanel.css";
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString("el-GR", {
@@ -22,15 +22,15 @@ const ResultsPanel = () => {
 
   const formData = location.state || backupData || {};
   const generalInfo = formData.generalInfoData || {};
-  const specialConditions = formData.specialConditionsData || {};
+  const yearsData = formData.yearsData || {};
 
   const payload = useMemo(
     () => ({
       ...generalInfo,
       heavyRetirement: "yes",
-      yearsData: specialConditions,
+      yearsData: yearsData,
     }),
-    [generalInfo, specialConditions]
+    [generalInfo, yearsData]
   );
 
   const displayResults = localResults || {};
@@ -189,7 +189,7 @@ const ResultsPanel = () => {
             navigate("/calculator/dei/sc", {
               state: {
                 generalInfoData: generalInfo,
-                specialConditionsData: specialConditions,
+                yearsData: yearsData,
               },
             })
           }

@@ -15,10 +15,6 @@ import ReportGuidePage from './pages/ReportGuidePage';
 
 import CategorySelector from './components/calculator/CategorySelector';
 
-import CalculatorPageGI from './pages/calculator/Efka/CalculatorPageGI';
-import CalculatorPageRP from './pages/calculator/Efka/CalculatorPageRP';
-import CalculatorPageSC from './pages/calculator/Efka/CalculatorPageSC';
-
 import CalculatorDeiPageGI from './pages/calculator/Dei/CalculatorPageGI';
 import CalculatorDeiPageRP from './pages/calculator/Dei/CalculatorPageRP';
 import CalculatorDeiPageSC from './pages/calculator/Dei/CalculatorPageSC';
@@ -40,10 +36,6 @@ function App() {
         <Route path="/report-guide" element={<ReportGuidePage />} />
 
         <Route path="/calculator" element={<CategorySelector />} />
-        
-        <Route path="/calculator/misthotoi" element={<CalculatorPageGI />} />
-        <Route path="/calculator/misthotoi/sc" element={<CalculatorPageSC />} />
-        <Route path="/calculator/misthotoi/results" element={<CalculatorPageRP />} />
 
         <Route path="/calculator/dei" element={<CalculatorDeiPageGI />} />
         <Route path="/calculator/dei/sc" element={<CalculatorDeiPageSC />} />

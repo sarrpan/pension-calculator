@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../css/GeneralInfo.css';
-import GeneralInfoMockData from './GeneralInfoMockData';
+import GeneralInfoMockData from '../categories/dei/GeneralInfoMockData';
 
 const sanitizeDisplayDate = (value) => {
   let cleaned = value.replace(/[^\d]/g, '').slice(0, 8);
@@ -200,12 +200,12 @@ const convertDaysToYearsMonths = (daysValue) => {
   };
 };
 
-const ikaGeneralInfo = () => {
+const DeiGeneralInfo = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const initialData = location.state?.generalInfoData || null;
-  const incomingSpecialConditionsData = location.state?.specialConditionsData || {};
+  const incomingAnnualEarningsData = location.state?.yearsData || {};
 
   const birthDatePickerRef = useRef(null);
   const pensionDatePickerRef = useRef(null);
@@ -221,7 +221,7 @@ const ikaGeneralInfo = () => {
     totalInsuranceDays: source.totalInsuranceDays || '',
     residenceYears: source.residenceYears || '40',
     insuredType: source.insuredType || 'old',
-    ikaCategory: source.ikaCategory || 'lignite',
+    deiCategory: source.deiCategory || 'lignite',
     pensionMode: source.pensionMode || 'full',
     reducedYears: source.reducedYears || '',
     differentCategoryMode: getInitialDifferentCategoryMode(source),
@@ -555,7 +555,7 @@ const ikaGeneralInfo = () => {
       totalInsuranceDays: String(totalInsuranceDaysNum),
       residenceYears: String(residenceYearsNum),
       insuredType: formData.insuredType,
-      ikaCategory: formData.ikaCategory,
+      deiCategory: formData.deiCategory,
       pensionMode: formData.pensionMode,
       reducedYears: formData.pensionMode === 'reduced' ? String(formData.reducedYears) : '',
 
@@ -575,10 +575,10 @@ const ikaGeneralInfo = () => {
       differentDeiCategoryAfter2015Days: String(differentCategoryAfter2015DaysNum)
     };
 
-    navigate('/calculator/misthotoi/sc', {
+    navigate('/calculator/dei/sc', {
       state: {
         generalInfoData: data,
-        specialConditionsData: incomingSpecialConditionsData
+        yearsData: incomingAnnualEarningsData
       }
     });
   };
@@ -594,7 +594,7 @@ const ikaGeneralInfo = () => {
   return (
     <div className="info-wrapper">
       <div className="info-header">
-        <h2>Ασφάλιση Μισθωτών (ΙΚΑ - ΤΕΑΜ)</h2>
+        <h2>Εργαζόμενοι ΔΕΗ </h2>
       </div>
 
       <div className="info-top-actions">
@@ -866,8 +866,8 @@ const ikaGeneralInfo = () => {
               <label className="radio-label">
                 <input
                   type="radio"
-                  checked={formData.ikaCategory === 'simple'}
-                  onChange={() => handleChange('ikaCategory', 'simple')}
+                  checked={formData.deiCategory === 'simple'}
+                  onChange={() => handleChange('deiCategory', 'simple')}
                 />
                 <span>Απλά</span>
               </label>
@@ -875,8 +875,8 @@ const ikaGeneralInfo = () => {
               <label className="radio-label">
                 <input
                   type="radio"
-                  checked={formData.ikaCategory === 'heavy'}
-                  onChange={() => handleChange('ikaCategory', 'heavy')}
+                  checked={formData.deiCategory === 'heavy'}
+                  onChange={() => handleChange('deiCategory', 'heavy')}
                 />
                 <span>Βαρέα (εισφορά 3,6%)</span>
               </label>
@@ -884,8 +884,8 @@ const ikaGeneralInfo = () => {
               <label className="radio-label">
                 <input
                   type="radio"
-                  checked={formData.ikaCategory === 'lignite'}
-                  onChange={() => handleChange('ikaCategory', 'lignite')}
+                  checked={formData.deiCategory === 'lignite'}
+                  onChange={() => handleChange('deiCategory', 'lignite')}
                 />
                 <span>ΥΒΑΕ (εισφορά 7%)</span>
               </label>
@@ -1117,4 +1117,4 @@ const ikaGeneralInfo = () => {
   );
 };
 
-export default ikaGeneralInfo;
+export default DeiGeneralInfo;

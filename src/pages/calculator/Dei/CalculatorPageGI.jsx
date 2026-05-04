@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import GeneralInfo from "../../../components/calculator/stepdei/GeneralInfo";
+import GeneralInfo from "../../../components/calculator/shared/GeneralPensionForm";
 import "../CalculatorPage.css";
 
 const CalculatorPageGI = () => {

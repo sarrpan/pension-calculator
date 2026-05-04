@@ -1,4 +1,4 @@
-const specialConditionsMockData = {
+const annualEarningsMockData = {
   2002: { amount: '16115', days: '300' },
   2003: { amount: '16626', days: '300' },
   2004: { amount: '17897', days: '300' },
@@ -22,10 +22,10 @@ const specialConditionsMockData = {
   2022: { amount: '50438', days: '300' },
   2023: { amount: '51828', days: '300' },
   2024: { amount: '55250', days: '300' },
-  2025: { amount: '57497', days: '300' },
+  2025: { amount: '57497', days: '299' },
   2026: { amount: '', days: '' },
   2027: { amount: '', days: '' },
   2028: { amount: '', days: '' }
 };
 
-export default specialConditionsMockData;
+export default annualEarningsMockData;

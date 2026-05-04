@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import SpecialConditions from "../../../components/calculator/stepdei/SpecialConditions";
+import AnnualEarningsForm from "../../../components/calculator/shared/AnnualEarningsForm";
 import "../CalculatorPage.css";
 
 const CalculatorPageSC = () => {
@@ -21,7 +21,7 @@ const CalculatorPageSC = () => {
   return (
     <main className="calculator-page">
       <div className="container">
-        <SpecialConditions 
+        <AnnualEarningsForm 
           years={years} 
           yearsData={yearsData} 
           setYearField={setYearField} 

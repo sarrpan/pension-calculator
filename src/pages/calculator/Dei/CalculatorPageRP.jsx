@@ -1,5 +1,5 @@
 import React from 'react';
-import ResultsPanel from "../../../components/calculator/stepdei/ResultsPanel";
+import ResultsPanel from "../../../components/calculator/shared/ResultsPanel";
 import "../CalculatorPage.css";
 
 const CalculatorPageRP = () => {
