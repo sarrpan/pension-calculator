@@ -22,6 +22,7 @@ const ResultsPanel = () => {
 
   const formData = location.state || backupData || {};
   const generalInfo = formData.generalInfoData || {};
+  const deiCategoryData = formData.deiCategoryData || {};
   const yearsData = formData.yearsData || {};
 
   const payload = useMemo(
@@ -189,7 +190,8 @@ const ResultsPanel = () => {
             navigate("/calculator/dei/sc", {
               state: {
                 generalInfoData: generalInfo,
-                yearsData: yearsData,
+                deiCategoryData,
+                yearsData,
               },
             })
           }

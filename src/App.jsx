@@ -16,6 +16,7 @@ import ReportGuidePage from './pages/ReportGuidePage';
 import CategorySelector from './components/calculator/CategorySelector';
 
 import CalculatorDeiPageGI from './pages/calculator/Dei/CalculatorPageGI';
+import CalculatorDeiPageCategory from './pages/calculator/Dei/CalculatorPageCategory';
 import CalculatorDeiPageRP from './pages/calculator/Dei/CalculatorPageRP';
 import CalculatorDeiPageSC from './pages/calculator/Dei/CalculatorPageSC';
 
@@ -38,6 +39,7 @@ function App() {
         <Route path="/calculator" element={<CategorySelector />} />
 
         <Route path="/calculator/dei" element={<CalculatorDeiPageGI />} />
+        <Route path="/calculator/dei/category" element={<CalculatorDeiPageCategory />} />
         <Route path="/calculator/dei/sc" element={<CalculatorDeiPageSC />} />
         <Route path="/calculator/dei/results" element={<CalculatorDeiPageRP />} />
 

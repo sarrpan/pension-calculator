@@ -44,7 +44,9 @@ const AnnualEarningsForm = () => {
   const location = useLocation();
 
   const generalInfoData = location.state?.generalInfoData || {};
-  const incomingAnnualEarningsData = location.state?.annualEarningsData || {};
+  const deiCategoryData = location.state?.deiCategoryData || {};
+  const incomingAnnualEarningsData =
+    location.state?.yearsData || location.state?.annualEarningsData || {};
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -127,8 +129,9 @@ const AnnualEarningsForm = () => {
     }
 console.log("YEARS DATA BEFORE FINAL:", yearsData);
     const finalData = {
-      generalInfoData: generalInfoData,
-      yearsData: yearsData
+      generalInfoData,
+      deiCategoryData,
+      yearsData
     };
 
     // Αποθήκευση στη μνήμη του browser για να αντέχει στο F5
@@ -183,10 +186,11 @@ console.log("YEARS DATA BEFORE FINAL:", yearsData);
       <div className="step-navigation">
         <button
           type="button"
-          onClick={() => navigate('/calculator/dei', {
+          onClick={() => navigate('/calculator/dei/category', {
             state: {
               generalInfoData,
-              annualEarningsData: yearsData
+              deiCategoryData,
+              yearsData
             }
           })}
           className="step-button step-button-back"
