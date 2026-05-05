@@ -25,21 +25,18 @@ const getInitialDifferentCategoryMode = (source) => {
     return source.differentCategoryMode;
   }
 
-  if (
-    source.hasDifferentDeiCategoryAfter2015 === true ||
-    source.hasDifferentDeiCategoryAfter2015 === 'yes'
-  ) {
+  if (source.hasDifferentDeiCategoryAfter2015 === true || source.hasDifferentDeiCategoryAfter2015 === 'yes') {
     return 'yes';
   }
 
-  if (
-    source.hasDifferentDeiCategoryAfter2015 === false ||
-    source.hasDifferentDeiCategoryAfter2015 === 'no'
-  ) {
+  if (source.hasDifferentDeiCategoryAfter2015 === false || source.hasDifferentDeiCategoryAfter2015 === 'no') {
     return 'no';
   }
 
   if (
+    source.differentCategoryAfter2015Years ||
+    source.differentCategoryAfter2015Months ||
+    source.differentCategoryAfter2015Days ||
     source.differentDeiCategoryAfter2015Years ||
     source.differentDeiCategoryAfter2015Months ||
     source.differentDeiCategoryAfter2015Days
@@ -50,12 +47,12 @@ const getInitialDifferentCategoryMode = (source) => {
   return 'no';
 };
 
-const getInitialPeriodInputMode = (source, modeField, daysField) => {
+const getInitialPeriodInputMode = (source, modeField, daysField, legacyDaysField = null) => {
   if (source[modeField] === 'days' || source[modeField] === 'yearsMonths') {
     return source[modeField];
   }
 
-  if (source[daysField]) {
+  if (source[daysField] || (legacyDaysField && source[legacyDaysField])) {
     return 'days';
   }
 
@@ -103,15 +100,16 @@ const DeiCategoryForm = () => {
     outsideBefore2014InputMode: getInitialPeriodInputMode(
       source,
       'outsideBefore2014InputMode',
-      'outsideBefore2014Days'
+      'outsideBefore2014Days',
+      'daysOutsideDeiBefore2014'
     ),
     outsideBefore2014Years:
-      source.yearsOutsideDeiBefore2014 ||
       source.outsideBefore2014Years ||
+      source.yearsOutsideDeiBefore2014 ||
       '',
     outsideBefore2014Months:
-      source.monthsOutsideDeiBefore2014 ||
       source.outsideBefore2014Months ||
+      source.monthsOutsideDeiBefore2014 ||
       '',
     outsideBefore2014Days:
       source.outsideBefore2014Days ||
@@ -122,15 +120,19 @@ const DeiCategoryForm = () => {
     differentCategoryAfter2015InputMode: getInitialPeriodInputMode(
       source,
       'differentCategoryAfter2015InputMode',
+      'differentCategoryAfter2015Days',
       'differentDeiCategoryAfter2015Days'
     ),
-    differentDeiCategoryAfter2015Years:
+    differentCategoryAfter2015Years:
+      source.differentCategoryAfter2015Years ||
       source.differentDeiCategoryAfter2015Years ||
       '',
-    differentDeiCategoryAfter2015Months:
+    differentCategoryAfter2015Months:
+      source.differentCategoryAfter2015Months ||
       source.differentDeiCategoryAfter2015Months ||
       '',
-    differentDeiCategoryAfter2015Days:
+    differentCategoryAfter2015Days:
+      source.differentCategoryAfter2015Days ||
       source.differentDeiCategoryAfter2015Days ||
       ''
   });
@@ -155,9 +157,9 @@ const DeiCategoryForm = () => {
     setFormData((prev) => ({
       ...prev,
       differentCategoryMode: value,
-      differentDeiCategoryAfter2015Years: value === 'yes' ? prev.differentDeiCategoryAfter2015Years : '',
-      differentDeiCategoryAfter2015Months: value === 'yes' ? prev.differentDeiCategoryAfter2015Months : '',
-      differentDeiCategoryAfter2015Days: value === 'yes' ? prev.differentDeiCategoryAfter2015Days : ''
+      differentCategoryAfter2015Years: value === 'yes' ? prev.differentCategoryAfter2015Years : '',
+      differentCategoryAfter2015Months: value === 'yes' ? prev.differentCategoryAfter2015Months : '',
+      differentCategoryAfter2015Days: value === 'yes' ? prev.differentCategoryAfter2015Days : ''
     }));
   };
 
@@ -237,13 +239,13 @@ const DeiCategoryForm = () => {
 
     if (formData.differentCategoryMode === 'yes') {
       if (isDifferentCategoryAfter2015InDaysMode) {
-        differentCategoryAfter2015DaysNum = parseIntegerOrZero(formData.differentDeiCategoryAfter2015Days);
-        const convertedDifferentCategoryAfter2015 = convertDaysToYearsMonths(formData.differentDeiCategoryAfter2015Days);
+        differentCategoryAfter2015DaysNum = parseIntegerOrZero(formData.differentCategoryAfter2015Days);
+        const convertedDifferentCategoryAfter2015 = convertDaysToYearsMonths(formData.differentCategoryAfter2015Days);
         differentCategoryAfter2015YearsNum = convertedDifferentCategoryAfter2015.years;
         differentCategoryAfter2015MonthsNum = convertedDifferentCategoryAfter2015.months;
       } else {
-        differentCategoryAfter2015YearsNum = parseIntegerOrZero(formData.differentDeiCategoryAfter2015Years);
-        differentCategoryAfter2015MonthsNum = parseIntegerOrZero(formData.differentDeiCategoryAfter2015Months);
+        differentCategoryAfter2015YearsNum = parseIntegerOrZero(formData.differentCategoryAfter2015Years);
+        differentCategoryAfter2015MonthsNum = parseIntegerOrZero(formData.differentCategoryAfter2015Months);
         differentCategoryAfter2015DaysNum = convertYearsMonthsToDays(
           differentCategoryAfter2015YearsNum,
           differentCategoryAfter2015MonthsNum
@@ -296,19 +298,15 @@ const DeiCategoryForm = () => {
       usesSpecialYVAERegime,
 
       outsideBefore2014InputMode: formData.outsideBefore2014InputMode,
-      yearsOutsideDeiBefore2014: String(outsideBefore2014YearsNum),
-      monthsOutsideDeiBefore2014: String(outsideBefore2014MonthsNum),
       outsideBefore2014Years: String(outsideBefore2014YearsNum),
       outsideBefore2014Months: String(outsideBefore2014MonthsNum),
       outsideBefore2014Days: String(outsideBefore2014DaysNum),
-      daysOutsideDeiBefore2014: String(outsideBefore2014DaysNum),
 
       differentCategoryMode: formData.differentCategoryMode,
-      hasDifferentDeiCategoryAfter2015: formData.differentCategoryMode,
       differentCategoryAfter2015InputMode: formData.differentCategoryAfter2015InputMode,
-      differentDeiCategoryAfter2015Years: String(differentCategoryAfter2015YearsNum),
-      differentDeiCategoryAfter2015Months: String(differentCategoryAfter2015MonthsNum),
-      differentDeiCategoryAfter2015Days: String(differentCategoryAfter2015DaysNum)
+      differentCategoryAfter2015Years: String(differentCategoryAfter2015YearsNum),
+      differentCategoryAfter2015Months: String(differentCategoryAfter2015MonthsNum),
+      differentCategoryAfter2015Days: String(differentCategoryAfter2015DaysNum)
     };
 
     navigate('/calculator/dei/sc', {
@@ -522,9 +520,9 @@ const DeiCategoryForm = () => {
                     checked={formData.differentCategoryAfter2015InputMode === 'yearsMonths'}
                     onChange={() => handlePeriodInputModeChange({
                       modeField: 'differentCategoryAfter2015InputMode',
-                      yearsField: 'differentDeiCategoryAfter2015Years',
-                      monthsField: 'differentDeiCategoryAfter2015Months',
-                      daysField: 'differentDeiCategoryAfter2015Days',
+                      yearsField: 'differentCategoryAfter2015Years',
+                      monthsField: 'differentCategoryAfter2015Months',
+                      daysField: 'differentCategoryAfter2015Days',
                       value: 'yearsMonths'
                     })}
                     disabled={formData.differentCategoryMode !== 'yes'}
@@ -538,9 +536,9 @@ const DeiCategoryForm = () => {
                     checked={formData.differentCategoryAfter2015InputMode === 'days'}
                     onChange={() => handlePeriodInputModeChange({
                       modeField: 'differentCategoryAfter2015InputMode',
-                      yearsField: 'differentDeiCategoryAfter2015Years',
-                      monthsField: 'differentDeiCategoryAfter2015Months',
-                      daysField: 'differentDeiCategoryAfter2015Days',
+                      yearsField: 'differentCategoryAfter2015Years',
+                      monthsField: 'differentCategoryAfter2015Months',
+                      daysField: 'differentCategoryAfter2015Days',
                       value: 'days'
                     })}
                     disabled={formData.differentCategoryMode !== 'yes'}
@@ -557,8 +555,8 @@ const DeiCategoryForm = () => {
                       type="text"
                       inputMode="numeric"
                       className="info-input"
-                      value={formData.differentDeiCategoryAfter2015Days}
-                      onChange={handleIntChange('differentDeiCategoryAfter2015Days')}
+                      value={formData.differentCategoryAfter2015Days}
+                      onChange={handleIntChange('differentCategoryAfter2015Days')}
                       disabled={formData.differentCategoryMode !== 'yes'}
                     />
                   </div>
@@ -571,8 +569,8 @@ const DeiCategoryForm = () => {
                       type="text"
                       inputMode="numeric"
                       className="info-input"
-                      value={formData.differentDeiCategoryAfter2015Years}
-                      onChange={handleIntChange('differentDeiCategoryAfter2015Years')}
+                      value={formData.differentCategoryAfter2015Years}
+                      onChange={handleIntChange('differentCategoryAfter2015Years')}
                       disabled={formData.differentCategoryMode !== 'yes'}
                     />
                   </div>
@@ -583,8 +581,8 @@ const DeiCategoryForm = () => {
                       type="text"
                       inputMode="numeric"
                       className="info-input"
-                      value={formData.differentDeiCategoryAfter2015Months}
-                      onChange={handleIntChange('differentDeiCategoryAfter2015Months', 11)}
+                      value={formData.differentCategoryAfter2015Months}
+                      onChange={handleIntChange('differentCategoryAfter2015Months', 11)}
                       disabled={formData.differentCategoryMode !== 'yes'}
                     />
                   </div>
