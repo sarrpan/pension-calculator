@@ -76,9 +76,26 @@ const sanitizeIntegerInput = (value, max = null) => {
   return normalized;
 };
 
+const sanitizeDecimalInput = (value) => {
+  let cleaned = value.replace(/[^\d.,]/g, '');
+  cleaned = cleaned.replace(',', '.');
+
+  const parts = cleaned.split('.');
+  if (parts.length > 2) {
+    cleaned = `${parts[0]}.${parts.slice(1).join('')}`;
+  }
+
+  return cleaned;
+};
+
 const parseIntegerOrZero = (value) => {
   if (value === '' || value === null || value === undefined) return 0;
   return Number.parseInt(value, 10) || 0;
+};
+
+const parseDecimalOrZero = (value) => {
+  if (value === '' || value === null || value === undefined) return 0;
+  return Number.parseFloat(String(value).replace(',', '.')) || 0;
 };
 
 const parseIsoDate = (value) => {
@@ -141,6 +158,18 @@ const getInitialInsuranceInputMode = (source) => {
   return 'yearsMonths';
 };
 
+const getInitialPensionableEarningsInputMode = (source) => {
+  if (source.pensionableEarningsInputMode === 'manual' || source.pensionableEarningsInputMode === 'annual') {
+    return source.pensionableEarningsInputMode;
+  }
+
+  if (source.pensionableMonthlyEarnings) {
+    return 'manual';
+  }
+
+  return 'annual';
+};
+
 const convertYearsMonthsToDays = (yearsValue, monthsValue) => {
   const years = parseIntegerOrZero(yearsValue);
   const months = parseIntegerOrZero(monthsValue);
@@ -181,7 +210,9 @@ const GeneralPensionForm = () => {
     residenceYears: source.residenceYears || '40',
     insuredType: source.insuredType || 'old',
     pensionMode: source.pensionMode || 'full',
-    reducedYears: source.reducedYears || ''
+    reducedYears: source.reducedYears || '',
+    pensionableEarningsInputMode: getInitialPensionableEarningsInputMode(source),
+    pensionableMonthlyEarnings: source.pensionableMonthlyEarnings || ''
   });
 
   const [formData, setFormData] = useState(() => mapDataToState({}));
@@ -207,6 +238,10 @@ const GeneralPensionForm = () => {
     handleChange(field, sanitizeIntegerInput(e.target.value, max));
   };
 
+  const handleDecimalChange = (field) => (e) => {
+    handleChange(field, sanitizeDecimalInput(e.target.value));
+  };
+
   const handleDateDisplayChange = (fieldIso, fieldDisplay, value) => {
     const sanitized = sanitizeDisplayDate(value);
     handleChange(fieldDisplay, sanitized);
@@ -230,6 +265,14 @@ const GeneralPensionForm = () => {
     setFormData((prev) => ({
       ...prev,
       reducedYears: value
+    }));
+  };
+
+  const handlePensionableEarningsInputModeChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      pensionableEarningsInputMode: value,
+      pensionableMonthlyEarnings: value === 'manual' ? prev.pensionableMonthlyEarnings : ''
     }));
   };
 
@@ -364,6 +407,14 @@ const GeneralPensionForm = () => {
       return;
     }
 
+    if (
+      formData.pensionableEarningsInputMode === 'manual' &&
+      parseDecimalOrZero(formData.pensionableMonthlyEarnings) <= 0
+    ) {
+      setErrorMessage('Παρακαλώ συμπληρώστε έγκυρο μέσο αναπροσαρμοσμένο μηνιαίο μισθό.');
+      return;
+    }
+
     const data = {
       birthDate: formData.birthDate,
       pensionDate: formData.pensionDate,
@@ -374,16 +425,22 @@ const GeneralPensionForm = () => {
       residenceYears: String(residenceYearsNum),
       insuredType: formData.insuredType,
       pensionMode: formData.pensionMode,
-      reducedYears: formData.pensionMode === 'reduced' ? String(formData.reducedYears) : ''
+      reducedYears: formData.pensionMode === 'reduced' ? String(formData.reducedYears) : '',
+      pensionableEarningsInputMode: formData.pensionableEarningsInputMode,
+      pensionableMonthlyEarnings:
+        formData.pensionableEarningsInputMode === 'manual'
+          ? String(parseDecimalOrZero(formData.pensionableMonthlyEarnings))
+          : ''
     };
 
-    navigate('/calculator/dei/category', {
-      state: {
-        generalInfoData: data,
-        deiCategoryData: incomingDeiCategoryData,
-        yearsData: incomingAnnualEarningsData
-      }
-    });
+    navigate('/calculator/dei/insurance-periods', {
+  state: {
+    generalInfoData: data,
+    insurancePeriods: location.state?.insurancePeriods || [],
+    deiCategoryData: incomingDeiCategoryData,
+    yearsData: incomingAnnualEarningsData
+    }
+  });
   };
 
   let currentAge = null;
@@ -559,6 +616,49 @@ const GeneralPensionForm = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="info-field info-field-top-gap">
+              <label className="info-label">Τρόπος εισαγωγής συντάξιμων αποδοχών</label>
+              <p className="info-helper info-field-helper">
+                Επιλέξτε αν θα συμπληρώσετε αναλυτικά τις αποδοχές ανά έτος ή αν γνωρίζετε ήδη τον μέσο αναπροσαρμοσμένο μηνιαίο μισθό.
+              </p>
+
+              <div className="radio-group radio-group-inline-cards">
+                <label className="radio-label radio-label-card">
+                  <input
+                    type="radio"
+                    checked={formData.pensionableEarningsInputMode === 'annual'}
+                    onChange={() => handlePensionableEarningsInputModeChange('annual')}
+                  />
+                  <span>Αναλυτικά ανά έτος</span>
+                </label>
+
+                <label className="radio-label radio-label-card">
+                  <input
+                    type="radio"
+                    checked={formData.pensionableEarningsInputMode === 'manual'}
+                    onChange={() => handlePensionableEarningsInputModeChange('manual')}
+                  />
+                  <span>Γνωρίζω ήδη τον μέσο αναπροσαρμοσμένο μηνιαίο μισθό</span>
+                </label>
+              </div>
+
+              {formData.pensionableEarningsInputMode === 'manual' ? (
+                <div className="info-grid info-grid-single info-grid-inner">
+                  <div className="info-field info-field-small">
+                    <label className="info-sub-label">Μέσος αναπροσαρμοσμένος μηνιαίος μισθός</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className="info-input"
+                      value={formData.pensionableMonthlyEarnings}
+                      onChange={handleDecimalChange('pensionableMonthlyEarnings')}
+                      placeholder="π.χ. 1850.50"
+                    />
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 

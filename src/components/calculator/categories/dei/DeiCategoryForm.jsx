@@ -92,7 +92,8 @@ const DeiCategoryForm = () => {
   const generalInfoData = location.state?.generalInfoData || null;
   const initialData = location.state?.deiCategoryData || {};
   const incomingAnnualEarningsData = location.state?.yearsData || {};
-
+  const insurancePeriods = location.state?.insurancePeriods || [];
+  
   const mapDataToState = (source) => ({
     deiCategory: source.deiCategory || 'lignite',
     retirementRegime: source.retirementRegime || 'special',
@@ -194,10 +195,12 @@ const DeiCategoryForm = () => {
   };
 
   const handleBack = () => {
-    navigate('/calculator/dei', {
+    navigate('/calculator/dei/insurance-periods', {
       state: {
         generalInfoData,
+        insurancePeriods,
         deiCategoryData: formData,
+        insurancePeriods,
         yearsData: incomingAnnualEarningsData
       }
     });
@@ -309,9 +312,15 @@ const DeiCategoryForm = () => {
       differentCategoryAfter2015Days: String(differentCategoryAfter2015DaysNum)
     };
 
-    navigate('/calculator/dei/sc', {
+    const nextRoute =
+      generalInfoData.pensionableEarningsInputMode === 'manual'
+        ? '/calculator/dei/results'
+        : '/calculator/dei/sc';
+
+    navigate(nextRoute, {
       state: {
         generalInfoData,
+        insurancePeriods,
         deiCategoryData: data,
         yearsData: incomingAnnualEarningsData
       }

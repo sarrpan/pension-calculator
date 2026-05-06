@@ -22,6 +22,7 @@ const ResultsPanel = () => {
 
   const formData = location.state || backupData || {};
   const generalInfo = formData.generalInfoData || {};
+  const insurancePeriods = formData.insurancePeriods || [];
   const deiCategoryData = formData.deiCategoryData || {};
   const yearsData = formData.yearsData || {};
 
@@ -35,6 +36,22 @@ const ResultsPanel = () => {
   );
 
   const displayResults = localResults || {};
+
+  const handleBack = () => {
+    const backRoute =
+      generalInfo.pensionableEarningsInputMode === "manual"
+        ? "/calculator/dei/category"
+        : "/calculator/dei/sc";
+
+    navigate(backRoute, {
+      state: {
+        generalInfoData: generalInfo,
+        insurancePeriods,
+        deiCategoryData,
+        yearsData,
+      },
+    });
+  };
 
   const handleCalculate = async () => {
     const { birthDate, pensionDate } = payload;
@@ -186,15 +203,7 @@ const ResultsPanel = () => {
       <div className="step-bottom-navigation">
         <button
           type="button"
-          onClick={() =>
-            navigate("/calculator/dei/sc", {
-              state: {
-                generalInfoData: generalInfo,
-                deiCategoryData,
-                yearsData,
-              },
-            })
-          }
+          onClick={handleBack}
           className="step-button step-button-back"
         >
           ← Πίσω

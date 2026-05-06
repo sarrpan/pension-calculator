@@ -45,6 +45,7 @@ const AnnualEarningsForm = () => {
 
   const generalInfoData = location.state?.generalInfoData || {};
   const deiCategoryData = location.state?.deiCategoryData || {};
+  const insurancePeriods = location.state?.insurancePeriods || [];
   const incomingAnnualEarningsData =
     location.state?.yearsData || location.state?.annualEarningsData || {};
 
@@ -137,7 +138,14 @@ console.log("YEARS DATA BEFORE FINAL:", yearsData);
     // Αποθήκευση στη μνήμη του browser για να αντέχει στο F5
     sessionStorage.setItem('deiCalculatorState', JSON.stringify(finalData));
 
-    navigate('/calculator/dei/results', { state: finalData });
+    navigate('/calculator/dei/results', {
+  state: {
+    generalInfoData,
+    insurancePeriods,
+    deiCategoryData,
+    yearsData
+    }
+  });
   };
 
   return (
@@ -189,6 +197,7 @@ console.log("YEARS DATA BEFORE FINAL:", yearsData);
           onClick={() => navigate('/calculator/dei/category', {
             state: {
               generalInfoData,
+              insurancePeriods,
               deiCategoryData,
               yearsData
             }

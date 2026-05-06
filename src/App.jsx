@@ -24,6 +24,7 @@ import ReportRecoveryPage from './pages/ReportRecoveryPage';
 import ScrollToTop from './components/ScrollToTop';
 import PremiumUploadPage from './pages/PremiumUploadPage';
 import AdminDashboard from './pages/AdminDashboard';
+import CalculatorPageInsurancePeriods from './pages/calculator/Dei/CalculatorPageInsurancePeriods';
 function App() {
   return (
     <div className="App">
@@ -39,6 +40,7 @@ function App() {
         <Route path="/calculator" element={<CategorySelector />} />
 
         <Route path="/calculator/dei" element={<CalculatorDeiPageGI />} />
+        <Route path="/calculator/dei/insurance-periods" element={<CalculatorPageInsurancePeriods />} />
         <Route path="/calculator/dei/category" element={<CalculatorDeiPageCategory />} />
         <Route path="/calculator/dei/sc" element={<CalculatorDeiPageSC />} />
         <Route path="/calculator/dei/results" element={<CalculatorDeiPageRP />} />
