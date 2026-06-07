@@ -13,18 +13,11 @@ import DisclaimerPage from './pages/legal/DisclaimerPage';
 import FreeGuidePage from './pages/FreeGuidePage';
 import ReportGuidePage from './pages/ReportGuidePage';
 
-import CategorySelector from './components/calculator/CategorySelector';
-
-import CalculatorDeiPageGI from './pages/calculator/Dei/CalculatorPageGI';
-import CalculatorDeiPageCategory from './pages/calculator/Dei/CalculatorPageCategory';
-import CalculatorDeiPageRP from './pages/calculator/Dei/CalculatorPageRP';
-import CalculatorDeiPageSC from './pages/calculator/Dei/CalculatorPageSC';
-
 import ReportRecoveryPage from './pages/ReportRecoveryPage';
 import ScrollToTop from './components/ScrollToTop';
 import PremiumUploadPage from './pages/PremiumUploadPage';
 import AdminDashboard from './pages/AdminDashboard';
-import CalculatorPageInsurancePeriods from './pages/calculator/Dei/CalculatorPageInsurancePeriods';
+
 function App() {
   return (
     <div className="App">
@@ -36,14 +29,6 @@ function App() {
 
         <Route path="/free-guide" element={<FreeGuidePage />} />
         <Route path="/report-guide" element={<ReportGuidePage />} />
-
-        <Route path="/calculator" element={<CategorySelector />} />
-
-        <Route path="/calculator/dei" element={<CalculatorDeiPageGI />} />
-        <Route path="/calculator/dei/insurance-periods" element={<CalculatorPageInsurancePeriods />} />
-        <Route path="/calculator/dei/category" element={<CalculatorDeiPageCategory />} />
-        <Route path="/calculator/dei/sc" element={<CalculatorDeiPageSC />} />
-        <Route path="/calculator/dei/results" element={<CalculatorDeiPageRP />} />
 
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/terms" element={<TermsPage />} />
