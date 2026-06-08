@@ -5,6 +5,9 @@ const PREPARE_PENSION_INPUT_URL = 'http://127.0.0.1:5001/pension-calculator-f8e6
 const INSURANCE_DAYS_PER_YEAR = 300;
 const INSURANCE_DAYS_PER_MONTH = 25;
 
+const MIN_RESIDENCE_YEARS_FOR_NATIONAL_PENSION = 15;
+const FULL_RESIDENCE_YEARS_FOR_NATIONAL_PENSION = 40;
+
 const NATIONAL_PENSION_BASE_AMOUNTS = {
   2025: {
     amount: 436.4,
@@ -60,6 +63,8 @@ function PensionCalculatorPage() {
   const [insuranceMonthsInput, setInsuranceMonthsInput] = useState('');
   const [insuranceExtraDaysInput, setInsuranceExtraDaysInput] = useState('');
 
+  const [residenceYearsInput, setResidenceYearsInput] = useState('');
+
   const [backendResponse, setBackendResponse] = useState(null);
   const [backendError, setBackendError] = useState('');
   const [isSendingToBackend, setIsSendingToBackend] = useState(false);
@@ -74,6 +79,7 @@ function PensionCalculatorPage() {
       insuranceYearsInput,
       insuranceMonthsInput,
       insuranceExtraDaysInput,
+      residenceYearsInput,
     });
   }, [
     pensionStartDateInput,
@@ -84,6 +90,7 @@ function PensionCalculatorPage() {
     insuranceYearsInput,
     insuranceMonthsInput,
     insuranceExtraDaysInput,
+    residenceYearsInput,
   ]);
 
   function clearBackendResult() {
@@ -97,7 +104,7 @@ function PensionCalculatorPage() {
 
     if (!analysis.isReady || analysis.error) {
       setBackendError(
-        'Συμπληρώστε σωστά την ημερομηνία έναρξης, το είδος σύνταξης, αν είναι πλήρης ή μειωμένη και τον χρόνο ασφάλισης.'
+        'Συμπληρώστε σωστά την ημερομηνία έναρξης, το είδος σύνταξης, αν είναι πλήρης ή μειωμένη, τον χρόνο ασφάλισης και τα έτη νόμιμης διαμονής.'
       );
       return;
     }
@@ -429,6 +436,38 @@ function PensionCalculatorPage() {
           )}
         </fieldset>
 
+        <fieldset
+          style={{
+            marginBottom: '1rem',
+            padding: '1rem',
+            border: '1px solid #ddd',
+          }}
+        >
+          <legend>Έτη νόμιμης διαμονής</legend>
+
+          <label htmlFor="residenceYears">
+            Έτη νόμιμης διαμονής στην Ελλάδα
+          </label>
+
+          <br />
+
+          <input
+            id="residenceYears"
+            type="text"
+            value={residenceYearsInput}
+            onChange={(event) => {
+              setResidenceYearsInput(event.target.value);
+              clearBackendResult();
+            }}
+            placeholder="π.χ. 40 ή 39,5"
+            style={{
+              marginTop: '0.5rem',
+              padding: '0.5rem',
+              width: '160px',
+            }}
+          />
+        </fieldset>
+
         <button
           type="submit"
           disabled={!analysis.isReady || Boolean(analysis.error) || isSendingToBackend}
@@ -502,6 +541,22 @@ function PensionCalculatorPage() {
               <strong>Σύνολο σε δεκαδικά έτη:</strong>{' '}
               {analysis.totalInsuranceDecimalYears}
             </p>
+
+            <p>
+              <strong>Έτη νόμιμης διαμονής:</strong>{' '}
+              {analysis.residenceYears}
+            </p>
+
+            <p>
+              <strong>Συντελεστής διαμονής Εθνικής:</strong>{' '}
+              {formatPercent(analysis.residenceRate)}
+            </p>
+
+            {analysis.residenceWarning && (
+              <p style={{ color: 'crimson' }}>
+                {analysis.residenceWarning}
+              </p>
+            )}
 
             <p>
               <strong>Ποσό Εθνικής που θα χρησιμοποιηθεί:</strong>{' '}
@@ -584,6 +639,24 @@ function PensionCalculatorPage() {
               <strong>Σύνολο δεκαδικών ετών:</strong>{' '}
               {analysis.calculationInput.generalInfoData.totalInsuranceDecimalYears}
             </p>
+
+            <p>
+              <strong>Έτη νόμιμης διαμονής:</strong>{' '}
+              {analysis.calculationInput.generalInfoData.residenceYears}
+            </p>
+
+            <p>
+              <strong>Συντελεστής διαμονής Εθνικής:</strong>{' '}
+              {formatPercent(
+                analysis.calculationInput.nationalPensionPreview.residenceRate
+              )}
+            </p>
+
+            {analysis.calculationInput.nationalPensionPreview.residenceWarning && (
+              <p style={{ color: 'crimson' }}>
+                {analysis.calculationInput.nationalPensionPreview.residenceWarning}
+              </p>
+            )}
 
             <p>
               <strong>Ποσό βάσης Εθνικής:</strong>{' '}
@@ -711,6 +784,37 @@ function PensionCalculatorPage() {
             {backendResponse.preparedInput?.generalInfoData?.totalInsuranceDecimalYears}
           </p>
 
+          <p>
+            <strong>Έτη νόμιμης διαμονής:</strong>{' '}
+            {backendResponse.preparedInput?.generalInfoData?.residenceYears}
+          </p>
+
+          <p>
+            <strong>Συντελεστής διαμονής Εθνικής:</strong>{' '}
+            {formatPercent(
+              backendResponse.preparedInput?.nationalPensionPreview?.residenceRate
+            )}
+          </p>
+
+          {backendResponse.preparedInput?.nationalPensionPreview?.residenceWarning && (
+            <p style={{ color: 'crimson' }}>
+              {backendResponse.preparedInput.nationalPensionPreview.residenceWarning}
+            </p>
+          )}
+
+          {Array.isArray(backendResponse.warnings) &&
+            backendResponse.warnings.length > 0 && (
+              <>
+                <h3>Προειδοποιήσεις</h3>
+
+                <ul>
+                  {backendResponse.warnings.map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+
           {Array.isArray(backendResponse.missingForCalculation) &&
             backendResponse.missingForCalculation.length > 0 && (
               <>
@@ -738,6 +842,7 @@ function analyzePensionForm({
   insuranceYearsInput,
   insuranceMonthsInput,
   insuranceExtraDaysInput,
+  residenceYearsInput,
 }) {
   const dateAnalysis = analyzePensionStartDate(pensionStartDateInput);
   const pensionTypeAnalysis = analyzePensionType(pensionTypeInput);
@@ -749,12 +854,14 @@ function analyzePensionForm({
     insuranceMonthsInput,
     insuranceExtraDaysInput,
   });
+  const residenceAnalysis = analyzeResidenceYears(residenceYearsInput);
 
   const hasAnyValue =
     dateAnalysis.hasValue ||
     pensionTypeAnalysis.hasValue ||
     pensionModeAnalysis.hasValue ||
-    insuranceTimeAnalysis.hasValue;
+    insuranceTimeAnalysis.hasValue ||
+    residenceAnalysis.hasValue;
 
   if (dateAnalysis.error) {
     return {
@@ -788,15 +895,25 @@ function analyzePensionForm({
     };
   }
 
+  if (residenceAnalysis.error) {
+    return {
+      hasValue: hasAnyValue,
+      isReady: false,
+      error: residenceAnalysis.error,
+    };
+  }
+
   const isReady =
     dateAnalysis.hasValue &&
     pensionTypeAnalysis.hasValue &&
     pensionModeAnalysis.hasValue &&
     insuranceTimeAnalysis.hasValue &&
+    residenceAnalysis.hasValue &&
     !dateAnalysis.error &&
     !pensionTypeAnalysis.error &&
     !pensionModeAnalysis.error &&
-    !insuranceTimeAnalysis.error;
+    !insuranceTimeAnalysis.error &&
+    !residenceAnalysis.error;
 
   if (!isReady) {
     return {
@@ -831,6 +948,10 @@ function analyzePensionForm({
     totalInsuranceDecimalYears:
       insuranceTimeAnalysis.totalInsuranceDecimalYears,
 
+    residenceYears: residenceAnalysis.residenceYears,
+    residenceRate: residenceAnalysis.residenceRate,
+    residenceWarning: residenceAnalysis.residenceWarning,
+
     calculationInput: {
       generalInfoData: {
         pensionDate: dateAnalysis.pensionDate,
@@ -847,6 +968,8 @@ function analyzePensionForm({
           insuranceTimeAnalysis.totalInsuranceDaysEquivalent,
         totalInsuranceDecimalYears:
           insuranceTimeAnalysis.totalInsuranceDecimalYears,
+
+        residenceYears: residenceAnalysis.residenceYears,
       },
 
       nationalPensionPreview: {
@@ -854,6 +977,8 @@ function analyzePensionForm({
         baseAmountSourceYear: dateAnalysis.baseAmountSourceYear,
         baseAmountStatus: dateAnalysis.baseAmountStatus,
         isBaseAmountTemporary: dateAnalysis.baseAmountStatus === 'temporary',
+        residenceRate: residenceAnalysis.residenceRate,
+        residenceWarning: residenceAnalysis.residenceWarning,
       },
     },
   };
@@ -1165,6 +1290,48 @@ function analyzeYearsMonthsDaysInsuranceInput({
   };
 }
 
+function analyzeResidenceYears(value) {
+  const trimmedValue = String(value || '').trim();
+
+  if (!trimmedValue) {
+    return {
+      hasValue: false,
+      error: null,
+    };
+  }
+
+  const numberResult = parseNonNegativeDecimal(trimmedValue);
+
+  if (!numberResult.isValid) {
+    return {
+      hasValue: true,
+      error: 'Τα έτη νόμιμης διαμονής πρέπει να είναι αριθμός.',
+    };
+  }
+
+  const residenceYears = numberResult.value;
+  const residenceRate =
+    residenceYears < MIN_RESIDENCE_YEARS_FOR_NATIONAL_PENSION
+      ? 0
+      : Math.min(
+          residenceYears / FULL_RESIDENCE_YEARS_FOR_NATIONAL_PENSION,
+          1
+        );
+
+  const residenceWarning =
+    residenceYears < MIN_RESIDENCE_YEARS_FOR_NATIONAL_PENSION
+      ? 'Με αυτά τα έτη νόμιμης διαμονής δεν δικαιούται εθνική σύνταξη.'
+      : null;
+
+  return {
+    hasValue: true,
+    error: null,
+    residenceYears: roundToDecimals(residenceYears, 4),
+    residenceRate: roundToDecimals(residenceRate, 6),
+    residenceWarning,
+  };
+}
+
 function parseNonNegativeInteger(value) {
   const text = String(value || '').trim();
 
@@ -1192,6 +1359,22 @@ function parseNonNegativeIntegerOrEmpty(value) {
   }
 
   return parseNonNegativeInteger(text);
+}
+
+function parseNonNegativeDecimal(value) {
+  const normalizedText = String(value || '').trim().replace(',', '.');
+
+  if (!/^\d+(\.\d+)?$/.test(normalizedText)) {
+    return {
+      isValid: false,
+      value: 0,
+    };
+  }
+
+  return {
+    isValid: true,
+    value: Number(normalizedText),
+  };
 }
 
 function convertInsuranceDaysToDisplayTime(totalDays) {
@@ -1339,6 +1522,14 @@ function getInsuranceTimeInputMethodLabel(value) {
 function roundToDecimals(value, decimals) {
   const factor = 10 ** decimals;
   return Math.round((Number(value || 0) + Number.EPSILON) * factor) / factor;
+}
+
+function formatPercent(value) {
+  if (value === null || value === undefined || value === '') {
+    return '-';
+  }
+
+  return `${roundToDecimals(Number(value) * 100, 2)}%`;
 }
 
 function formatEuro(value) {
