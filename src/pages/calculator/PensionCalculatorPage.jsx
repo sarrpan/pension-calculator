@@ -24,9 +24,21 @@ const PENSION_TYPE_OPTIONS = {
   },
 };
 
+const PENSION_MODE_OPTIONS = {
+  full: {
+    value: 'full',
+    label: 'Πλήρης',
+  },
+  reduced: {
+    value: 'reduced',
+    label: 'Μειωμένη',
+  },
+};
+
 function PensionCalculatorPage() {
   const [pensionStartDateInput, setPensionStartDateInput] = useState('');
   const [pensionTypeInput, setPensionTypeInput] = useState('');
+  const [pensionModeInput, setPensionModeInput] = useState('');
   const [backendResponse, setBackendResponse] = useState(null);
   const [backendError, setBackendError] = useState('');
   const [isSendingToBackend, setIsSendingToBackend] = useState(false);
@@ -35,15 +47,18 @@ function PensionCalculatorPage() {
     return analyzePensionForm({
       pensionStartDateInput,
       pensionTypeInput,
+      pensionModeInput,
     });
-  }, [pensionStartDateInput, pensionTypeInput]);
+  }, [pensionStartDateInput, pensionTypeInput, pensionModeInput]);
 
   async function handlePrepareCalculationInput() {
     setBackendResponse(null);
     setBackendError('');
 
     if (!analysis.isReady || analysis.error) {
-      setBackendError('Συμπληρώστε σωστά την ημερομηνία έναρξης και το είδος σύνταξης.');
+      setBackendError(
+        'Συμπληρώστε σωστά την ημερομηνία έναρξης, το είδος σύνταξης και αν είναι πλήρης ή μειωμένη.'
+      );
       return;
     }
 
@@ -165,6 +180,64 @@ function PensionCalculatorPage() {
           </label>
         </fieldset>
 
+        <fieldset
+          style={{
+            marginBottom: '1rem',
+            padding: '1rem',
+            border: '1px solid #ddd',
+          }}
+        >
+          <legend>Πλήρης ή μειωμένη σύνταξη</legend>
+
+          <label
+            htmlFor="pensionModeFull"
+            style={{
+              display: 'block',
+              marginTop: '0.5rem',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              id="pensionModeFull"
+              type="radio"
+              name="pensionMode"
+              value="full"
+              checked={pensionModeInput === 'full'}
+              onChange={(event) => {
+                setPensionModeInput(event.target.value);
+                setBackendResponse(null);
+                setBackendError('');
+              }}
+              style={{ marginRight: '0.5rem' }}
+            />
+            Πλήρης
+          </label>
+
+          <label
+            htmlFor="pensionModeReduced"
+            style={{
+              display: 'block',
+              marginTop: '0.5rem',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              id="pensionModeReduced"
+              type="radio"
+              name="pensionMode"
+              value="reduced"
+              checked={pensionModeInput === 'reduced'}
+              onChange={(event) => {
+                setPensionModeInput(event.target.value);
+                setBackendResponse(null);
+                setBackendError('');
+              }}
+              style={{ marginRight: '0.5rem' }}
+            />
+            Μειωμένη
+          </label>
+        </fieldset>
+
         <button
           type="submit"
           disabled={!analysis.isReady || Boolean(analysis.error) || isSendingToBackend}
@@ -215,6 +288,11 @@ function PensionCalculatorPage() {
             </p>
 
             <p>
+              <strong>Πλήρης ή μειωμένη:</strong>{' '}
+              {analysis.pensionModeLabel}
+            </p>
+
+            <p>
               <strong>Ποσό Εθνικής που θα χρησιμοποιηθεί:</strong>{' '}
               {formatEuro(analysis.nationalPensionBaseAmount)}
             </p>
@@ -252,8 +330,18 @@ function PensionCalculatorPage() {
             </p>
 
             <p>
-              <strong>Internal value:</strong>{' '}
+              <strong>Internal value είδους:</strong>{' '}
               {analysis.calculationInput.generalInfoData.pensionType}
+            </p>
+
+            <p>
+              <strong>Πλήρης ή μειωμένη:</strong>{' '}
+              {analysis.pensionModeLabel}
+            </p>
+
+            <p>
+              <strong>Internal value πλήρους/μειωμένης:</strong>{' '}
+              {analysis.calculationInput.generalInfoData.pensionMode}
             </p>
 
             <p>
@@ -334,8 +422,20 @@ function PensionCalculatorPage() {
           </p>
 
           <p>
-            <strong>Internal value:</strong>{' '}
+            <strong>Internal value είδους:</strong>{' '}
             {backendResponse.preparedInput?.generalInfoData?.pensionType}
+          </p>
+
+          <p>
+            <strong>Πλήρης ή μειωμένη:</strong>{' '}
+            {getPensionModeLabel(
+              backendResponse.preparedInput?.generalInfoData?.pensionMode
+            )}
+          </p>
+
+          <p>
+            <strong>Internal value πλήρους/μειωμένης:</strong>{' '}
+            {backendResponse.preparedInput?.generalInfoData?.pensionMode}
           </p>
 
           {Array.isArray(backendResponse.missingForCalculation) &&
@@ -359,12 +459,16 @@ function PensionCalculatorPage() {
 function analyzePensionForm({
   pensionStartDateInput,
   pensionTypeInput,
+  pensionModeInput,
 }) {
   const dateAnalysis = analyzePensionStartDate(pensionStartDateInput);
   const pensionTypeAnalysis = analyzePensionType(pensionTypeInput);
+  const pensionModeAnalysis = analyzePensionMode(pensionModeInput);
 
   const hasAnyValue =
-    dateAnalysis.hasValue || pensionTypeAnalysis.hasValue;
+    dateAnalysis.hasValue ||
+    pensionTypeAnalysis.hasValue ||
+    pensionModeAnalysis.hasValue;
 
   if (dateAnalysis.error) {
     return {
@@ -382,11 +486,21 @@ function analyzePensionForm({
     };
   }
 
+  if (pensionModeAnalysis.error) {
+    return {
+      hasValue: hasAnyValue,
+      isReady: false,
+      error: pensionModeAnalysis.error,
+    };
+  }
+
   const isReady =
     dateAnalysis.hasValue &&
     pensionTypeAnalysis.hasValue &&
+    pensionModeAnalysis.hasValue &&
     !dateAnalysis.error &&
-    !pensionTypeAnalysis.error;
+    !pensionTypeAnalysis.error &&
+    !pensionModeAnalysis.error;
 
   if (!isReady) {
     return {
@@ -406,11 +520,15 @@ function analyzePensionForm({
     pensionType: pensionTypeAnalysis.pensionType,
     pensionTypeLabel: pensionTypeAnalysis.pensionTypeLabel,
 
+    pensionMode: pensionModeAnalysis.pensionMode,
+    pensionModeLabel: pensionModeAnalysis.pensionModeLabel,
+
     calculationInput: {
       generalInfoData: {
         pensionDate: dateAnalysis.pensionDate,
         pensionYear: dateAnalysis.pensionYear,
         pensionType: pensionTypeAnalysis.pensionType,
+        pensionMode: pensionModeAnalysis.pensionMode,
       },
 
       nationalPensionPreview: {
@@ -514,6 +632,31 @@ function analyzePensionType(value) {
     error: null,
     pensionType: normalizedValue,
     pensionTypeLabel: PENSION_TYPE_OPTIONS[normalizedValue].label,
+  };
+}
+
+function analyzePensionMode(value) {
+  const normalizedValue = String(value || '').trim();
+
+  if (!normalizedValue) {
+    return {
+      hasValue: false,
+      error: null,
+    };
+  }
+
+  if (!PENSION_MODE_OPTIONS[normalizedValue]) {
+    return {
+      hasValue: true,
+      error: 'Επιλέξτε αν η σύνταξη είναι πλήρης ή μειωμένη.',
+    };
+  }
+
+  return {
+    hasValue: true,
+    error: null,
+    pensionMode: normalizedValue,
+    pensionModeLabel: PENSION_MODE_OPTIONS[normalizedValue].label,
   };
 }
 
@@ -622,6 +765,14 @@ function getPensionTypeLabel(value) {
   }
 
   return PENSION_TYPE_OPTIONS[value].label;
+}
+
+function getPensionModeLabel(value) {
+  if (!value || !PENSION_MODE_OPTIONS[value]) {
+    return '-';
+  }
+
+  return PENSION_MODE_OPTIONS[value].label;
 }
 
 function formatEuro(value) {
