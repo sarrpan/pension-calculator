@@ -65,7 +65,19 @@ const INSURANCE_TIME_INPUT_METHOD_OPTIONS = {
   },
 };
 
+const CONTRIBUTORY_EARNINGS_INPUT_METHOD_OPTIONS = {
+  average_monthly: {
+    value: 'average_monthly',
+    label: 'Έτοιμος μέσος μηνιαίος συντάξιμος μισθός',
+  },
+  yearly_earnings: {
+    value: 'yearly_earnings',
+    label: 'Αποδοχές και ένσημα ανά έτος',
+  },
+};
+
 function analyzePensionForm({
+  currentFormStep = 'main',
   pensionStartDateInput,
   pensionTypeInput,
   oldAgeCategoryInput,
@@ -78,6 +90,9 @@ function analyzePensionForm({
   insuranceMonthsInput,
   insuranceExtraDaysInput,
   residenceYearsInput,
+  contributoryEarningsInputMethod,
+  averageMonthlyPensionableEarningsInput,
+  yearlyEarningsRows,
 }) {
   const dateAnalysis = analyzePensionStartDate(pensionStartDateInput);
   const pensionTypeAnalysis = analyzePensionType(pensionTypeInput);
@@ -99,6 +114,12 @@ function analyzePensionForm({
     insuranceMonthsInput,
     insuranceExtraDaysInput,
   });
+  const contributoryAnalysis = analyzeContributoryPensionInputs({
+    currentFormStep,
+    contributoryEarningsInputMethod,
+    averageMonthlyPensionableEarningsInput,
+    yearlyEarningsRows,
+  });
 
   const errors = [
     dateAnalysis.error,
@@ -106,12 +127,15 @@ function analyzePensionForm({
     oldAgeAnalysis.error,
     disabilityAnalysis.error,
     insuranceTimeAnalysis.error,
+    contributoryAnalysis.error,
   ].filter(Boolean);
 
   if (errors.length > 0) {
     return {
       isReady: false,
       error: errors[0],
+      requiresContributoryYearlyStep:
+        contributoryAnalysis.requiresContributoryYearlyStep === true,
     };
   }
 
@@ -120,12 +144,15 @@ function analyzePensionForm({
     pensionTypeAnalysis.hasValue &&
     oldAgeAnalysis.hasValue &&
     disabilityAnalysis.hasValue &&
-    insuranceTimeAnalysis.hasValue;
+    insuranceTimeAnalysis.hasValue &&
+    contributoryAnalysis.hasValue;
 
   if (!isReady) {
     return {
       isReady: false,
       error: null,
+      requiresContributoryYearlyStep:
+        contributoryAnalysis.requiresContributoryYearlyStep === true,
     };
   }
 
@@ -133,6 +160,7 @@ function analyzePensionForm({
     ...oldAgeAnalysis.warnings,
     ...disabilityAnalysis.warnings,
     ...insuranceTimeAnalysis.warnings,
+    ...contributoryAnalysis.warnings,
   ];
 
   const calculationInput = {
@@ -161,12 +189,15 @@ function analyzePensionForm({
       totalInsuranceDecimalYears:
         insuranceTimeAnalysis.totalInsuranceDecimalYears,
     },
+    contributoryPensionData: contributoryAnalysis.contributoryPensionData,
   };
 
   return {
     isReady: true,
     error: null,
     warnings,
+    requiresContributoryYearlyStep:
+      contributoryAnalysis.requiresContributoryYearlyStep === true,
 
     displayDate: dateAnalysis.displayDate,
     pensionYear: dateAnalysis.pensionYear,
@@ -197,6 +228,15 @@ function analyzePensionForm({
       insuranceTimeAnalysis.totalInsuranceDaysEquivalent,
     totalInsuranceDecimalYears:
       insuranceTimeAnalysis.totalInsuranceDecimalYears,
+
+    contributoryEarningsInputMethod:
+      contributoryAnalysis.contributoryEarningsInputMethod,
+    contributoryEarningsInputMethodLabel:
+      contributoryAnalysis.contributoryEarningsInputMethodLabel,
+    averageMonthlyPensionableEarnings:
+      contributoryAnalysis.averageMonthlyPensionableEarnings,
+    yearsData: contributoryAnalysis.yearsData,
+    yearlyEarningsRowsCount: contributoryAnalysis.yearsData.length,
 
     calculationInput,
   };
@@ -758,6 +798,257 @@ function analyzeResidenceYears(value) {
   };
 }
 
+function analyzeContributoryPensionInputs({
+  currentFormStep,
+  contributoryEarningsInputMethod,
+  averageMonthlyPensionableEarningsInput,
+  yearlyEarningsRows,
+}) {
+  const method = String(contributoryEarningsInputMethod || '').trim();
+
+  if (!method) {
+    return {
+      hasValue: false,
+      error: null,
+      warnings: [],
+      requiresContributoryYearlyStep: false,
+      contributoryEarningsInputMethod: null,
+      contributoryEarningsInputMethodLabel: null,
+      averageMonthlyPensionableEarnings: null,
+      yearsData: [],
+      contributoryPensionData: null,
+    };
+  }
+
+  if (!CONTRIBUTORY_EARNINGS_INPUT_METHOD_OPTIONS[method]) {
+    return {
+      hasValue: true,
+      error: 'Επιλέξτε έγκυρο τρόπο εισαγωγής συντάξιμων αποδοχών.',
+      warnings: [],
+      requiresContributoryYearlyStep: false,
+    };
+  }
+
+  if (method === 'average_monthly') {
+    return analyzeAverageMonthlyPensionableEarnings({
+      averageMonthlyPensionableEarningsInput,
+      method,
+    });
+  }
+
+  return analyzeYearlyEarnings({
+    currentFormStep,
+    yearlyEarningsRows,
+    method,
+  });
+}
+
+function analyzeAverageMonthlyPensionableEarnings({
+  averageMonthlyPensionableEarningsInput,
+  method,
+}) {
+  const trimmedValue = String(averageMonthlyPensionableEarningsInput || '').trim();
+
+  if (!trimmedValue) {
+    return {
+      hasValue: false,
+      error: null,
+      warnings: [],
+      requiresContributoryYearlyStep: false,
+      contributoryEarningsInputMethod: method,
+      contributoryEarningsInputMethodLabel:
+        CONTRIBUTORY_EARNINGS_INPUT_METHOD_OPTIONS[method].label,
+      averageMonthlyPensionableEarnings: null,
+      yearsData: [],
+      contributoryPensionData: {
+        earningsInputMethod: method,
+      },
+    };
+  }
+
+  const amountResult = parseNonNegativeDecimal(trimmedValue);
+
+  if (!amountResult.isValid) {
+    return {
+      hasValue: true,
+      error: 'Ο μέσος μηνιαίος συντάξιμος μισθός πρέπει να είναι αριθμός.',
+      warnings: [],
+      requiresContributoryYearlyStep: false,
+    };
+  }
+
+  if (amountResult.value <= 0) {
+    return {
+      hasValue: true,
+      error: 'Ο μέσος μηνιαίος συντάξιμος μισθός πρέπει να είναι μεγαλύτερος από 0.',
+      warnings: [],
+      requiresContributoryYearlyStep: false,
+    };
+  }
+
+  const amount = roundToDecimals(amountResult.value, 2);
+
+  return {
+    hasValue: true,
+    error: null,
+    warnings: [],
+    requiresContributoryYearlyStep: false,
+    contributoryEarningsInputMethod: method,
+    contributoryEarningsInputMethodLabel:
+      CONTRIBUTORY_EARNINGS_INPUT_METHOD_OPTIONS[method].label,
+    averageMonthlyPensionableEarnings: amount,
+    yearsData: [],
+    contributoryPensionData: {
+      earningsInputMethod: method,
+      averageMonthlyPensionableEarnings: amount,
+    },
+  };
+}
+
+function analyzeYearlyEarnings({
+  currentFormStep,
+  yearlyEarningsRows,
+  method,
+}) {
+  if (currentFormStep !== 'contributory_yearly') {
+    return {
+      hasValue: true,
+      error: null,
+      warnings: [
+        'Η αναλυτική εισαγωγή αποδοχών θα συμπληρωθεί στο επόμενο βήμα.',
+      ],
+      requiresContributoryYearlyStep: true,
+      contributoryEarningsInputMethod: method,
+      contributoryEarningsInputMethodLabel:
+        CONTRIBUTORY_EARNINGS_INPUT_METHOD_OPTIONS[method].label,
+      averageMonthlyPensionableEarnings: null,
+      yearsData: [],
+      contributoryPensionData: {
+        earningsInputMethod: method,
+      },
+    };
+  }
+
+  const normalizedRows = normalizeYearlyEarningsRows(yearlyEarningsRows);
+
+  if (normalizedRows.error) {
+    return {
+      hasValue: true,
+      error: normalizedRows.error,
+      warnings: [],
+      requiresContributoryYearlyStep: true,
+    };
+  }
+
+  if (normalizedRows.yearsData.length === 0) {
+    return {
+      hasValue: false,
+      error: null,
+      warnings: [],
+      requiresContributoryYearlyStep: true,
+      contributoryEarningsInputMethod: method,
+      contributoryEarningsInputMethodLabel:
+        CONTRIBUTORY_EARNINGS_INPUT_METHOD_OPTIONS[method].label,
+      averageMonthlyPensionableEarnings: null,
+      yearsData: [],
+      contributoryPensionData: {
+        earningsInputMethod: method,
+      },
+    };
+  }
+
+  return {
+    hasValue: true,
+    error: null,
+    warnings: [],
+    requiresContributoryYearlyStep: true,
+    contributoryEarningsInputMethod: method,
+    contributoryEarningsInputMethodLabel:
+      CONTRIBUTORY_EARNINGS_INPUT_METHOD_OPTIONS[method].label,
+    averageMonthlyPensionableEarnings: null,
+    yearsData: normalizedRows.yearsData,
+    contributoryPensionData: {
+      earningsInputMethod: method,
+      yearsData: normalizedRows.yearsData,
+    },
+  };
+}
+
+function normalizeYearlyEarningsRows(rows) {
+  if (!Array.isArray(rows)) {
+    return {
+      error: 'Τα ετήσια στοιχεία αποδοχών δεν έχουν σωστή μορφή.',
+      yearsData: [],
+    };
+  }
+
+  const yearsData = [];
+
+  for (const row of rows) {
+    const yearText = String(row.year || '').trim();
+    const earningsText = String(row.annualEarnings || '').trim();
+    const daysText = String(row.insuranceDays || '').trim();
+
+    const hasAnyValue = Boolean(yearText || earningsText || daysText);
+    const hasUsefulValue = Boolean(earningsText || daysText);
+
+    if (!hasAnyValue || !hasUsefulValue) {
+      continue;
+    }
+
+    const yearResult = parseNonNegativeInteger(yearText);
+
+    if (!yearResult.isValid || yearResult.value < 2002) {
+      return {
+        error: 'Κάθε γραμμή αποδοχών πρέπει να έχει έγκυρο έτος από το 2002 και μετά.',
+        yearsData: [],
+      };
+    }
+
+    const earningsResult = parseNonNegativeDecimal(earningsText);
+
+    if (!earningsResult.isValid) {
+      return {
+        error: `Οι ετήσιες αποδοχές για το έτος ${yearText} πρέπει να είναι αριθμός.`,
+        yearsData: [],
+      };
+    }
+
+    if (earningsResult.value <= 0) {
+      return {
+        error: `Οι ετήσιες αποδοχές για το έτος ${yearText} πρέπει να είναι μεγαλύτερες από 0.`,
+        yearsData: [],
+      };
+    }
+
+    const daysResult = parseNonNegativeInteger(daysText);
+
+    if (!daysResult.isValid) {
+      return {
+        error: `Τα ένσημα / ημέρες για το έτος ${yearText} πρέπει να είναι ακέραιος αριθμός.`,
+        yearsData: [],
+      };
+    }
+
+    if (daysResult.value <= 0) {
+      return {
+        error: `Τα ένσημα / ημέρες για το έτος ${yearText} πρέπει να είναι περισσότερα από 0.`,
+        yearsData: [],
+      };
+    }
+
+    yearsData.push({
+      year: yearResult.value,
+      annualEarnings: roundToDecimals(earningsResult.value, 2),
+      insuranceDays: daysResult.value,
+    });
+  }
+
+  return {
+    error: null,
+    yearsData,
+  };
+}
 
 function parseNonNegativeInteger(value) {
   const text = String(value || '').trim();
@@ -896,8 +1187,6 @@ function roundToDecimals(value, decimals) {
   const factor = 10 ** decimals;
   return Math.round((Number(value || 0) + Number.EPSILON) * factor) / factor;
 }
-
-
 
 export {
   analyzePensionForm,

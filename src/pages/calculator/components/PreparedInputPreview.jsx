@@ -89,9 +89,36 @@ function PreparedInputPreview({ analysis }) {
           </p>
         )}
 
+        {analysis.contributoryEarningsInputMethodLabel && (
+          <p>
+            <strong>Τρόπος εισαγωγής ανταποδοτικής:</strong>{' '}
+            {analysis.contributoryEarningsInputMethodLabel}
+          </p>
+        )}
+
+        {analysis.averageMonthlyPensionableEarnings !== null && (
+          <p>
+            <strong>Μέσος μηνιαίος συντάξιμος μισθός:</strong>{' '}
+            {analysis.averageMonthlyPensionableEarnings} €
+          </p>
+        )}
+
+        {analysis.yearlyEarningsRowsCount > 0 && (
+          <p>
+            <strong>Γραμμές ετήσιων αποδοχών που θα σταλούν:</strong>{' '}
+            {analysis.yearlyEarningsRowsCount}
+          </p>
+        )}
+
         {analysis.isSpecialDiseaseOldAgeCase && (
           <p style={{ color: '#8a5a00' }}>
             Η εφαρμογή θα στείλει ειδική ένδειξη ότι πρόκειται για γήρας λόγω ειδικών παθήσεων. Ο calculator αργότερα πρέπει να εφαρμόσει τον ειδικό κανόνα χωρίς μείωση 1/40 λόγω 40ετίας.
+          </p>
+        )}
+
+        {analysis.requiresContributoryYearlyStep && analysis.yearlyEarningsRowsCount === 0 && (
+          <p style={{ color: '#8a5a00' }}>
+            Έχει επιλεγεί αναλυτική εισαγωγή αποδοχών. Η επόμενη φόρμα θα ζητήσει αποδοχές και ένσημα ανά έτος.
           </p>
         )}
 
@@ -107,7 +134,7 @@ function PreparedInputPreview({ analysis }) {
 
         <p>
           <strong>Σημείωση:</strong>{' '}
-          Εδώ δεν εμφανίζονται πλέον συντελεστές ή ποσά εθνικής σύνταξης. Αυτά πρέπει να τα υπολογίσει ο calculator.
+          Εδώ δεν εμφανίζονται ποσά σύνταξης. Το prepare endpoint κάνει μόνο validation / normalization και δεν καλεί τον calculator.
         </p>
 
         <pre style={preStyle}>
@@ -117,6 +144,5 @@ function PreparedInputPreview({ analysis }) {
     </>
   );
 }
-
 
 export default PreparedInputPreview;
