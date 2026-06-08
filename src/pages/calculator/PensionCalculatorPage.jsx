@@ -13,22 +13,37 @@ const NATIONAL_PENSION_BASE_AMOUNTS = {
   },
 };
 
+const PENSION_TYPE_OPTIONS = {
+  old_age: {
+    value: 'old_age',
+    label: 'Γήρατος',
+  },
+  disability: {
+    value: 'disability',
+    label: 'Αναπηρίας',
+  },
+};
+
 function PensionCalculatorPage() {
   const [pensionStartDateInput, setPensionStartDateInput] = useState('');
+  const [pensionTypeInput, setPensionTypeInput] = useState('');
   const [backendResponse, setBackendResponse] = useState(null);
   const [backendError, setBackendError] = useState('');
   const [isSendingToBackend, setIsSendingToBackend] = useState(false);
 
   const analysis = useMemo(() => {
-    return analyzePensionStartDate(pensionStartDateInput);
-  }, [pensionStartDateInput]);
+    return analyzePensionForm({
+      pensionStartDateInput,
+      pensionTypeInput,
+    });
+  }, [pensionStartDateInput, pensionTypeInput]);
 
   async function handlePrepareCalculationInput() {
     setBackendResponse(null);
     setBackendError('');
 
-    if (!analysis.hasValue || analysis.error) {
-      setBackendError('Διορθώστε πρώτα την ημερομηνία έναρξης σύνταξης.');
+    if (!analysis.isReady || analysis.error) {
+      setBackendError('Συμπληρώστε σωστά την ημερομηνία έναρξης και το είδος σύνταξης.');
       return;
     }
 
@@ -92,13 +107,71 @@ function PensionCalculatorPage() {
           />
         </div>
 
+        <fieldset
+          style={{
+            marginBottom: '1rem',
+            padding: '1rem',
+            border: '1px solid #ddd',
+          }}
+        >
+          <legend>Είδος σύνταξης</legend>
+
+          <label
+            htmlFor="pensionTypeOldAge"
+            style={{
+              display: 'block',
+              marginTop: '0.5rem',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              id="pensionTypeOldAge"
+              type="radio"
+              name="pensionType"
+              value="old_age"
+              checked={pensionTypeInput === 'old_age'}
+              onChange={(event) => {
+                setPensionTypeInput(event.target.value);
+                setBackendResponse(null);
+                setBackendError('');
+              }}
+              style={{ marginRight: '0.5rem' }}
+            />
+            Γήρατος
+          </label>
+
+          <label
+            htmlFor="pensionTypeDisability"
+            style={{
+              display: 'block',
+              marginTop: '0.5rem',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              id="pensionTypeDisability"
+              type="radio"
+              name="pensionType"
+              value="disability"
+              checked={pensionTypeInput === 'disability'}
+              onChange={(event) => {
+                setPensionTypeInput(event.target.value);
+                setBackendResponse(null);
+                setBackendError('');
+              }}
+              style={{ marginRight: '0.5rem' }}
+            />
+            Αναπηρίας
+          </label>
+        </fieldset>
+
         <button
           type="submit"
-          disabled={!analysis.hasValue || Boolean(analysis.error) || isSendingToBackend}
+          disabled={!analysis.isReady || Boolean(analysis.error) || isSendingToBackend}
           style={{
             padding: '0.6rem 1rem',
             cursor:
-              !analysis.hasValue || analysis.error || isSendingToBackend
+              !analysis.isReady || analysis.error || isSendingToBackend
                 ? 'not-allowed'
                 : 'pointer',
           }}
@@ -115,7 +188,7 @@ function PensionCalculatorPage() {
         </p>
       )}
 
-      {!analysis.error && analysis.hasValue && (
+      {!analysis.error && analysis.isReady && (
         <>
           <section
             style={{
@@ -134,6 +207,11 @@ function PensionCalculatorPage() {
             <p>
               <strong>Έτος σύνταξης:</strong>{' '}
               {analysis.pensionYear}
+            </p>
+
+            <p>
+              <strong>Είδος σύνταξης:</strong>{' '}
+              {analysis.pensionTypeLabel}
             </p>
 
             <p>
@@ -166,6 +244,16 @@ function PensionCalculatorPage() {
             <p>
               <strong>Έτος σύνταξης:</strong>{' '}
               {analysis.calculationInput.generalInfoData.pensionYear}
+            </p>
+
+            <p>
+              <strong>Είδος σύνταξης:</strong>{' '}
+              {analysis.pensionTypeLabel}
+            </p>
+
+            <p>
+              <strong>Internal value:</strong>{' '}
+              {analysis.calculationInput.generalInfoData.pensionType}
             </p>
 
             <p>
@@ -238,6 +326,18 @@ function PensionCalculatorPage() {
             {backendResponse.preparedInput?.generalInfoData?.pensionYear}
           </p>
 
+          <p>
+            <strong>Είδος σύνταξης:</strong>{' '}
+            {getPensionTypeLabel(
+              backendResponse.preparedInput?.generalInfoData?.pensionType
+            )}
+          </p>
+
+          <p>
+            <strong>Internal value:</strong>{' '}
+            {backendResponse.preparedInput?.generalInfoData?.pensionType}
+          </p>
+
           {Array.isArray(backendResponse.missingForCalculation) &&
             backendResponse.missingForCalculation.length > 0 && (
               <>
@@ -254,6 +354,73 @@ function PensionCalculatorPage() {
       )}
     </main>
   );
+}
+
+function analyzePensionForm({
+  pensionStartDateInput,
+  pensionTypeInput,
+}) {
+  const dateAnalysis = analyzePensionStartDate(pensionStartDateInput);
+  const pensionTypeAnalysis = analyzePensionType(pensionTypeInput);
+
+  const hasAnyValue =
+    dateAnalysis.hasValue || pensionTypeAnalysis.hasValue;
+
+  if (dateAnalysis.error) {
+    return {
+      hasValue: hasAnyValue,
+      isReady: false,
+      error: dateAnalysis.error,
+    };
+  }
+
+  if (pensionTypeAnalysis.error) {
+    return {
+      hasValue: hasAnyValue,
+      isReady: false,
+      error: pensionTypeAnalysis.error,
+    };
+  }
+
+  const isReady =
+    dateAnalysis.hasValue &&
+    pensionTypeAnalysis.hasValue &&
+    !dateAnalysis.error &&
+    !pensionTypeAnalysis.error;
+
+  if (!isReady) {
+    return {
+      hasValue: hasAnyValue,
+      isReady: false,
+      error: null,
+    };
+  }
+
+  return {
+    ...dateAnalysis,
+
+    hasValue: true,
+    isReady: true,
+    error: null,
+
+    pensionType: pensionTypeAnalysis.pensionType,
+    pensionTypeLabel: pensionTypeAnalysis.pensionTypeLabel,
+
+    calculationInput: {
+      generalInfoData: {
+        pensionDate: dateAnalysis.pensionDate,
+        pensionYear: dateAnalysis.pensionYear,
+        pensionType: pensionTypeAnalysis.pensionType,
+      },
+
+      nationalPensionPreview: {
+        baseAmount: dateAnalysis.nationalPensionBaseAmount,
+        baseAmountSourceYear: dateAnalysis.baseAmountSourceYear,
+        baseAmountStatus: dateAnalysis.baseAmountStatus,
+        isBaseAmountTemporary: dateAnalysis.baseAmountStatus === 'temporary',
+      },
+    },
+  };
 }
 
 function analyzePensionStartDate(value) {
@@ -322,20 +489,31 @@ function analyzePensionStartDate(value) {
       baseAmountInfo.status === 'temporary'
         ? `Δεν υπάρχει ακόμα επίσημο ποσό Εθνικής σύνταξης για το ${year}. Χρησιμοποιήθηκε προσωρινά το ποσό του ${baseAmountInfo.sourceYear}.`
         : null,
+  };
+}
 
-    calculationInput: {
-      generalInfoData: {
-        pensionDate,
-        pensionYear: year,
-      },
+function analyzePensionType(value) {
+  const normalizedValue = String(value || '').trim();
 
-      nationalPensionPreview: {
-        baseAmount: baseAmountInfo.amount,
-        baseAmountSourceYear: baseAmountInfo.sourceYear,
-        baseAmountStatus: baseAmountInfo.status,
-        isBaseAmountTemporary: baseAmountInfo.status === 'temporary',
-      },
-    },
+  if (!normalizedValue) {
+    return {
+      hasValue: false,
+      error: null,
+    };
+  }
+
+  if (!PENSION_TYPE_OPTIONS[normalizedValue]) {
+    return {
+      hasValue: true,
+      error: 'Επιλέξτε έγκυρο είδος σύνταξης.',
+    };
+  }
+
+  return {
+    hasValue: true,
+    error: null,
+    pensionType: normalizedValue,
+    pensionTypeLabel: PENSION_TYPE_OPTIONS[normalizedValue].label,
   };
 }
 
@@ -436,6 +614,14 @@ function resolveNationalPensionBaseAmount(pensionYear) {
     sourceYear: null,
     status: 'missing',
   };
+}
+
+function getPensionTypeLabel(value) {
+  if (!value || !PENSION_TYPE_OPTIONS[value]) {
+    return '-';
+  }
+
+  return PENSION_TYPE_OPTIONS[value].label;
 }
 
 function formatEuro(value) {
