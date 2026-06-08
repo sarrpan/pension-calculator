@@ -2,6 +2,9 @@ import React, { useMemo, useState } from 'react';
 
 const PREPARE_PENSION_INPUT_URL = 'http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/preparePensionCalculationInput';
 
+const INSURANCE_DAYS_PER_YEAR = 300;
+const INSURANCE_DAYS_PER_MONTH = 25;
+
 const NATIONAL_PENSION_BASE_AMOUNTS = {
   2025: {
     amount: 436.4,
@@ -35,10 +38,28 @@ const PENSION_MODE_OPTIONS = {
   },
 };
 
+const INSURANCE_TIME_INPUT_METHOD_OPTIONS = {
+  insurance_days: {
+    value: 'insurance_days',
+    label: 'Με αριθμό ενσήμων / ημερών ασφάλισης',
+  },
+  years_months_days: {
+    value: 'years_months_days',
+    label: 'Με έτη, μήνες και ημέρες',
+  },
+};
+
 function PensionCalculatorPage() {
   const [pensionStartDateInput, setPensionStartDateInput] = useState('');
   const [pensionTypeInput, setPensionTypeInput] = useState('');
   const [pensionModeInput, setPensionModeInput] = useState('');
+
+  const [insuranceTimeInputMethod, setInsuranceTimeInputMethod] = useState('');
+  const [insuranceDaysInput, setInsuranceDaysInput] = useState('');
+  const [insuranceYearsInput, setInsuranceYearsInput] = useState('');
+  const [insuranceMonthsInput, setInsuranceMonthsInput] = useState('');
+  const [insuranceExtraDaysInput, setInsuranceExtraDaysInput] = useState('');
+
   const [backendResponse, setBackendResponse] = useState(null);
   const [backendError, setBackendError] = useState('');
   const [isSendingToBackend, setIsSendingToBackend] = useState(false);
@@ -48,8 +69,27 @@ function PensionCalculatorPage() {
       pensionStartDateInput,
       pensionTypeInput,
       pensionModeInput,
+      insuranceTimeInputMethod,
+      insuranceDaysInput,
+      insuranceYearsInput,
+      insuranceMonthsInput,
+      insuranceExtraDaysInput,
     });
-  }, [pensionStartDateInput, pensionTypeInput, pensionModeInput]);
+  }, [
+    pensionStartDateInput,
+    pensionTypeInput,
+    pensionModeInput,
+    insuranceTimeInputMethod,
+    insuranceDaysInput,
+    insuranceYearsInput,
+    insuranceMonthsInput,
+    insuranceExtraDaysInput,
+  ]);
+
+  function clearBackendResult() {
+    setBackendResponse(null);
+    setBackendError('');
+  }
 
   async function handlePrepareCalculationInput() {
     setBackendResponse(null);
@@ -57,7 +97,7 @@ function PensionCalculatorPage() {
 
     if (!analysis.isReady || analysis.error) {
       setBackendError(
-        'Συμπληρώστε σωστά την ημερομηνία έναρξης, το είδος σύνταξης και αν είναι πλήρης ή μειωμένη.'
+        'Συμπληρώστε σωστά την ημερομηνία έναρξης, το είδος σύνταξης, αν είναι πλήρης ή μειωμένη και τον χρόνο ασφάλισης.'
       );
       return;
     }
@@ -110,8 +150,7 @@ function PensionCalculatorPage() {
             value={pensionStartDateInput}
             onChange={(event) => {
               setPensionStartDateInput(event.target.value);
-              setBackendResponse(null);
-              setBackendError('');
+              clearBackendResult();
             }}
             placeholder="π.χ. 1/1/26 ή 01/01/2026"
             style={{
@@ -147,8 +186,7 @@ function PensionCalculatorPage() {
               checked={pensionTypeInput === 'old_age'}
               onChange={(event) => {
                 setPensionTypeInput(event.target.value);
-                setBackendResponse(null);
-                setBackendError('');
+                clearBackendResult();
               }}
               style={{ marginRight: '0.5rem' }}
             />
@@ -171,8 +209,7 @@ function PensionCalculatorPage() {
               checked={pensionTypeInput === 'disability'}
               onChange={(event) => {
                 setPensionTypeInput(event.target.value);
-                setBackendResponse(null);
-                setBackendError('');
+                clearBackendResult();
               }}
               style={{ marginRight: '0.5rem' }}
             />
@@ -205,8 +242,7 @@ function PensionCalculatorPage() {
               checked={pensionModeInput === 'full'}
               onChange={(event) => {
                 setPensionModeInput(event.target.value);
-                setBackendResponse(null);
-                setBackendError('');
+                clearBackendResult();
               }}
               style={{ marginRight: '0.5rem' }}
             />
@@ -229,13 +265,168 @@ function PensionCalculatorPage() {
               checked={pensionModeInput === 'reduced'}
               onChange={(event) => {
                 setPensionModeInput(event.target.value);
-                setBackendResponse(null);
-                setBackendError('');
+                clearBackendResult();
               }}
               style={{ marginRight: '0.5rem' }}
             />
             Μειωμένη
           </label>
+        </fieldset>
+
+        <fieldset
+          style={{
+            marginBottom: '1rem',
+            padding: '1rem',
+            border: '1px solid #ddd',
+          }}
+        >
+          <legend>Χρόνος ασφάλισης</legend>
+
+          <p style={{ marginTop: 0 }}>
+            Πώς θέλετε να δηλώσετε τον χρόνο ασφάλισης;
+          </p>
+
+          <label
+            htmlFor="insuranceTimeMethodDays"
+            style={{
+              display: 'block',
+              marginTop: '0.5rem',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              id="insuranceTimeMethodDays"
+              type="radio"
+              name="insuranceTimeInputMethod"
+              value="insurance_days"
+              checked={insuranceTimeInputMethod === 'insurance_days'}
+              onChange={(event) => {
+                setInsuranceTimeInputMethod(event.target.value);
+                clearBackendResult();
+              }}
+              style={{ marginRight: '0.5rem' }}
+            />
+            Με αριθμό ενσήμων / ημερών ασφάλισης
+          </label>
+
+          <label
+            htmlFor="insuranceTimeMethodYearsMonthsDays"
+            style={{
+              display: 'block',
+              marginTop: '0.5rem',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              id="insuranceTimeMethodYearsMonthsDays"
+              type="radio"
+              name="insuranceTimeInputMethod"
+              value="years_months_days"
+              checked={insuranceTimeInputMethod === 'years_months_days'}
+              onChange={(event) => {
+                setInsuranceTimeInputMethod(event.target.value);
+                clearBackendResult();
+              }}
+              style={{ marginRight: '0.5rem' }}
+            />
+            Με έτη, μήνες και ημέρες
+          </label>
+
+          {insuranceTimeInputMethod === 'insurance_days' && (
+            <div style={{ marginTop: '1rem' }}>
+              <label htmlFor="insuranceDays">
+                Αριθμός ενσήμων / ημερών ασφάλισης
+              </label>
+
+              <br />
+
+              <input
+                id="insuranceDays"
+                type="text"
+                value={insuranceDaysInput}
+                onChange={(event) => {
+                  setInsuranceDaysInput(event.target.value);
+                  clearBackendResult();
+                }}
+                placeholder="π.χ. 10225"
+                style={{
+                  marginTop: '0.5rem',
+                  padding: '0.5rem',
+                  width: '160px',
+                }}
+              />
+            </div>
+          )}
+
+          {insuranceTimeInputMethod === 'years_months_days' && (
+            <div style={{ marginTop: '1rem' }}>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <label htmlFor="insuranceYears">Έτη</label>
+
+                <br />
+
+                <input
+                  id="insuranceYears"
+                  type="text"
+                  value={insuranceYearsInput}
+                  onChange={(event) => {
+                    setInsuranceYearsInput(event.target.value);
+                    clearBackendResult();
+                  }}
+                  placeholder="π.χ. 35"
+                  style={{
+                    marginTop: '0.5rem',
+                    padding: '0.5rem',
+                    width: '100px',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '0.75rem' }}>
+                <label htmlFor="insuranceMonths">Μήνες</label>
+
+                <br />
+
+                <input
+                  id="insuranceMonths"
+                  type="text"
+                  value={insuranceMonthsInput}
+                  onChange={(event) => {
+                    setInsuranceMonthsInput(event.target.value);
+                    clearBackendResult();
+                  }}
+                  placeholder="0-11"
+                  style={{
+                    marginTop: '0.5rem',
+                    padding: '0.5rem',
+                    width: '100px',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="insuranceExtraDays">Ημέρες</label>
+
+                <br />
+
+                <input
+                  id="insuranceExtraDays"
+                  type="text"
+                  value={insuranceExtraDaysInput}
+                  onChange={(event) => {
+                    setInsuranceExtraDaysInput(event.target.value);
+                    clearBackendResult();
+                  }}
+                  placeholder="0-24"
+                  style={{
+                    marginTop: '0.5rem',
+                    padding: '0.5rem',
+                    width: '100px',
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </fieldset>
 
         <button
@@ -293,6 +484,26 @@ function PensionCalculatorPage() {
             </p>
 
             <p>
+              <strong>Τρόπος εισαγωγής χρόνου ασφάλισης:</strong>{' '}
+              {analysis.insuranceTimeInputMethodLabel}
+            </p>
+
+            <p>
+              <strong>Χρόνος ασφάλισης:</strong>{' '}
+              {analysis.insuranceTimeDisplay}
+            </p>
+
+            <p>
+              <strong>Σύνολο ημερών ασφάλισης:</strong>{' '}
+              {analysis.totalInsuranceDaysEquivalent}
+            </p>
+
+            <p>
+              <strong>Σύνολο σε δεκαδικά έτη:</strong>{' '}
+              {analysis.totalInsuranceDecimalYears}
+            </p>
+
+            <p>
               <strong>Ποσό Εθνικής που θα χρησιμοποιηθεί:</strong>{' '}
               {formatEuro(analysis.nationalPensionBaseAmount)}
             </p>
@@ -342,6 +553,36 @@ function PensionCalculatorPage() {
             <p>
               <strong>Internal value πλήρους/μειωμένης:</strong>{' '}
               {analysis.calculationInput.generalInfoData.pensionMode}
+            </p>
+
+            <p>
+              <strong>Internal τρόπος χρόνου ασφάλισης:</strong>{' '}
+              {analysis.calculationInput.generalInfoData.insuranceTimeInputMethod}
+            </p>
+
+            <p>
+              <strong>Έτη ασφάλισης:</strong>{' '}
+              {analysis.calculationInput.generalInfoData.totalInsuranceYears}
+            </p>
+
+            <p>
+              <strong>Μήνες ασφάλισης:</strong>{' '}
+              {analysis.calculationInput.generalInfoData.totalInsuranceMonths}
+            </p>
+
+            <p>
+              <strong>Ημέρες ασφάλισης:</strong>{' '}
+              {analysis.calculationInput.generalInfoData.totalInsuranceDays}
+            </p>
+
+            <p>
+              <strong>Σύνολο ημερών ασφάλισης:</strong>{' '}
+              {analysis.calculationInput.generalInfoData.totalInsuranceDaysEquivalent}
+            </p>
+
+            <p>
+              <strong>Σύνολο δεκαδικών ετών:</strong>{' '}
+              {analysis.calculationInput.generalInfoData.totalInsuranceDecimalYears}
             </p>
 
             <p>
@@ -438,6 +679,38 @@ function PensionCalculatorPage() {
             {backendResponse.preparedInput?.generalInfoData?.pensionMode}
           </p>
 
+          <p>
+            <strong>Τρόπος εισαγωγής χρόνου ασφάλισης:</strong>{' '}
+            {getInsuranceTimeInputMethodLabel(
+              backendResponse.preparedInput?.generalInfoData?.insuranceTimeInputMethod
+            )}
+          </p>
+
+          <p>
+            <strong>Έτη ασφάλισης:</strong>{' '}
+            {backendResponse.preparedInput?.generalInfoData?.totalInsuranceYears}
+          </p>
+
+          <p>
+            <strong>Μήνες ασφάλισης:</strong>{' '}
+            {backendResponse.preparedInput?.generalInfoData?.totalInsuranceMonths}
+          </p>
+
+          <p>
+            <strong>Ημέρες ασφάλισης:</strong>{' '}
+            {backendResponse.preparedInput?.generalInfoData?.totalInsuranceDays}
+          </p>
+
+          <p>
+            <strong>Σύνολο ημερών ασφάλισης:</strong>{' '}
+            {backendResponse.preparedInput?.generalInfoData?.totalInsuranceDaysEquivalent}
+          </p>
+
+          <p>
+            <strong>Σύνολο δεκαδικών ετών:</strong>{' '}
+            {backendResponse.preparedInput?.generalInfoData?.totalInsuranceDecimalYears}
+          </p>
+
           {Array.isArray(backendResponse.missingForCalculation) &&
             backendResponse.missingForCalculation.length > 0 && (
               <>
@@ -460,15 +733,28 @@ function analyzePensionForm({
   pensionStartDateInput,
   pensionTypeInput,
   pensionModeInput,
+  insuranceTimeInputMethod,
+  insuranceDaysInput,
+  insuranceYearsInput,
+  insuranceMonthsInput,
+  insuranceExtraDaysInput,
 }) {
   const dateAnalysis = analyzePensionStartDate(pensionStartDateInput);
   const pensionTypeAnalysis = analyzePensionType(pensionTypeInput);
   const pensionModeAnalysis = analyzePensionMode(pensionModeInput);
+  const insuranceTimeAnalysis = analyzeInsuranceTime({
+    insuranceTimeInputMethod,
+    insuranceDaysInput,
+    insuranceYearsInput,
+    insuranceMonthsInput,
+    insuranceExtraDaysInput,
+  });
 
   const hasAnyValue =
     dateAnalysis.hasValue ||
     pensionTypeAnalysis.hasValue ||
-    pensionModeAnalysis.hasValue;
+    pensionModeAnalysis.hasValue ||
+    insuranceTimeAnalysis.hasValue;
 
   if (dateAnalysis.error) {
     return {
@@ -494,13 +780,23 @@ function analyzePensionForm({
     };
   }
 
+  if (insuranceTimeAnalysis.error) {
+    return {
+      hasValue: hasAnyValue,
+      isReady: false,
+      error: insuranceTimeAnalysis.error,
+    };
+  }
+
   const isReady =
     dateAnalysis.hasValue &&
     pensionTypeAnalysis.hasValue &&
     pensionModeAnalysis.hasValue &&
+    insuranceTimeAnalysis.hasValue &&
     !dateAnalysis.error &&
     !pensionTypeAnalysis.error &&
-    !pensionModeAnalysis.error;
+    !pensionModeAnalysis.error &&
+    !insuranceTimeAnalysis.error;
 
   if (!isReady) {
     return {
@@ -523,12 +819,34 @@ function analyzePensionForm({
     pensionMode: pensionModeAnalysis.pensionMode,
     pensionModeLabel: pensionModeAnalysis.pensionModeLabel,
 
+    insuranceTimeInputMethod: insuranceTimeAnalysis.insuranceTimeInputMethod,
+    insuranceTimeInputMethodLabel:
+      insuranceTimeAnalysis.insuranceTimeInputMethodLabel,
+    insuranceTimeDisplay: insuranceTimeAnalysis.insuranceTimeDisplay,
+    totalInsuranceYears: insuranceTimeAnalysis.totalInsuranceYears,
+    totalInsuranceMonths: insuranceTimeAnalysis.totalInsuranceMonths,
+    totalInsuranceDays: insuranceTimeAnalysis.totalInsuranceDays,
+    totalInsuranceDaysEquivalent:
+      insuranceTimeAnalysis.totalInsuranceDaysEquivalent,
+    totalInsuranceDecimalYears:
+      insuranceTimeAnalysis.totalInsuranceDecimalYears,
+
     calculationInput: {
       generalInfoData: {
         pensionDate: dateAnalysis.pensionDate,
         pensionYear: dateAnalysis.pensionYear,
         pensionType: pensionTypeAnalysis.pensionType,
         pensionMode: pensionModeAnalysis.pensionMode,
+
+        insuranceTimeInputMethod:
+          insuranceTimeAnalysis.insuranceTimeInputMethod,
+        totalInsuranceYears: insuranceTimeAnalysis.totalInsuranceYears,
+        totalInsuranceMonths: insuranceTimeAnalysis.totalInsuranceMonths,
+        totalInsuranceDays: insuranceTimeAnalysis.totalInsuranceDays,
+        totalInsuranceDaysEquivalent:
+          insuranceTimeAnalysis.totalInsuranceDaysEquivalent,
+        totalInsuranceDecimalYears:
+          insuranceTimeAnalysis.totalInsuranceDecimalYears,
       },
 
       nationalPensionPreview: {
@@ -660,6 +978,241 @@ function analyzePensionMode(value) {
   };
 }
 
+function analyzeInsuranceTime({
+  insuranceTimeInputMethod,
+  insuranceDaysInput,
+  insuranceYearsInput,
+  insuranceMonthsInput,
+  insuranceExtraDaysInput,
+}) {
+  const normalizedMethod = String(insuranceTimeInputMethod || '').trim();
+
+  if (!normalizedMethod) {
+    return {
+      hasValue: false,
+      error: null,
+    };
+  }
+
+  if (!INSURANCE_TIME_INPUT_METHOD_OPTIONS[normalizedMethod]) {
+    return {
+      hasValue: true,
+      error: 'Επιλέξτε έγκυρο τρόπο εισαγωγής χρόνου ασφάλισης.',
+    };
+  }
+
+  if (normalizedMethod === 'insurance_days') {
+    return analyzeInsuranceDaysInput({
+      insuranceDaysInput,
+      insuranceTimeInputMethod: normalizedMethod,
+    });
+  }
+
+  return analyzeYearsMonthsDaysInsuranceInput({
+    insuranceYearsInput,
+    insuranceMonthsInput,
+    insuranceExtraDaysInput,
+    insuranceTimeInputMethod: normalizedMethod,
+  });
+}
+
+function analyzeInsuranceDaysInput({
+  insuranceDaysInput,
+  insuranceTimeInputMethod,
+}) {
+  const trimmedDays = String(insuranceDaysInput || '').trim();
+
+  if (!trimmedDays) {
+    return {
+      hasValue: false,
+      error: null,
+    };
+  }
+
+  const daysResult = parseNonNegativeInteger(trimmedDays);
+
+  if (!daysResult.isValid) {
+    return {
+      hasValue: true,
+      error: 'Τα ένσημα / ημέρες ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+    };
+  }
+
+  if (daysResult.value <= 0) {
+    return {
+      hasValue: true,
+      error: 'Τα ένσημα / ημέρες ασφάλισης πρέπει να είναι περισσότερα από 0.',
+    };
+  }
+
+  const displayTime = convertInsuranceDaysToDisplayTime(daysResult.value);
+  const decimalYears = roundToDecimals(
+    daysResult.value / INSURANCE_DAYS_PER_YEAR,
+    6
+  );
+
+  return {
+    hasValue: true,
+    error: null,
+
+    insuranceTimeInputMethod,
+    insuranceTimeInputMethodLabel:
+      INSURANCE_TIME_INPUT_METHOD_OPTIONS[insuranceTimeInputMethod].label,
+
+    totalInsuranceYears: 0,
+    totalInsuranceMonths: 0,
+    totalInsuranceDays: daysResult.value,
+    totalInsuranceDaysEquivalent: daysResult.value,
+    totalInsuranceDecimalYears: decimalYears,
+
+    insuranceTimeDisplay:
+      `${daysResult.value} ένσημα / ημέρες ασφάλισης ` +
+      `(${displayTime.years} έτη, ${displayTime.months} μήνες, ${displayTime.days} ημέρες)`,
+  };
+}
+
+function analyzeYearsMonthsDaysInsuranceInput({
+  insuranceYearsInput,
+  insuranceMonthsInput,
+  insuranceExtraDaysInput,
+  insuranceTimeInputMethod,
+}) {
+  const yearsText = String(insuranceYearsInput || '').trim();
+  const monthsText = String(insuranceMonthsInput || '').trim();
+  const daysText = String(insuranceExtraDaysInput || '').trim();
+
+  const hasAnyTimeValue = Boolean(yearsText || monthsText || daysText);
+
+  if (!hasAnyTimeValue) {
+    return {
+      hasValue: false,
+      error: null,
+    };
+  }
+
+  const yearsResult = parseNonNegativeIntegerOrEmpty(yearsText);
+  const monthsResult = parseNonNegativeIntegerOrEmpty(monthsText);
+  const daysResult = parseNonNegativeIntegerOrEmpty(daysText);
+
+  if (!yearsResult.isValid) {
+    return {
+      hasValue: true,
+      error: 'Τα έτη ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+    };
+  }
+
+  if (!monthsResult.isValid) {
+    return {
+      hasValue: true,
+      error: 'Οι μήνες ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+    };
+  }
+
+  if (!daysResult.isValid) {
+    return {
+      hasValue: true,
+      error: 'Οι ημέρες ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+    };
+  }
+
+  const years = yearsResult.value;
+  const months = monthsResult.value;
+  const days = daysResult.value;
+
+  if (months > 11) {
+    return {
+      hasValue: true,
+      error: 'Οι μήνες ασφάλισης πρέπει να είναι από 0 έως 11.',
+    };
+  }
+
+  if (days > 24) {
+    return {
+      hasValue: true,
+      error: 'Οι ημέρες ασφάλισης πρέπει να είναι από 0 έως 24.',
+    };
+  }
+
+  if (years === 0 && months === 0 && days === 0) {
+    return {
+      hasValue: true,
+      error: 'Ο χρόνος ασφάλισης πρέπει να είναι μεγαλύτερος από 0.',
+    };
+  }
+
+  const totalDays =
+    years * INSURANCE_DAYS_PER_YEAR +
+    months * INSURANCE_DAYS_PER_MONTH +
+    days;
+
+  const decimalYears = roundToDecimals(totalDays / INSURANCE_DAYS_PER_YEAR, 6);
+
+  return {
+    hasValue: true,
+    error: null,
+
+    insuranceTimeInputMethod,
+    insuranceTimeInputMethodLabel:
+      INSURANCE_TIME_INPUT_METHOD_OPTIONS[insuranceTimeInputMethod].label,
+
+    totalInsuranceYears: years,
+    totalInsuranceMonths: months,
+    totalInsuranceDays: days,
+    totalInsuranceDaysEquivalent: totalDays,
+    totalInsuranceDecimalYears: decimalYears,
+
+    insuranceTimeDisplay: `${years} έτη, ${months} μήνες, ${days} ημέρες`,
+  };
+}
+
+function parseNonNegativeInteger(value) {
+  const text = String(value || '').trim();
+
+  if (!/^\d+$/.test(text)) {
+    return {
+      isValid: false,
+      value: 0,
+    };
+  }
+
+  return {
+    isValid: true,
+    value: Number(text),
+  };
+}
+
+function parseNonNegativeIntegerOrEmpty(value) {
+  const text = String(value || '').trim();
+
+  if (!text) {
+    return {
+      isValid: true,
+      value: 0,
+    };
+  }
+
+  return parseNonNegativeInteger(text);
+}
+
+function convertInsuranceDaysToDisplayTime(totalDays) {
+  const safeTotalDays = Number(totalDays || 0);
+
+  const years = Math.floor(safeTotalDays / INSURANCE_DAYS_PER_YEAR);
+  const remainingDaysAfterYears = safeTotalDays % INSURANCE_DAYS_PER_YEAR;
+
+  const months = Math.floor(
+    remainingDaysAfterYears / INSURANCE_DAYS_PER_MONTH
+  );
+
+  const days = remainingDaysAfterYears % INSURANCE_DAYS_PER_MONTH;
+
+  return {
+    years,
+    months,
+    days,
+  };
+}
+
 function parseGreekDateInput(value) {
   const normalizedValue = String(value || '').trim();
 
@@ -773,6 +1326,19 @@ function getPensionModeLabel(value) {
   }
 
   return PENSION_MODE_OPTIONS[value].label;
+}
+
+function getInsuranceTimeInputMethodLabel(value) {
+  if (!value || !INSURANCE_TIME_INPUT_METHOD_OPTIONS[value]) {
+    return '-';
+  }
+
+  return INSURANCE_TIME_INPUT_METHOD_OPTIONS[value].label;
+}
+
+function roundToDecimals(value, decimals) {
+  const factor = 10 ** decimals;
+  return Math.round((Number(value || 0) + Number.EPSILON) * factor) / factor;
 }
 
 function formatEuro(value) {
