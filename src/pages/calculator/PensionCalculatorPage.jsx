@@ -4,20 +4,8 @@ const PREPARE_PENSION_INPUT_URL = 'http://127.0.0.1:5001/pension-calculator-f8e6
 
 const INSURANCE_DAYS_PER_YEAR = 300;
 const INSURANCE_DAYS_PER_MONTH = 25;
-
-const MIN_RESIDENCE_YEARS_FOR_NATIONAL_PENSION = 15;
-const FULL_RESIDENCE_YEARS_FOR_NATIONAL_PENSION = 40;
-
-const NATIONAL_PENSION_BASE_AMOUNTS = {
-  2025: {
-    amount: 436.4,
-    status: 'official',
-  },
-  2026: {
-    amount: 446.87,
-    status: 'official',
-  },
-};
+const MIN_RESIDENCE_YEARS_FOR_OLD_AGE_NATIONAL_PENSION = 15;
+const MAX_EARLY_REDUCTION_MONTHS = 60;
 
 const PENSION_TYPE_OPTIONS = {
   old_age: {
@@ -30,6 +18,17 @@ const PENSION_TYPE_OPTIONS = {
   },
 };
 
+const OLD_AGE_CATEGORY_OPTIONS = {
+  standard: {
+    value: 'standard',
+    label: 'Κανονική σύνταξη γήρατος',
+  },
+  special_disease: {
+    value: 'special_disease',
+    label: 'Γήρατος λόγω ειδικών παθήσεων',
+  },
+};
+
 const PENSION_MODE_OPTIONS = {
   full: {
     value: 'full',
@@ -38,6 +37,24 @@ const PENSION_MODE_OPTIONS = {
   reduced: {
     value: 'reduced',
     label: 'Μειωμένη',
+  },
+};
+
+const DISABILITY_CATEGORY_OPTIONS = {
+  eighty_plus: {
+    value: 'eighty_plus',
+    label: '80% και άνω',
+    disabilityPercentage: 80,
+  },
+  sixty_seven_to_seventy_nine: {
+    value: 'sixty_seven_to_seventy_nine',
+    label: '67% έως 79,99%',
+    disabilityPercentage: 67,
+  },
+  fifty_to_sixty_six: {
+    value: 'fifty_to_sixty_six',
+    label: '50% έως 66,99%',
+    disabilityPercentage: 50,
   },
 };
 
@@ -55,7 +72,12 @@ const INSURANCE_TIME_INPUT_METHOD_OPTIONS = {
 function PensionCalculatorPage() {
   const [pensionStartDateInput, setPensionStartDateInput] = useState('');
   const [pensionTypeInput, setPensionTypeInput] = useState('');
+
+  const [oldAgeCategoryInput, setOldAgeCategoryInput] = useState('standard');
   const [pensionModeInput, setPensionModeInput] = useState('');
+  const [earlyReductionMonthsInput, setEarlyReductionMonthsInput] = useState('');
+
+  const [disabilityCategoryInput, setDisabilityCategoryInput] = useState('');
 
   const [insuranceTimeInputMethod, setInsuranceTimeInputMethod] = useState('');
   const [insuranceDaysInput, setInsuranceDaysInput] = useState('');
@@ -73,7 +95,10 @@ function PensionCalculatorPage() {
     return analyzePensionForm({
       pensionStartDateInput,
       pensionTypeInput,
+      oldAgeCategoryInput,
       pensionModeInput,
+      earlyReductionMonthsInput,
+      disabilityCategoryInput,
       insuranceTimeInputMethod,
       insuranceDaysInput,
       insuranceYearsInput,
@@ -84,7 +109,10 @@ function PensionCalculatorPage() {
   }, [
     pensionStartDateInput,
     pensionTypeInput,
+    oldAgeCategoryInput,
     pensionModeInput,
+    earlyReductionMonthsInput,
+    disabilityCategoryInput,
     insuranceTimeInputMethod,
     insuranceDaysInput,
     insuranceYearsInput,
@@ -98,13 +126,49 @@ function PensionCalculatorPage() {
     setBackendError('');
   }
 
+  function handlePensionTypeChange(value) {
+    setPensionTypeInput(value);
+    clearBackendResult();
+
+    if (value === 'old_age') {
+      setDisabilityCategoryInput('');
+      return;
+    }
+
+    if (value === 'disability') {
+      setPensionModeInput('');
+      setEarlyReductionMonthsInput('');
+      setResidenceYearsInput('');
+      setOldAgeCategoryInput('standard');
+    }
+  }
+
+  function handleOldAgeCategoryChange(value) {
+    setOldAgeCategoryInput(value);
+    clearBackendResult();
+
+    if (value === 'special_disease') {
+      setPensionModeInput('');
+      setEarlyReductionMonthsInput('');
+    }
+  }
+
+  function handlePensionModeChange(value) {
+    setPensionModeInput(value);
+    clearBackendResult();
+
+    if (value !== 'reduced') {
+      setEarlyReductionMonthsInput('');
+    }
+  }
+
   async function handlePrepareCalculationInput() {
     setBackendResponse(null);
     setBackendError('');
 
     if (!analysis.isReady || analysis.error) {
       setBackendError(
-        'Συμπληρώστε σωστά την ημερομηνία έναρξης, το είδος σύνταξης, αν είναι πλήρης ή μειωμένη, τον χρόνο ασφάλισης και τα έτη νόμιμης διαμονής.'
+        'Συμπληρώστε σωστά τα πεδία της εθνικής σύνταξης πριν την προετοιμασία.'
       );
       return;
     }
@@ -168,176 +232,178 @@ function PensionCalculatorPage() {
           />
         </div>
 
-        <fieldset
-          style={{
-            marginBottom: '1rem',
-            padding: '1rem',
-            border: '1px solid #ddd',
-          }}
-        >
+        <fieldset style={fieldsetStyle}>
           <legend>Είδος σύνταξης</legend>
 
-          <label
-            htmlFor="pensionTypeOldAge"
-            style={{
-              display: 'block',
-              marginTop: '0.5rem',
-              cursor: 'pointer',
-            }}
-          >
-            <input
-              id="pensionTypeOldAge"
-              type="radio"
-              name="pensionType"
-              value="old_age"
-              checked={pensionTypeInput === 'old_age'}
-              onChange={(event) => {
-                setPensionTypeInput(event.target.value);
-                clearBackendResult();
-              }}
-              style={{ marginRight: '0.5rem' }}
-            />
-            Γήρατος
-          </label>
+          <RadioOption
+            id="pensionTypeOldAge"
+            name="pensionType"
+            value="old_age"
+            checked={pensionTypeInput === 'old_age'}
+            onChange={handlePensionTypeChange}
+            label="Γήρατος"
+          />
 
-          <label
-            htmlFor="pensionTypeDisability"
-            style={{
-              display: 'block',
-              marginTop: '0.5rem',
-              cursor: 'pointer',
-            }}
-          >
-            <input
-              id="pensionTypeDisability"
-              type="radio"
-              name="pensionType"
-              value="disability"
-              checked={pensionTypeInput === 'disability'}
-              onChange={(event) => {
-                setPensionTypeInput(event.target.value);
-                clearBackendResult();
-              }}
-              style={{ marginRight: '0.5rem' }}
-            />
-            Αναπηρίας
-          </label>
+          <RadioOption
+            id="pensionTypeDisability"
+            name="pensionType"
+            value="disability"
+            checked={pensionTypeInput === 'disability'}
+            onChange={handlePensionTypeChange}
+            label="Αναπηρίας"
+          />
         </fieldset>
 
-        <fieldset
-          style={{
-            marginBottom: '1rem',
-            padding: '1rem',
-            border: '1px solid #ddd',
-          }}
-        >
-          <legend>Πλήρης ή μειωμένη σύνταξη</legend>
+        {pensionTypeInput === 'old_age' && (
+          <fieldset style={fieldsetStyle}>
+            <legend>Κατηγορία σύνταξης γήρατος</legend>
 
-          <label
-            htmlFor="pensionModeFull"
-            style={{
-              display: 'block',
-              marginTop: '0.5rem',
-              cursor: 'pointer',
-            }}
-          >
-            <input
+            <RadioOption
+              id="oldAgeCategoryStandard"
+              name="oldAgeCategory"
+              value="standard"
+              checked={oldAgeCategoryInput === 'standard'}
+              onChange={handleOldAgeCategoryChange}
+              label="Κανονική σύνταξη γήρατος"
+            />
+
+            <RadioOption
+              id="oldAgeCategorySpecialDisease"
+              name="oldAgeCategory"
+              value="special_disease"
+              checked={oldAgeCategoryInput === 'special_disease'}
+              onChange={handleOldAgeCategoryChange}
+              label="Γήρατος λόγω ειδικών παθήσεων"
+            />
+          </fieldset>
+        )}
+
+        {pensionTypeInput === 'old_age' && oldAgeCategoryInput === 'standard' && (
+          <fieldset style={fieldsetStyle}>
+            <legend>Πλήρης ή μειωμένη σύνταξη γήρατος</legend>
+
+            <RadioOption
               id="pensionModeFull"
-              type="radio"
               name="pensionMode"
               value="full"
               checked={pensionModeInput === 'full'}
-              onChange={(event) => {
-                setPensionModeInput(event.target.value);
-                clearBackendResult();
-              }}
-              style={{ marginRight: '0.5rem' }}
+              onChange={handlePensionModeChange}
+              label="Πλήρης"
             />
-            Πλήρης
-          </label>
 
-          <label
-            htmlFor="pensionModeReduced"
-            style={{
-              display: 'block',
-              marginTop: '0.5rem',
-              cursor: 'pointer',
-            }}
-          >
-            <input
+            <RadioOption
               id="pensionModeReduced"
-              type="radio"
               name="pensionMode"
               value="reduced"
               checked={pensionModeInput === 'reduced'}
-              onChange={(event) => {
-                setPensionModeInput(event.target.value);
+              onChange={handlePensionModeChange}
+              label="Μειωμένη"
+            />
+          </fieldset>
+        )}
+
+        {pensionTypeInput === 'old_age' &&
+          oldAgeCategoryInput === 'standard' &&
+          pensionModeInput === 'reduced' && (
+            <fieldset style={fieldsetStyle}>
+              <legend>Μήνες πρόωρης μείωσης</legend>
+
+              <label htmlFor="earlyReductionMonths">
+                Μήνες πρόωρης μείωσης από το όριο πλήρους σύνταξης
+              </label>
+
+              <br />
+
+              <input
+                id="earlyReductionMonths"
+                type="text"
+                value={earlyReductionMonthsInput}
+                onChange={(event) => {
+                  setEarlyReductionMonthsInput(event.target.value);
+                  clearBackendResult();
+                }}
+                placeholder="0 έως 60"
+                style={{
+                  marginTop: '0.5rem',
+                  padding: '0.5rem',
+                  width: '120px',
+                }}
+              />
+            </fieldset>
+          )}
+
+        {pensionTypeInput === 'disability' && (
+          <fieldset style={fieldsetStyle}>
+            <legend>Κατηγορία ποσοστού αναπηρίας</legend>
+
+            <RadioOption
+              id="disabilityEightyPlus"
+              name="disabilityCategory"
+              value="eighty_plus"
+              checked={disabilityCategoryInput === 'eighty_plus'}
+              onChange={(value) => {
+                setDisabilityCategoryInput(value);
                 clearBackendResult();
               }}
-              style={{ marginRight: '0.5rem' }}
+              label="80% και άνω"
             />
-            Μειωμένη
-          </label>
-        </fieldset>
 
-        <fieldset
-          style={{
-            marginBottom: '1rem',
-            padding: '1rem',
-            border: '1px solid #ddd',
-          }}
-        >
+            <RadioOption
+              id="disabilitySixtySeven"
+              name="disabilityCategory"
+              value="sixty_seven_to_seventy_nine"
+              checked={disabilityCategoryInput === 'sixty_seven_to_seventy_nine'}
+              onChange={(value) => {
+                setDisabilityCategoryInput(value);
+                clearBackendResult();
+              }}
+              label="67% έως 79,99%"
+            />
+
+            <RadioOption
+              id="disabilityFifty"
+              name="disabilityCategory"
+              value="fifty_to_sixty_six"
+              checked={disabilityCategoryInput === 'fifty_to_sixty_six'}
+              onChange={(value) => {
+                setDisabilityCategoryInput(value);
+                clearBackendResult();
+              }}
+              label="50% έως 66,99%"
+            />
+          </fieldset>
+        )}
+
+        <fieldset style={fieldsetStyle}>
           <legend>Χρόνος ασφάλισης</legend>
 
           <p style={{ marginTop: 0 }}>
             Πώς θέλετε να δηλώσετε τον χρόνο ασφάλισης;
           </p>
 
-          <label
-            htmlFor="insuranceTimeMethodDays"
-            style={{
-              display: 'block',
-              marginTop: '0.5rem',
-              cursor: 'pointer',
+          <RadioOption
+            id="insuranceTimeMethodDays"
+            name="insuranceTimeInputMethod"
+            value="insurance_days"
+            checked={insuranceTimeInputMethod === 'insurance_days'}
+            onChange={(value) => {
+              setInsuranceTimeInputMethod(value);
+              clearBackendResult();
             }}
-          >
-            <input
-              id="insuranceTimeMethodDays"
-              type="radio"
-              name="insuranceTimeInputMethod"
-              value="insurance_days"
-              checked={insuranceTimeInputMethod === 'insurance_days'}
-              onChange={(event) => {
-                setInsuranceTimeInputMethod(event.target.value);
-                clearBackendResult();
-              }}
-              style={{ marginRight: '0.5rem' }}
-            />
-            Με αριθμό ενσήμων / ημερών ασφάλισης
-          </label>
+            label="Με αριθμό ενσήμων / ημερών ασφάλισης"
+          />
 
-          <label
-            htmlFor="insuranceTimeMethodYearsMonthsDays"
-            style={{
-              display: 'block',
-              marginTop: '0.5rem',
-              cursor: 'pointer',
+          <RadioOption
+            id="insuranceTimeMethodYearsMonthsDays"
+            name="insuranceTimeInputMethod"
+            value="years_months_days"
+            checked={insuranceTimeInputMethod === 'years_months_days'}
+            onChange={(value) => {
+              setInsuranceTimeInputMethod(value);
+              clearBackendResult();
             }}
-          >
-            <input
-              id="insuranceTimeMethodYearsMonthsDays"
-              type="radio"
-              name="insuranceTimeInputMethod"
-              value="years_months_days"
-              checked={insuranceTimeInputMethod === 'years_months_days'}
-              onChange={(event) => {
-                setInsuranceTimeInputMethod(event.target.value);
-                clearBackendResult();
-              }}
-              style={{ marginRight: '0.5rem' }}
-            />
-            Με έτη, μήνες και ημέρες
-          </label>
+            label="Με έτη, μήνες και ημέρες"
+          />
 
           {insuranceTimeInputMethod === 'insurance_days' && (
             <div style={{ marginTop: '1rem' }}>
@@ -367,106 +433,72 @@ function PensionCalculatorPage() {
 
           {insuranceTimeInputMethod === 'years_months_days' && (
             <div style={{ marginTop: '1rem' }}>
-              <div style={{ marginBottom: '0.75rem' }}>
-                <label htmlFor="insuranceYears">Έτη</label>
+              <InputWithLabel
+                id="insuranceYears"
+                label="Έτη"
+                value={insuranceYearsInput}
+                onChange={(value) => {
+                  setInsuranceYearsInput(value);
+                  clearBackendResult();
+                }}
+                placeholder="π.χ. 35"
+                width="100px"
+              />
 
-                <br />
+              <InputWithLabel
+                id="insuranceMonths"
+                label="Μήνες"
+                value={insuranceMonthsInput}
+                onChange={(value) => {
+                  setInsuranceMonthsInput(value);
+                  clearBackendResult();
+                }}
+                placeholder="0-11"
+                width="100px"
+              />
 
-                <input
-                  id="insuranceYears"
-                  type="text"
-                  value={insuranceYearsInput}
-                  onChange={(event) => {
-                    setInsuranceYearsInput(event.target.value);
-                    clearBackendResult();
-                  }}
-                  placeholder="π.χ. 35"
-                  style={{
-                    marginTop: '0.5rem',
-                    padding: '0.5rem',
-                    width: '100px',
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '0.75rem' }}>
-                <label htmlFor="insuranceMonths">Μήνες</label>
-
-                <br />
-
-                <input
-                  id="insuranceMonths"
-                  type="text"
-                  value={insuranceMonthsInput}
-                  onChange={(event) => {
-                    setInsuranceMonthsInput(event.target.value);
-                    clearBackendResult();
-                  }}
-                  placeholder="0-11"
-                  style={{
-                    marginTop: '0.5rem',
-                    padding: '0.5rem',
-                    width: '100px',
-                  }}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="insuranceExtraDays">Ημέρες</label>
-
-                <br />
-
-                <input
-                  id="insuranceExtraDays"
-                  type="text"
-                  value={insuranceExtraDaysInput}
-                  onChange={(event) => {
-                    setInsuranceExtraDaysInput(event.target.value);
-                    clearBackendResult();
-                  }}
-                  placeholder="0-24"
-                  style={{
-                    marginTop: '0.5rem',
-                    padding: '0.5rem',
-                    width: '100px',
-                  }}
-                />
-              </div>
+              <InputWithLabel
+                id="insuranceExtraDays"
+                label="Ημέρες"
+                value={insuranceExtraDaysInput}
+                onChange={(value) => {
+                  setInsuranceExtraDaysInput(value);
+                  clearBackendResult();
+                }}
+                placeholder="0-24"
+                width="100px"
+              />
             </div>
           )}
         </fieldset>
 
-        <fieldset
-          style={{
-            marginBottom: '1rem',
-            padding: '1rem',
-            border: '1px solid #ddd',
-          }}
-        >
-          <legend>Έτη νόμιμης διαμονής</legend>
+        {pensionTypeInput === 'old_age' && (
+          <fieldset style={fieldsetStyle}>
+            <legend>Έτη νόμιμης διαμονής</legend>
 
-          <label htmlFor="residenceYears">
-            Έτη νόμιμης διαμονής στην Ελλάδα
-          </label>
+            <label htmlFor="residenceYears">
+              Έτη νόμιμης διαμονής στην Ελλάδα
+            </label>
 
-          <br />
+            <br />
 
-          <input
-            id="residenceYears"
-            type="text"
-            value={residenceYearsInput}
-            onChange={(event) => {
-              setResidenceYearsInput(event.target.value);
-              clearBackendResult();
-            }}
-            placeholder="π.χ. 40 ή 39,5"
-            style={{
-              marginTop: '0.5rem',
-              padding: '0.5rem',
-              width: '160px',
-            }}
-          />
-        </fieldset>
+            <input
+              id="residenceYears"
+              type="text"
+              value={residenceYearsInput}
+              onChange={(event) => {
+                setResidenceYearsInput(event.target.value);
+                clearBackendResult();
+              }}
+              placeholder="π.χ. 40 ή 39,5"
+              style={{
+                marginTop: '0.5rem',
+                padding: '0.5rem',
+                width: '160px',
+              }}
+            />
+          </fieldset>
+        )}
 
         <button
           type="submit"
@@ -492,351 +524,192 @@ function PensionCalculatorPage() {
       )}
 
       {!analysis.error && analysis.isReady && (
-        <>
-          <section
-            style={{
-              marginTop: '2rem',
-              padding: '1rem',
-              border: '1px solid #ddd',
-            }}
-          >
-            <h2>Τι κατάλαβε η εφαρμογή</h2>
-
-            <p>
-              <strong>Ημερομηνία που δόθηκε:</strong>{' '}
-              {analysis.displayDate}
-            </p>
-
-            <p>
-              <strong>Έτος σύνταξης:</strong>{' '}
-              {analysis.pensionYear}
-            </p>
-
-            <p>
-              <strong>Είδος σύνταξης:</strong>{' '}
-              {analysis.pensionTypeLabel}
-            </p>
-
-            <p>
-              <strong>Πλήρης ή μειωμένη:</strong>{' '}
-              {analysis.pensionModeLabel}
-            </p>
-
-            <p>
-              <strong>Τρόπος εισαγωγής χρόνου ασφάλισης:</strong>{' '}
-              {analysis.insuranceTimeInputMethodLabel}
-            </p>
-
-            <p>
-              <strong>Χρόνος ασφάλισης:</strong>{' '}
-              {analysis.insuranceTimeDisplay}
-            </p>
-
-            <p>
-              <strong>Σύνολο ημερών ασφάλισης:</strong>{' '}
-              {analysis.totalInsuranceDaysEquivalent}
-            </p>
-
-            <p>
-              <strong>Σύνολο σε δεκαδικά έτη:</strong>{' '}
-              {analysis.totalInsuranceDecimalYears}
-            </p>
-
-            <p>
-              <strong>Έτη νόμιμης διαμονής:</strong>{' '}
-              {analysis.residenceYears}
-            </p>
-
-            <p>
-              <strong>Συντελεστής διαμονής Εθνικής:</strong>{' '}
-              {formatPercent(analysis.residenceRate)}
-            </p>
-
-            {analysis.residenceWarning && (
-              <p style={{ color: 'crimson' }}>
-                {analysis.residenceWarning}
-              </p>
-            )}
-
-            <p>
-              <strong>Ποσό Εθνικής που θα χρησιμοποιηθεί:</strong>{' '}
-              {formatEuro(analysis.nationalPensionBaseAmount)}
-            </p>
-
-            {analysis.temporaryMessage && (
-              <p style={{ color: '#8a5a00' }}>
-                {analysis.temporaryMessage}
-              </p>
-            )}
-          </section>
-
-          <section
-            style={{
-              marginTop: '1rem',
-              padding: '1rem',
-              border: '1px solid #ddd',
-              background: '#fafafa',
-            }}
-          >
-            <h2>Δεδομένα που ετοιμάζονται για τον υπολογισμό</h2>
-
-            <p>
-              <strong>Ημερομηνία σύνταξης:</strong>{' '}
-              {analysis.calculationInput.generalInfoData.pensionDate}
-            </p>
-
-            <p>
-              <strong>Έτος σύνταξης:</strong>{' '}
-              {analysis.calculationInput.generalInfoData.pensionYear}
-            </p>
-
-            <p>
-              <strong>Είδος σύνταξης:</strong>{' '}
-              {analysis.pensionTypeLabel}
-            </p>
-
-            <p>
-              <strong>Internal value είδους:</strong>{' '}
-              {analysis.calculationInput.generalInfoData.pensionType}
-            </p>
-
-            <p>
-              <strong>Πλήρης ή μειωμένη:</strong>{' '}
-              {analysis.pensionModeLabel}
-            </p>
-
-            <p>
-              <strong>Internal value πλήρους/μειωμένης:</strong>{' '}
-              {analysis.calculationInput.generalInfoData.pensionMode}
-            </p>
-
-            <p>
-              <strong>Internal τρόπος χρόνου ασφάλισης:</strong>{' '}
-              {analysis.calculationInput.generalInfoData.insuranceTimeInputMethod}
-            </p>
-
-            <p>
-              <strong>Έτη ασφάλισης:</strong>{' '}
-              {analysis.calculationInput.generalInfoData.totalInsuranceYears}
-            </p>
-
-            <p>
-              <strong>Μήνες ασφάλισης:</strong>{' '}
-              {analysis.calculationInput.generalInfoData.totalInsuranceMonths}
-            </p>
-
-            <p>
-              <strong>Ημέρες ασφάλισης:</strong>{' '}
-              {analysis.calculationInput.generalInfoData.totalInsuranceDays}
-            </p>
-
-            <p>
-              <strong>Σύνολο ημερών ασφάλισης:</strong>{' '}
-              {analysis.calculationInput.generalInfoData.totalInsuranceDaysEquivalent}
-            </p>
-
-            <p>
-              <strong>Σύνολο δεκαδικών ετών:</strong>{' '}
-              {analysis.calculationInput.generalInfoData.totalInsuranceDecimalYears}
-            </p>
-
-            <p>
-              <strong>Έτη νόμιμης διαμονής:</strong>{' '}
-              {analysis.calculationInput.generalInfoData.residenceYears}
-            </p>
-
-            <p>
-              <strong>Συντελεστής διαμονής Εθνικής:</strong>{' '}
-              {formatPercent(
-                analysis.calculationInput.nationalPensionPreview.residenceRate
-              )}
-            </p>
-
-            {analysis.calculationInput.nationalPensionPreview.residenceWarning && (
-              <p style={{ color: 'crimson' }}>
-                {analysis.calculationInput.nationalPensionPreview.residenceWarning}
-              </p>
-            )}
-
-            <p>
-              <strong>Ποσό βάσης Εθνικής:</strong>{' '}
-              {formatEuro(
-                analysis.calculationInput.nationalPensionPreview.baseAmount
-              )}
-            </p>
-
-            <p>
-              <strong>Έτος ποσού Εθνικής:</strong>{' '}
-              {analysis.calculationInput.nationalPensionPreview.baseAmountSourceYear}
-            </p>
-
-            <p>
-              <strong>Κατάσταση ποσού:</strong>{' '}
-              {analysis.calculationInput.nationalPensionPreview.baseAmountStatus ===
-              'temporary'
-                ? 'Προσωρινό'
-                : 'Επίσημο'}
-            </p>
-          </section>
-        </>
+        <PreparedInputPreview analysis={analysis} />
       )}
 
       {backendError && (
-        <section
-          style={{
-            marginTop: '1rem',
-            padding: '1rem',
-            border: '1px solid crimson',
-            background: '#fff5f5',
-          }}
-        >
+        <section style={errorSectionStyle}>
           <h2>Απάντηση από functions</h2>
           <p style={{ color: 'crimson' }}>{backendError}</p>
         </section>
       )}
 
       {backendResponse && (
-        <section
-          style={{
-            marginTop: '1rem',
-            padding: '1rem',
-            border: '1px solid #ddd',
-            background: '#f8fff8',
-          }}
-        >
-          <h2>Απάντηση από functions</h2>
-
-          <p>
-            <strong>Κατάσταση:</strong>{' '}
-            {backendResponse.status}
-          </p>
-
-          <p>
-            <strong>Μήνυμα:</strong>{' '}
-            {backendResponse.message}
-          </p>
-
-          <h3>Το backend ετοίμασε</h3>
-
-          <p>
-            <strong>Ημερομηνία σύνταξης:</strong>{' '}
-            {backendResponse.preparedInput?.generalInfoData?.pensionDate}
-          </p>
-
-          <p>
-            <strong>Έτος σύνταξης:</strong>{' '}
-            {backendResponse.preparedInput?.generalInfoData?.pensionYear}
-          </p>
-
-          <p>
-            <strong>Είδος σύνταξης:</strong>{' '}
-            {getPensionTypeLabel(
-              backendResponse.preparedInput?.generalInfoData?.pensionType
-            )}
-          </p>
-
-          <p>
-            <strong>Internal value είδους:</strong>{' '}
-            {backendResponse.preparedInput?.generalInfoData?.pensionType}
-          </p>
-
-          <p>
-            <strong>Πλήρης ή μειωμένη:</strong>{' '}
-            {getPensionModeLabel(
-              backendResponse.preparedInput?.generalInfoData?.pensionMode
-            )}
-          </p>
-
-          <p>
-            <strong>Internal value πλήρους/μειωμένης:</strong>{' '}
-            {backendResponse.preparedInput?.generalInfoData?.pensionMode}
-          </p>
-
-          <p>
-            <strong>Τρόπος εισαγωγής χρόνου ασφάλισης:</strong>{' '}
-            {getInsuranceTimeInputMethodLabel(
-              backendResponse.preparedInput?.generalInfoData?.insuranceTimeInputMethod
-            )}
-          </p>
-
-          <p>
-            <strong>Έτη ασφάλισης:</strong>{' '}
-            {backendResponse.preparedInput?.generalInfoData?.totalInsuranceYears}
-          </p>
-
-          <p>
-            <strong>Μήνες ασφάλισης:</strong>{' '}
-            {backendResponse.preparedInput?.generalInfoData?.totalInsuranceMonths}
-          </p>
-
-          <p>
-            <strong>Ημέρες ασφάλισης:</strong>{' '}
-            {backendResponse.preparedInput?.generalInfoData?.totalInsuranceDays}
-          </p>
-
-          <p>
-            <strong>Σύνολο ημερών ασφάλισης:</strong>{' '}
-            {backendResponse.preparedInput?.generalInfoData?.totalInsuranceDaysEquivalent}
-          </p>
-
-          <p>
-            <strong>Σύνολο δεκαδικών ετών:</strong>{' '}
-            {backendResponse.preparedInput?.generalInfoData?.totalInsuranceDecimalYears}
-          </p>
-
-          <p>
-            <strong>Έτη νόμιμης διαμονής:</strong>{' '}
-            {backendResponse.preparedInput?.generalInfoData?.residenceYears}
-          </p>
-
-          <p>
-            <strong>Συντελεστής διαμονής Εθνικής:</strong>{' '}
-            {formatPercent(
-              backendResponse.preparedInput?.nationalPensionPreview?.residenceRate
-            )}
-          </p>
-
-          {backendResponse.preparedInput?.nationalPensionPreview?.residenceWarning && (
-            <p style={{ color: 'crimson' }}>
-              {backendResponse.preparedInput.nationalPensionPreview.residenceWarning}
-            </p>
-          )}
-
-          {Array.isArray(backendResponse.warnings) &&
-            backendResponse.warnings.length > 0 && (
-              <>
-                <h3>Προειδοποιήσεις</h3>
-
-                <ul>
-                  {backendResponse.warnings.map((warning) => (
-                    <li key={warning}>{warning}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-
-          {Array.isArray(backendResponse.missingForCalculation) &&
-            backendResponse.missingForCalculation.length > 0 && (
-              <>
-                <h3>Λείπουν ακόμα για κανονικό υπολογισμό</h3>
-
-                <ul>
-                  {backendResponse.missingForCalculation.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-        </section>
+        <BackendResponsePanel backendResponse={backendResponse} />
       )}
     </main>
+  );
+}
+
+function PreparedInputPreview({ analysis }) {
+  return (
+    <>
+      <section style={sectionStyle}>
+        <h2>Τι κατάλαβε η εφαρμογή</h2>
+
+        <p>
+          <strong>Ημερομηνία που δόθηκε:</strong>{' '}
+          {analysis.displayDate}
+        </p>
+
+        <p>
+          <strong>Έτος σύνταξης:</strong>{' '}
+          {analysis.pensionYear}
+        </p>
+
+        <p>
+          <strong>Είδος σύνταξης:</strong>{' '}
+          {analysis.pensionTypeLabel}
+        </p>
+
+        {analysis.oldAgeCategoryLabel && (
+          <p>
+            <strong>Κατηγορία γήρατος:</strong>{' '}
+            {analysis.oldAgeCategoryLabel}
+          </p>
+        )}
+
+        {analysis.pensionModeLabel && (
+          <p>
+            <strong>Πλήρης ή μειωμένη:</strong>{' '}
+            {analysis.pensionModeLabel}
+          </p>
+        )}
+
+        {analysis.earlyReductionMonths !== null && (
+          <p>
+            <strong>Μήνες πρόωρης μείωσης:</strong>{' '}
+            {analysis.earlyReductionMonths}
+          </p>
+        )}
+
+        {analysis.disabilityCategoryLabel && (
+          <p>
+            <strong>Κατηγορία αναπηρίας:</strong>{' '}
+            {analysis.disabilityCategoryLabel}
+          </p>
+        )}
+
+        {analysis.disabilityPercentage !== null && (
+          <p>
+            <strong>Ποσοστό αναπηρίας που θα σταλεί:</strong>{' '}
+            {analysis.disabilityPercentage}%
+          </p>
+        )}
+
+        <p>
+          <strong>Τρόπος εισαγωγής χρόνου ασφάλισης:</strong>{' '}
+          {analysis.insuranceTimeInputMethodLabel}
+        </p>
+
+        <p>
+          <strong>Χρόνος ασφάλισης:</strong>{' '}
+          {analysis.insuranceTimeDisplay}
+        </p>
+
+        <p>
+          <strong>Σύνολο ημερών ασφάλισης:</strong>{' '}
+          {analysis.totalInsuranceDaysEquivalent}
+        </p>
+
+        <p>
+          <strong>Σύνολο σε δεκαδικά έτη:</strong>{' '}
+          {analysis.totalInsuranceDecimalYears}
+        </p>
+
+        {analysis.residenceYears !== null && (
+          <p>
+            <strong>Έτη νόμιμης διαμονής:</strong>{' '}
+            {analysis.residenceYears}
+          </p>
+        )}
+
+        {analysis.isSpecialDiseaseOldAgeCase && (
+          <p style={{ color: '#8a5a00' }}>
+            Η εφαρμογή θα στείλει ειδική ένδειξη ότι πρόκειται για γήρας λόγω ειδικών παθήσεων. Ο calculator αργότερα πρέπει να εφαρμόσει τον ειδικό κανόνα χωρίς μείωση 1/40 λόγω 40ετίας.
+          </p>
+        )}
+
+        {analysis.warnings.map((warning) => (
+          <p key={warning} style={{ color: 'crimson' }}>
+            {warning}
+          </p>
+        ))}
+      </section>
+
+      <section style={preparedInputSectionStyle}>
+        <h2>Δεδομένα που ετοιμάζονται για τον calculator</h2>
+
+        <p>
+          <strong>Σημείωση:</strong>{' '}
+          Εδώ δεν εμφανίζονται πλέον συντελεστές ή ποσά εθνικής σύνταξης. Αυτά πρέπει να τα υπολογίσει ο calculator.
+        </p>
+
+        <pre style={preStyle}>
+          {JSON.stringify(analysis.calculationInput, null, 2)}
+        </pre>
+      </section>
+    </>
+  );
+}
+
+function BackendResponsePanel({ backendResponse }) {
+  return (
+    <section style={successSectionStyle}>
+      <h2>Απάντηση από functions</h2>
+
+      <p>
+        <strong>Κατάσταση:</strong>{' '}
+        {backendResponse.status}
+      </p>
+
+      <p>
+        <strong>Μήνυμα:</strong>{' '}
+        {backendResponse.message}
+      </p>
+
+      <h3>Το backend ετοίμασε</h3>
+
+      <pre style={preStyle}>
+        {JSON.stringify(backendResponse.preparedInput, null, 2)}
+      </pre>
+
+      {Array.isArray(backendResponse.warnings) &&
+        backendResponse.warnings.length > 0 && (
+          <>
+            <h3>Προειδοποιήσεις</h3>
+
+            <ul>
+              {backendResponse.warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          </>
+        )}
+
+      {Array.isArray(backendResponse.missingForCalculation) &&
+        backendResponse.missingForCalculation.length > 0 && (
+          <>
+            <h3>Λείπουν ακόμα για κανονικό υπολογισμό</h3>
+
+            <ul>
+              {backendResponse.missingForCalculation.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </>
+        )}
+    </section>
   );
 }
 
 function analyzePensionForm({
   pensionStartDateInput,
   pensionTypeInput,
+  oldAgeCategoryInput,
   pensionModeInput,
+  earlyReductionMonthsInput,
+  disabilityCategoryInput,
   insuranceTimeInputMethod,
   insuranceDaysInput,
   insuranceYearsInput,
@@ -846,7 +719,17 @@ function analyzePensionForm({
 }) {
   const dateAnalysis = analyzePensionStartDate(pensionStartDateInput);
   const pensionTypeAnalysis = analyzePensionType(pensionTypeInput);
-  const pensionModeAnalysis = analyzePensionMode(pensionModeInput);
+  const oldAgeAnalysis = analyzeOldAgeInputs({
+    pensionType: pensionTypeAnalysis.pensionType,
+    oldAgeCategoryInput,
+    pensionModeInput,
+    earlyReductionMonthsInput,
+    residenceYearsInput,
+  });
+  const disabilityAnalysis = analyzeDisabilityInputs({
+    pensionType: pensionTypeAnalysis.pensionType,
+    disabilityCategoryInput,
+  });
   const insuranceTimeAnalysis = analyzeInsuranceTime({
     insuranceTimeInputMethod,
     insuranceDaysInput,
@@ -854,87 +737,92 @@ function analyzePensionForm({
     insuranceMonthsInput,
     insuranceExtraDaysInput,
   });
-  const residenceAnalysis = analyzeResidenceYears(residenceYearsInput);
 
-  const hasAnyValue =
-    dateAnalysis.hasValue ||
-    pensionTypeAnalysis.hasValue ||
-    pensionModeAnalysis.hasValue ||
-    insuranceTimeAnalysis.hasValue ||
-    residenceAnalysis.hasValue;
+  const errors = [
+    dateAnalysis.error,
+    pensionTypeAnalysis.error,
+    oldAgeAnalysis.error,
+    disabilityAnalysis.error,
+    insuranceTimeAnalysis.error,
+  ].filter(Boolean);
 
-  if (dateAnalysis.error) {
+  if (errors.length > 0) {
     return {
-      hasValue: hasAnyValue,
       isReady: false,
-      error: dateAnalysis.error,
-    };
-  }
-
-  if (pensionTypeAnalysis.error) {
-    return {
-      hasValue: hasAnyValue,
-      isReady: false,
-      error: pensionTypeAnalysis.error,
-    };
-  }
-
-  if (pensionModeAnalysis.error) {
-    return {
-      hasValue: hasAnyValue,
-      isReady: false,
-      error: pensionModeAnalysis.error,
-    };
-  }
-
-  if (insuranceTimeAnalysis.error) {
-    return {
-      hasValue: hasAnyValue,
-      isReady: false,
-      error: insuranceTimeAnalysis.error,
-    };
-  }
-
-  if (residenceAnalysis.error) {
-    return {
-      hasValue: hasAnyValue,
-      isReady: false,
-      error: residenceAnalysis.error,
+      error: errors[0],
     };
   }
 
   const isReady =
     dateAnalysis.hasValue &&
     pensionTypeAnalysis.hasValue &&
-    pensionModeAnalysis.hasValue &&
-    insuranceTimeAnalysis.hasValue &&
-    residenceAnalysis.hasValue &&
-    !dateAnalysis.error &&
-    !pensionTypeAnalysis.error &&
-    !pensionModeAnalysis.error &&
-    !insuranceTimeAnalysis.error &&
-    !residenceAnalysis.error;
+    oldAgeAnalysis.hasValue &&
+    disabilityAnalysis.hasValue &&
+    insuranceTimeAnalysis.hasValue;
 
   if (!isReady) {
     return {
-      hasValue: hasAnyValue,
       isReady: false,
       error: null,
     };
   }
 
-  return {
-    ...dateAnalysis,
+  const warnings = [
+    ...oldAgeAnalysis.warnings,
+    ...disabilityAnalysis.warnings,
+    ...insuranceTimeAnalysis.warnings,
+  ];
 
-    hasValue: true,
+  const calculationInput = {
+    generalInfoData: {
+      pensionDate: dateAnalysis.pensionDate,
+      pensionYear: dateAnalysis.pensionYear,
+      pensionType: pensionTypeAnalysis.pensionType,
+
+      oldAgeCategory: oldAgeAnalysis.oldAgeCategory,
+      pensionMode: oldAgeAnalysis.pensionMode,
+      earlyReductionMonths: oldAgeAnalysis.earlyReductionMonths,
+      residenceYears: oldAgeAnalysis.residenceYears,
+      isSpecialDiseaseOldAgeCase: oldAgeAnalysis.isSpecialDiseaseOldAgeCase,
+      ignoreResidenceFortyYearPenalty:
+        oldAgeAnalysis.ignoreResidenceFortyYearPenalty,
+
+      disabilityCategory: disabilityAnalysis.disabilityCategory,
+      disabilityPercentage: disabilityAnalysis.disabilityPercentage,
+
+      insuranceTimeInputMethod: insuranceTimeAnalysis.insuranceTimeInputMethod,
+      totalInsuranceYears: insuranceTimeAnalysis.totalInsuranceYears,
+      totalInsuranceMonths: insuranceTimeAnalysis.totalInsuranceMonths,
+      totalInsuranceDays: insuranceTimeAnalysis.totalInsuranceDays,
+      totalInsuranceDaysEquivalent:
+        insuranceTimeAnalysis.totalInsuranceDaysEquivalent,
+      totalInsuranceDecimalYears:
+        insuranceTimeAnalysis.totalInsuranceDecimalYears,
+    },
+  };
+
+  return {
     isReady: true,
     error: null,
+    warnings,
+
+    displayDate: dateAnalysis.displayDate,
+    pensionYear: dateAnalysis.pensionYear,
 
     pensionType: pensionTypeAnalysis.pensionType,
     pensionTypeLabel: pensionTypeAnalysis.pensionTypeLabel,
 
-    pensionMode: pensionModeAnalysis.pensionMode,
-    pensionModeLabel: pensionModeAnalysis.pensionModeLabel,
+    oldAgeCategory: oldAgeAnalysis.oldAgeCategory,
+    oldAgeCategoryLabel: oldAgeAnalysis.oldAgeCategoryLabel,
+    pensionMode: oldAgeAnalysis.pensionMode,
+    pensionModeLabel: oldAgeAnalysis.pensionModeLabel,
+    earlyReductionMonths: oldAgeAnalysis.earlyReductionMonths,
+    residenceYears: oldAgeAnalysis.residenceYears,
+    isSpecialDiseaseOldAgeCase: oldAgeAnalysis.isSpecialDiseaseOldAgeCase,
+
+    disabilityCategory: disabilityAnalysis.disabilityCategory,
+    disabilityCategoryLabel: disabilityAnalysis.disabilityCategoryLabel,
+    disabilityPercentage: disabilityAnalysis.disabilityPercentage,
 
     insuranceTimeInputMethod: insuranceTimeAnalysis.insuranceTimeInputMethod,
     insuranceTimeInputMethodLabel:
@@ -948,39 +836,7 @@ function analyzePensionForm({
     totalInsuranceDecimalYears:
       insuranceTimeAnalysis.totalInsuranceDecimalYears,
 
-    residenceYears: residenceAnalysis.residenceYears,
-    residenceRate: residenceAnalysis.residenceRate,
-    residenceWarning: residenceAnalysis.residenceWarning,
-
-    calculationInput: {
-      generalInfoData: {
-        pensionDate: dateAnalysis.pensionDate,
-        pensionYear: dateAnalysis.pensionYear,
-        pensionType: pensionTypeAnalysis.pensionType,
-        pensionMode: pensionModeAnalysis.pensionMode,
-
-        insuranceTimeInputMethod:
-          insuranceTimeAnalysis.insuranceTimeInputMethod,
-        totalInsuranceYears: insuranceTimeAnalysis.totalInsuranceYears,
-        totalInsuranceMonths: insuranceTimeAnalysis.totalInsuranceMonths,
-        totalInsuranceDays: insuranceTimeAnalysis.totalInsuranceDays,
-        totalInsuranceDaysEquivalent:
-          insuranceTimeAnalysis.totalInsuranceDaysEquivalent,
-        totalInsuranceDecimalYears:
-          insuranceTimeAnalysis.totalInsuranceDecimalYears,
-
-        residenceYears: residenceAnalysis.residenceYears,
-      },
-
-      nationalPensionPreview: {
-        baseAmount: dateAnalysis.nationalPensionBaseAmount,
-        baseAmountSourceYear: dateAnalysis.baseAmountSourceYear,
-        baseAmountStatus: dateAnalysis.baseAmountStatus,
-        isBaseAmountTemporary: dateAnalysis.baseAmountStatus === 'temporary',
-        residenceRate: residenceAnalysis.residenceRate,
-        residenceWarning: residenceAnalysis.residenceWarning,
-      },
-    },
+    calculationInput,
   };
 }
 
@@ -1005,7 +861,6 @@ function analyzePensionStartDate(value) {
   }
 
   const { day, month, year } = parsedInput;
-
   const parsedDate = new Date(Date.UTC(year, month - 1, day));
 
   const isRealDate =
@@ -1030,26 +885,12 @@ function analyzePensionStartDate(value) {
     };
   }
 
-  const baseAmountInfo = resolveNationalPensionBaseAmount(year);
-  const displayDate = formatGreekDate(day, month, year);
-  const pensionDate = formatIsoDate(day, month, year);
-
   return {
     hasValue: true,
     error: null,
-
-    displayDate,
-    pensionDate,
+    displayDate: formatGreekDate(day, month, year),
+    pensionDate: formatIsoDate(day, month, year),
     pensionYear: year,
-
-    nationalPensionBaseAmount: baseAmountInfo.amount,
-    baseAmountSourceYear: baseAmountInfo.sourceYear,
-    baseAmountStatus: baseAmountInfo.status,
-
-    temporaryMessage:
-      baseAmountInfo.status === 'temporary'
-        ? `Δεν υπάρχει ακόμα επίσημο ποσό Εθνικής σύνταξης για το ${year}. Χρησιμοποιήθηκε προσωρινά το ποσό του ${baseAmountInfo.sourceYear}.`
-        : null,
   };
 }
 
@@ -1060,6 +901,7 @@ function analyzePensionType(value) {
     return {
       hasValue: false,
       error: null,
+      pensionType: null,
     };
   }
 
@@ -1067,6 +909,7 @@ function analyzePensionType(value) {
     return {
       hasValue: true,
       error: 'Επιλέξτε έγκυρο είδος σύνταξης.',
+      pensionType: null,
     };
   }
 
@@ -1078,28 +921,236 @@ function analyzePensionType(value) {
   };
 }
 
-function analyzePensionMode(value) {
-  const normalizedValue = String(value || '').trim();
+function analyzeOldAgeInputs({
+  pensionType,
+  oldAgeCategoryInput,
+  pensionModeInput,
+  earlyReductionMonthsInput,
+  residenceYearsInput,
+}) {
+  if (!pensionType) {
+    return createInactiveOldAgeAnalysis(false);
+  }
 
-  if (!normalizedValue) {
+  if (pensionType !== 'old_age') {
+    return createInactiveOldAgeAnalysis(true);
+  }
+
+  const oldAgeCategory = String(oldAgeCategoryInput || '').trim();
+
+  if (!OLD_AGE_CATEGORY_OPTIONS[oldAgeCategory]) {
     return {
-      hasValue: false,
-      error: null,
+      hasValue: true,
+      error: 'Επιλέξτε έγκυρη κατηγορία σύνταξης γήρατος.',
+      warnings: [],
     };
   }
 
-  if (!PENSION_MODE_OPTIONS[normalizedValue]) {
+  const residenceResult = analyzeResidenceYears(residenceYearsInput);
+
+  if (residenceResult.error) {
     return {
       hasValue: true,
-      error: 'Επιλέξτε αν η σύνταξη είναι πλήρης ή μειωμένη.',
+      error: residenceResult.error,
+      warnings: [],
+    };
+  }
+
+  if (!residenceResult.hasValue) {
+    return {
+      hasValue: false,
+      error: null,
+      warnings: [],
+    };
+  }
+
+  const warnings = [...residenceResult.warnings];
+
+  if (oldAgeCategory === 'special_disease') {
+    return {
+      hasValue: true,
+      error: null,
+      warnings,
+      oldAgeCategory,
+      oldAgeCategoryLabel: OLD_AGE_CATEGORY_OPTIONS[oldAgeCategory].label,
+      pensionMode: 'full',
+      pensionModeLabel: null,
+      earlyReductionMonths: 0,
+      residenceYears: residenceResult.residenceYears,
+      isSpecialDiseaseOldAgeCase: true,
+      ignoreResidenceFortyYearPenalty: true,
+    };
+  }
+
+  const pensionMode = String(pensionModeInput || '').trim();
+
+  if (!pensionMode) {
+    return {
+      hasValue: false,
+      error: null,
+      warnings,
+    };
+  }
+
+  if (!PENSION_MODE_OPTIONS[pensionMode]) {
+    return {
+      hasValue: true,
+      error: 'Επιλέξτε αν η σύνταξη γήρατος είναι πλήρης ή μειωμένη.',
+      warnings,
+    };
+  }
+
+  const earlyReductionResult = analyzeEarlyReductionMonths({
+    pensionMode,
+    earlyReductionMonthsInput,
+  });
+
+  if (earlyReductionResult.error) {
+    return {
+      hasValue: true,
+      error: earlyReductionResult.error,
+      warnings,
+    };
+  }
+
+  if (!earlyReductionResult.hasValue) {
+    return {
+      hasValue: false,
+      error: null,
+      warnings,
     };
   }
 
   return {
     hasValue: true,
     error: null,
-    pensionMode: normalizedValue,
-    pensionModeLabel: PENSION_MODE_OPTIONS[normalizedValue].label,
+    warnings,
+    oldAgeCategory,
+    oldAgeCategoryLabel: OLD_AGE_CATEGORY_OPTIONS[oldAgeCategory].label,
+    pensionMode,
+    pensionModeLabel: PENSION_MODE_OPTIONS[pensionMode].label,
+    earlyReductionMonths: earlyReductionResult.earlyReductionMonths,
+    residenceYears: residenceResult.residenceYears,
+    isSpecialDiseaseOldAgeCase: false,
+    ignoreResidenceFortyYearPenalty: false,
+  };
+}
+
+function createInactiveOldAgeAnalysis(hasValue) {
+  return {
+    hasValue,
+    error: null,
+    warnings: [],
+    oldAgeCategory: null,
+    oldAgeCategoryLabel: null,
+    pensionMode: null,
+    pensionModeLabel: null,
+    earlyReductionMonths: 0,
+    residenceYears: null,
+    isSpecialDiseaseOldAgeCase: false,
+    ignoreResidenceFortyYearPenalty: false,
+  };
+}
+
+function analyzeEarlyReductionMonths({ pensionMode, earlyReductionMonthsInput }) {
+  if (pensionMode !== 'reduced') {
+    return {
+      hasValue: true,
+      error: null,
+      earlyReductionMonths: 0,
+    };
+  }
+
+  const trimmedMonths = String(earlyReductionMonthsInput || '').trim();
+
+  if (!trimmedMonths) {
+    return {
+      hasValue: false,
+      error: null,
+      earlyReductionMonths: null,
+    };
+  }
+
+  const monthsResult = parseNonNegativeInteger(trimmedMonths);
+
+  if (!monthsResult.isValid) {
+    return {
+      hasValue: true,
+      error: 'Οι μήνες πρόωρης μείωσης πρέπει να είναι ακέραιος αριθμός.',
+      earlyReductionMonths: null,
+    };
+  }
+
+  if (monthsResult.value > MAX_EARLY_REDUCTION_MONTHS) {
+    return {
+      hasValue: true,
+      error: 'Οι μήνες πρόωρης μείωσης πρέπει να είναι από 0 έως 60.',
+      earlyReductionMonths: null,
+    };
+  }
+
+  return {
+    hasValue: true,
+    error: null,
+    earlyReductionMonths: monthsResult.value,
+  };
+}
+
+function analyzeDisabilityInputs({ pensionType, disabilityCategoryInput }) {
+  if (!pensionType) {
+    return {
+      hasValue: false,
+      error: null,
+      warnings: [],
+      disabilityCategory: null,
+      disabilityCategoryLabel: null,
+      disabilityPercentage: null,
+    };
+  }
+
+  if (pensionType !== 'disability') {
+    return {
+      hasValue: true,
+      error: null,
+      warnings: [],
+      disabilityCategory: null,
+      disabilityCategoryLabel: null,
+      disabilityPercentage: null,
+    };
+  }
+
+  const disabilityCategory = String(disabilityCategoryInput || '').trim();
+
+  if (!disabilityCategory) {
+    return {
+      hasValue: false,
+      error: null,
+      warnings: [],
+      disabilityCategory: null,
+      disabilityCategoryLabel: null,
+      disabilityPercentage: null,
+    };
+  }
+
+  if (!DISABILITY_CATEGORY_OPTIONS[disabilityCategory]) {
+    return {
+      hasValue: true,
+      error: 'Επιλέξτε έγκυρη κατηγορία αναπηρίας.',
+      warnings: [],
+      disabilityCategory: null,
+      disabilityCategoryLabel: null,
+      disabilityPercentage: null,
+    };
+  }
+
+  return {
+    hasValue: true,
+    error: null,
+    warnings: [],
+    disabilityCategory,
+    disabilityCategoryLabel: DISABILITY_CATEGORY_OPTIONS[disabilityCategory].label,
+    disabilityPercentage:
+      DISABILITY_CATEGORY_OPTIONS[disabilityCategory].disabilityPercentage,
   };
 }
 
@@ -1116,6 +1167,7 @@ function analyzeInsuranceTime({
     return {
       hasValue: false,
       error: null,
+      warnings: [],
     };
   }
 
@@ -1123,6 +1175,7 @@ function analyzeInsuranceTime({
     return {
       hasValue: true,
       error: 'Επιλέξτε έγκυρο τρόπο εισαγωγής χρόνου ασφάλισης.',
+      warnings: [],
     };
   }
 
@@ -1151,6 +1204,7 @@ function analyzeInsuranceDaysInput({
     return {
       hasValue: false,
       error: null,
+      warnings: [],
     };
   }
 
@@ -1160,6 +1214,7 @@ function analyzeInsuranceDaysInput({
     return {
       hasValue: true,
       error: 'Τα ένσημα / ημέρες ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+      warnings: [],
     };
   }
 
@@ -1167,6 +1222,7 @@ function analyzeInsuranceDaysInput({
     return {
       hasValue: true,
       error: 'Τα ένσημα / ημέρες ασφάλισης πρέπει να είναι περισσότερα από 0.',
+      warnings: [],
     };
   }
 
@@ -1179,6 +1235,7 @@ function analyzeInsuranceDaysInput({
   return {
     hasValue: true,
     error: null,
+    warnings: [],
 
     insuranceTimeInputMethod,
     insuranceTimeInputMethodLabel:
@@ -1212,6 +1269,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
     return {
       hasValue: false,
       error: null,
+      warnings: [],
     };
   }
 
@@ -1223,6 +1281,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
     return {
       hasValue: true,
       error: 'Τα έτη ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+      warnings: [],
     };
   }
 
@@ -1230,6 +1289,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
     return {
       hasValue: true,
       error: 'Οι μήνες ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+      warnings: [],
     };
   }
 
@@ -1237,6 +1297,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
     return {
       hasValue: true,
       error: 'Οι ημέρες ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+      warnings: [],
     };
   }
 
@@ -1248,6 +1309,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
     return {
       hasValue: true,
       error: 'Οι μήνες ασφάλισης πρέπει να είναι από 0 έως 11.',
+      warnings: [],
     };
   }
 
@@ -1255,6 +1317,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
     return {
       hasValue: true,
       error: 'Οι ημέρες ασφάλισης πρέπει να είναι από 0 έως 24.',
+      warnings: [],
     };
   }
 
@@ -1262,6 +1325,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
     return {
       hasValue: true,
       error: 'Ο χρόνος ασφάλισης πρέπει να είναι μεγαλύτερος από 0.',
+      warnings: [],
     };
   }
 
@@ -1275,6 +1339,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
   return {
     hasValue: true,
     error: null,
+    warnings: [],
 
     insuranceTimeInputMethod,
     insuranceTimeInputMethodLabel:
@@ -1297,6 +1362,7 @@ function analyzeResidenceYears(value) {
     return {
       hasValue: false,
       error: null,
+      warnings: [],
     };
   }
 
@@ -1306,30 +1372,75 @@ function analyzeResidenceYears(value) {
     return {
       hasValue: true,
       error: 'Τα έτη νόμιμης διαμονής πρέπει να είναι αριθμός.',
+      warnings: [],
     };
   }
 
-  const residenceYears = numberResult.value;
-  const residenceRate =
-    residenceYears < MIN_RESIDENCE_YEARS_FOR_NATIONAL_PENSION
-      ? 0
-      : Math.min(
-          residenceYears / FULL_RESIDENCE_YEARS_FOR_NATIONAL_PENSION,
-          1
-        );
+  const residenceYears = roundToDecimals(numberResult.value, 4);
+  const warnings = [];
 
-  const residenceWarning =
-    residenceYears < MIN_RESIDENCE_YEARS_FOR_NATIONAL_PENSION
-      ? 'Με αυτά τα έτη νόμιμης διαμονής δεν δικαιούται εθνική σύνταξη.'
-      : null;
+  if (
+    residenceYears <
+    MIN_RESIDENCE_YEARS_FOR_OLD_AGE_NATIONAL_PENSION
+  ) {
+    warnings.push(
+      'Με αυτά τα έτη νόμιμης διαμονής δεν δικαιούται εθνική σύνταξη.'
+    );
+  }
 
   return {
     hasValue: true,
     error: null,
-    residenceYears: roundToDecimals(residenceYears, 4),
-    residenceRate: roundToDecimals(residenceRate, 6),
-    residenceWarning,
+    warnings,
+    residenceYears,
   };
+}
+
+function RadioOption({ id, name, value, checked, onChange, label }) {
+  return (
+    <label
+      htmlFor={id}
+      style={{
+        display: 'block',
+        marginTop: '0.5rem',
+        cursor: 'pointer',
+      }}
+    >
+      <input
+        id={id}
+        type="radio"
+        name={name}
+        value={value}
+        checked={checked}
+        onChange={(event) => onChange(event.target.value)}
+        style={{ marginRight: '0.5rem' }}
+      />
+      {label}
+    </label>
+  );
+}
+
+function InputWithLabel({ id, label, value, onChange, placeholder, width }) {
+  return (
+    <div style={{ marginBottom: '0.75rem' }}>
+      <label htmlFor={id}>{label}</label>
+
+      <br />
+
+      <input
+        id={id}
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        style={{
+          marginTop: '0.5rem',
+          padding: '0.5rem',
+          width,
+        }}
+      />
+    </div>
+  );
 }
 
 function parseNonNegativeInteger(value) {
@@ -1465,82 +1576,50 @@ function padTwoDigits(value) {
   return String(value).padStart(2, '0');
 }
 
-function resolveNationalPensionBaseAmount(pensionYear) {
-  if (NATIONAL_PENSION_BASE_AMOUNTS[pensionYear]) {
-    return {
-      amount: NATIONAL_PENSION_BASE_AMOUNTS[pensionYear].amount,
-      sourceYear: pensionYear,
-      status: 'official',
-    };
-  }
-
-  const knownYears = Object.keys(NATIONAL_PENSION_BASE_AMOUNTS)
-    .map(Number)
-    .sort((a, b) => a - b);
-
-  const latestKnownYear = knownYears[knownYears.length - 1];
-
-  if (pensionYear > latestKnownYear) {
-    return {
-      amount: NATIONAL_PENSION_BASE_AMOUNTS[latestKnownYear].amount,
-      sourceYear: latestKnownYear,
-      status: 'temporary',
-    };
-  }
-
-  return {
-    amount: null,
-    sourceYear: null,
-    status: 'missing',
-  };
-}
-
-function getPensionTypeLabel(value) {
-  if (!value || !PENSION_TYPE_OPTIONS[value]) {
-    return '-';
-  }
-
-  return PENSION_TYPE_OPTIONS[value].label;
-}
-
-function getPensionModeLabel(value) {
-  if (!value || !PENSION_MODE_OPTIONS[value]) {
-    return '-';
-  }
-
-  return PENSION_MODE_OPTIONS[value].label;
-}
-
-function getInsuranceTimeInputMethodLabel(value) {
-  if (!value || !INSURANCE_TIME_INPUT_METHOD_OPTIONS[value]) {
-    return '-';
-  }
-
-  return INSURANCE_TIME_INPUT_METHOD_OPTIONS[value].label;
-}
-
 function roundToDecimals(value, decimals) {
   const factor = 10 ** decimals;
   return Math.round((Number(value || 0) + Number.EPSILON) * factor) / factor;
 }
 
-function formatPercent(value) {
-  if (value === null || value === undefined || value === '') {
-    return '-';
-  }
+const fieldsetStyle = {
+  marginBottom: '1rem',
+  padding: '1rem',
+  border: '1px solid #ddd',
+};
 
-  return `${roundToDecimals(Number(value) * 100, 2)}%`;
-}
+const sectionStyle = {
+  marginTop: '2rem',
+  padding: '1rem',
+  border: '1px solid #ddd',
+};
 
-function formatEuro(value) {
-  if (value === null || value === undefined) {
-    return '-';
-  }
+const preparedInputSectionStyle = {
+  marginTop: '1rem',
+  padding: '1rem',
+  border: '1px solid #ddd',
+  background: '#fafafa',
+};
 
-  return new Intl.NumberFormat('el-GR', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(value);
-}
+const errorSectionStyle = {
+  marginTop: '1rem',
+  padding: '1rem',
+  border: '1px solid crimson',
+  background: '#fff5f5',
+};
+
+const successSectionStyle = {
+  marginTop: '1rem',
+  padding: '1rem',
+  border: '1px solid #ddd',
+  background: '#f8fff8',
+};
+
+const preStyle = {
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  background: '#f3f3f3',
+  padding: '1rem',
+  borderRadius: '4px',
+};
 
 export default PensionCalculatorPage;
