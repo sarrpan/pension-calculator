@@ -91,7 +91,7 @@ function PreparedInputPreview({ analysis }) {
 
         {analysis.insurancePeriodsDraft?.length > 0 && (
           <div style={previewBoxStyle}>
-            <h3 style={{ marginTop: 0 }}>Κατηγορία συνολικού χρόνου ασφάλισης</h3>
+            <h3 style={{ marginTop: 0 }}>Κατανομή χρόνου ασφάλισης</h3>
 
             {analysis.insurancePeriodsDraft.map((period, index) => (
               <div key={`${period.fund}-${period.insuredType}-${period.employmentCategory}-${index}`}>
@@ -103,7 +103,9 @@ function PreparedInputPreview({ analysis }) {
                 ) : (
                   <p>
                     <strong>Χρόνος που αποδίδεται:</strong>{' '}
-                    Όλος ο δηλωμένος συνολικός χρόνος ασφάλισης
+                    {period.insuranceDaysSource === 'total_insurance_time'
+                      ? 'Όλος ο δηλωμένος συνολικός χρόνος ασφάλισης'
+                      : `Περίοδος / ομάδα ${index + 1}`}
                   </p>
                 )}
 

@@ -7,42 +7,85 @@ function InsurancePeriodsInputSection({
   simpleFundInput,
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
+  multiPeriodTimeInputMethod,
+  multiPeriodInsuranceDaysInput,
+  multiPeriodInsuranceYearsInput,
+  multiPeriodInsuranceMonthsInput,
+  multiPeriodInsuranceExtraDaysInput,
+  multiPeriodFundInput,
+  multiPeriodInsuredTypeInput,
+  multiPeriodEmploymentCategoryInput,
   onInsurancePeriodsInputModeChange,
   onSimpleFundChange,
   onSimpleInsuredTypeChange,
   onSimpleEmploymentCategoryChange,
+  onMultiPeriodTimeInputMethodChange,
+  onMultiPeriodInsuranceDaysChange,
+  onMultiPeriodInsuranceYearsChange,
+  onMultiPeriodInsuranceMonthsChange,
+  onMultiPeriodInsuranceExtraDaysChange,
+  onMultiPeriodFundChange,
+  onMultiPeriodInsuredTypeChange,
+  onMultiPeriodEmploymentCategoryChange,
 }) {
-  const insuredTypeOptions = getInsuredTypeOptions(simpleFundInput);
-  const employmentCategoryOptions = getEmploymentCategoryOptions(simpleFundInput);
+  const simpleInsuredTypeOptions = getInsuredTypeOptions(simpleFundInput);
+  const simpleEmploymentCategoryOptions = getEmploymentCategoryOptions(simpleFundInput);
+
+  const multiInsuredTypeOptions = getInsuredTypeOptions(multiPeriodFundInput);
+  const multiEmploymentCategoryOptions = getEmploymentCategoryOptions(multiPeriodFundInput);
 
   function handleModeChange(value) {
     onInsurancePeriodsInputModeChange(value);
 
-    if (value === 'disabled') {
+    if (value !== 'simple') {
       onSimpleFundChange('');
       onSimpleInsuredTypeChange('');
       onSimpleEmploymentCategoryChange('');
     }
+
+    if (value !== 'multiple') {
+      onMultiPeriodTimeInputMethodChange('');
+      onMultiPeriodInsuranceDaysChange('');
+      onMultiPeriodInsuranceYearsChange('');
+      onMultiPeriodInsuranceMonthsChange('');
+      onMultiPeriodInsuranceExtraDaysChange('');
+      onMultiPeriodFundChange('');
+      onMultiPeriodInsuredTypeChange('');
+      onMultiPeriodEmploymentCategoryChange('');
+    }
   }
 
-  function handleFundChange(value) {
+  function handleSimpleFundChange(value) {
     onSimpleFundChange(value);
     onSimpleInsuredTypeChange('');
     onSimpleEmploymentCategoryChange('');
   }
 
+  function handleMultiFundChange(value) {
+    onMultiPeriodFundChange(value);
+    onMultiPeriodInsuredTypeChange('');
+    onMultiPeriodEmploymentCategoryChange('');
+  }
+
+  function handleMultiTimeMethodChange(value) {
+    onMultiPeriodTimeInputMethodChange(value);
+    onMultiPeriodInsuranceDaysChange('');
+    onMultiPeriodInsuranceYearsChange('');
+    onMultiPeriodInsuranceMonthsChange('');
+    onMultiPeriodInsuranceExtraDaysChange('');
+  }
+
   return (
     <fieldset style={fieldsetStyle}>
-      <legend>Κατηγορία συνολικού χρόνου ασφάλισης</legend>
+      <legend>Τρόπος κατανομής χρόνου ασφάλισης</legend>
 
       <p style={{ marginTop: 0, color: '#475569' }}>
-        Πρώτα δηλώνεται ο συνολικός χρόνος ασφάλισης παραπάνω, είτε με ένσημα
-        είτε με έτη / μήνες / ημέρες. Εδώ δηλώνουμε σε ποιον φορέα και σε ποια
-        κατηγορία ανήκει αυτός ο χρόνος.
+        Επιλέγουμε αν όλος ο χρόνος ασφάλισης ανήκει σε μία κατηγορία ή αν θα
+        χωριστεί σε περισσότερες κατηγορίες / περιόδους.
       </p>
 
       <label htmlFor="insurancePeriodsInputMode">
-        Ο συνολικός χρόνος ανήκει σε μία κατηγορία;
+        Πώς θα δηλωθεί ο χρόνος ασφάλισης;
       </label>
 
       <br />
@@ -54,17 +97,22 @@ function InsurancePeriodsInputSection({
         style={selectStyle}
       >
         <option value="disabled">Όχι ακόμα</option>
-        <option value="simple">Ναι, μία κατηγορία</option>
+        <option value="simple">Μία κατηγορία ασφάλισης</option>
+        <option value="multiple">Περισσότερες κατηγορίες / περίοδοι</option>
       </select>
 
       {insurancePeriodsInputMode === 'simple' && (
         <div style={{ marginTop: '1rem' }}>
+          <h3 style={{ marginBottom: '0.75rem' }}>
+            Κατηγορία συνολικού χρόνου ασφάλισης
+          </h3>
+
           <div style={gridStyle}>
             <SelectWithLabel
               id="simpleFund"
               label="Φορέας / κατηγορία ασφάλισης"
               value={simpleFundInput}
-              onChange={handleFundChange}
+              onChange={handleSimpleFundChange}
               options={FUND_OPTIONS}
             />
 
@@ -73,7 +121,7 @@ function InsurancePeriodsInputSection({
               label="Ασφαλισμένος"
               value={simpleInsuredTypeInput}
               onChange={onSimpleInsuredTypeChange}
-              options={insuredTypeOptions}
+              options={simpleInsuredTypeOptions}
               disabled={!simpleFundInput}
             />
 
@@ -82,17 +130,101 @@ function InsurancePeriodsInputSection({
               label="Κατηγορία εργασίας / εισφορών"
               value={simpleEmploymentCategoryInput}
               onChange={onSimpleEmploymentCategoryChange}
-              options={employmentCategoryOptions}
+              options={simpleEmploymentCategoryOptions}
               disabled={!simpleFundInput}
             />
           </div>
 
           <p style={{ color: '#475569', marginBottom: 0 }}>
-            Δεν δηλώνεται δεύτερη φορά χρόνος ασφάλισης. Όλος ο χρόνος που
-            δηλώθηκε παραπάνω αποδίδεται σε αυτή την κατηγορία. Αν υπάρχουν
-            περισσότερες κατηγορίες, θα προστεθεί επόμενο βήμα με ξεχωριστές
-            ομάδες / περιόδους.
+            Ο χρόνος ασφάλισης δηλώνεται μία φορά στο πεδίο «Χρόνος ασφάλισης».
+            Όλος αυτός ο χρόνος αποδίδεται στην παραπάνω κατηγορία.
           </p>
+        </div>
+      )}
+
+      {insurancePeriodsInputMode === 'multiple' && (
+        <div style={periodBoxStyle}>
+          <h3 style={{ marginTop: 0 }}>Περίοδος / ομάδα 1</h3>
+
+          <p style={{ color: '#475569' }}>
+            Για περισσότερες κατηγορίες δηλώνουμε χρόνο ξεχωριστά για κάθε
+            ομάδα. Σε αυτό το βήμα φτιάχνουμε την πρώτη ομάδα. Το κουμπί
+            προσθήκης δεύτερης ομάδας θα μπει μετά.
+          </p>
+
+          <div style={gridStyle}>
+            <SelectWithLabel
+              id="multiPeriodTimeInputMethod"
+              label="Τρόπος εισαγωγής χρόνου"
+              value={multiPeriodTimeInputMethod}
+              onChange={handleMultiTimeMethodChange}
+              options={INSURANCE_TIME_METHOD_OPTIONS}
+            />
+
+            {multiPeriodTimeInputMethod === 'insurance_days' && (
+              <TextInputWithLabel
+                id="multiPeriodInsuranceDays"
+                label="Ένσημα / ημέρες ασφάλισης"
+                value={multiPeriodInsuranceDaysInput}
+                onChange={onMultiPeriodInsuranceDaysChange}
+                placeholder="π.χ. 4500"
+              />
+            )}
+
+            {multiPeriodTimeInputMethod === 'years_months_days' && (
+              <>
+                <TextInputWithLabel
+                  id="multiPeriodInsuranceYears"
+                  label="Έτη"
+                  value={multiPeriodInsuranceYearsInput}
+                  onChange={onMultiPeriodInsuranceYearsChange}
+                  placeholder="π.χ. 15"
+                />
+
+                <TextInputWithLabel
+                  id="multiPeriodInsuranceMonths"
+                  label="Μήνες"
+                  value={multiPeriodInsuranceMonthsInput}
+                  onChange={onMultiPeriodInsuranceMonthsChange}
+                  placeholder="0 έως 11"
+                />
+
+                <TextInputWithLabel
+                  id="multiPeriodInsuranceExtraDays"
+                  label="Ημέρες"
+                  value={multiPeriodInsuranceExtraDaysInput}
+                  onChange={onMultiPeriodInsuranceExtraDaysChange}
+                  placeholder="0 έως 24"
+                />
+              </>
+            )}
+
+            <SelectWithLabel
+              id="multiPeriodFund"
+              label="Φορέας / κατηγορία ασφάλισης"
+              value={multiPeriodFundInput}
+              onChange={handleMultiFundChange}
+              options={FUND_OPTIONS}
+            />
+
+            <SelectWithLabel
+              id="multiPeriodInsuredType"
+              label="Ασφαλισμένος"
+              value={multiPeriodInsuredTypeInput}
+              onChange={onMultiPeriodInsuredTypeChange}
+              options={multiInsuredTypeOptions}
+              disabled={!multiPeriodFundInput}
+            />
+
+            <SelectWithLabel
+              id="multiPeriodEmploymentCategory"
+              label="Κατηγορία εργασίας / εισφορών"
+              value={multiPeriodEmploymentCategoryInput}
+              onChange={onMultiPeriodEmploymentCategoryChange}
+              options={multiEmploymentCategoryOptions}
+              disabled={!multiPeriodFundInput}
+            />
+          </div>
         </div>
       )}
     </fieldset>
@@ -126,6 +258,30 @@ function SelectWithLabel({
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function TextInputWithLabel({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+}) {
+  return (
+    <div style={{ marginBottom: '0.75rem' }}>
+      <label htmlFor={id}>{label}</label>
+
+      <br />
+
+      <input
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        style={inputStyle}
+      />
     </div>
   );
 }
@@ -190,6 +346,18 @@ const FUND_OPTIONS = [
   {
     value: 'oga',
     label: 'Πρώην ΟΓΑ / αγρότης',
+  },
+];
+
+const INSURANCE_TIME_METHOD_OPTIONS = [
+  { value: '', label: 'Επιλέξτε' },
+  {
+    value: 'insurance_days',
+    label: 'Με αριθμό ενσήμων / ημερών ασφάλισης',
+  },
+  {
+    value: 'years_months_days',
+    label: 'Με έτη, μήνες και ημέρες',
   },
 ];
 
@@ -293,7 +461,20 @@ const gridStyle = {
 const selectStyle = {
   marginTop: '0.5rem',
   padding: '0.5rem',
+  width: '260px',
+};
+
+const inputStyle = {
+  marginTop: '0.5rem',
+  padding: '0.5rem',
   width: '220px',
+};
+
+const periodBoxStyle = {
+  marginTop: '1rem',
+  border: '1px solid #cbd5e1',
+  background: '#f8fafc',
+  padding: '0.75rem',
 };
 
 export default InsurancePeriodsInputSection;

@@ -86,6 +86,10 @@ const INSURANCE_PERIODS_INPUT_MODE_OPTIONS = {
     value: 'simple',
     label: 'Μία κατηγορία ασφάλισης',
   },
+  multiple: {
+    value: 'multiple',
+    label: 'Περισσότερες κατηγορίες / περίοδοι',
+  },
 };
 
 const INSURANCE_PERIOD_FUND_OPTIONS = {
@@ -224,6 +228,14 @@ function analyzePensionForm({
   simpleFromDateInput,
   simpleToDateInput,
   simpleInsuranceDaysInput,
+  multiPeriodTimeInputMethod,
+  multiPeriodInsuranceDaysInput,
+  multiPeriodInsuranceYearsInput,
+  multiPeriodInsuranceMonthsInput,
+  multiPeriodInsuranceExtraDaysInput,
+  multiPeriodFundInput,
+  multiPeriodInsuredTypeInput,
+  multiPeriodEmploymentCategoryInput,
 }) {
   const dateAnalysis = analyzePensionStartDate(pensionStartDateInput);
   const pensionTypeAnalysis = analyzePensionType(pensionTypeInput);
@@ -253,6 +265,14 @@ function analyzePensionForm({
     simpleFromDateInput,
     simpleToDateInput,
     simpleInsuranceDaysInput,
+    multiPeriodTimeInputMethod,
+    multiPeriodInsuranceDaysInput,
+    multiPeriodInsuranceYearsInput,
+    multiPeriodInsuranceMonthsInput,
+    multiPeriodInsuranceExtraDaysInput,
+    multiPeriodFundInput,
+    multiPeriodInsuredTypeInput,
+    multiPeriodEmploymentCategoryInput,
     insuranceTimeAnalysis,
   });
   const contributoryAnalysis = analyzeContributoryPensionInputs({
@@ -262,12 +282,18 @@ function analyzePensionForm({
     yearlyEarningsRows,
   });
 
+  const isMultipleInsuranceMode =
+    insurancePeriodsAnalysis.insurancePeriodsInputMode === 'multiple';
+
+  const effectiveInsuranceTimeAnalysis =
+    insurancePeriodsAnalysis.totalInsuranceTimeAnalysis || insuranceTimeAnalysis;
+
   const errors = [
     dateAnalysis.error,
     pensionTypeAnalysis.error,
     oldAgeAnalysis.error,
     disabilityAnalysis.error,
-    insuranceTimeAnalysis.error,
+    isMultipleInsuranceMode ? null : insuranceTimeAnalysis.error,
     insurancePeriodsAnalysis.error,
     contributoryAnalysis.error,
   ].filter(Boolean);
@@ -286,7 +312,7 @@ function analyzePensionForm({
     pensionTypeAnalysis.hasValue &&
     oldAgeAnalysis.hasValue &&
     disabilityAnalysis.hasValue &&
-    insuranceTimeAnalysis.hasValue &&
+    effectiveInsuranceTimeAnalysis.hasValue &&
     insurancePeriodsAnalysis.hasValue &&
     contributoryAnalysis.hasValue;
 
@@ -324,14 +350,14 @@ function analyzePensionForm({
       disabilityCategory: disabilityAnalysis.disabilityCategory,
       disabilityPercentage: disabilityAnalysis.disabilityPercentage,
 
-      insuranceTimeInputMethod: insuranceTimeAnalysis.insuranceTimeInputMethod,
-      totalInsuranceYears: insuranceTimeAnalysis.totalInsuranceYears,
-      totalInsuranceMonths: insuranceTimeAnalysis.totalInsuranceMonths,
-      totalInsuranceDays: insuranceTimeAnalysis.totalInsuranceDays,
+      insuranceTimeInputMethod: effectiveInsuranceTimeAnalysis.insuranceTimeInputMethod,
+      totalInsuranceYears: effectiveInsuranceTimeAnalysis.totalInsuranceYears,
+      totalInsuranceMonths: effectiveInsuranceTimeAnalysis.totalInsuranceMonths,
+      totalInsuranceDays: effectiveInsuranceTimeAnalysis.totalInsuranceDays,
       totalInsuranceDaysEquivalent:
-        insuranceTimeAnalysis.totalInsuranceDaysEquivalent,
+        effectiveInsuranceTimeAnalysis.totalInsuranceDaysEquivalent,
       totalInsuranceDecimalYears:
-        insuranceTimeAnalysis.totalInsuranceDecimalYears,
+        effectiveInsuranceTimeAnalysis.totalInsuranceDecimalYears,
     },
     contributoryPensionData: contributoryAnalysis.contributoryPensionData,
     insurancePeriodsDraft: insurancePeriodsAnalysis.insurancePeriodsDraft.map(
@@ -364,17 +390,17 @@ function analyzePensionForm({
     disabilityCategoryLabel: disabilityAnalysis.disabilityCategoryLabel,
     disabilityPercentage: disabilityAnalysis.disabilityPercentage,
 
-    insuranceTimeInputMethod: insuranceTimeAnalysis.insuranceTimeInputMethod,
+    insuranceTimeInputMethod: effectiveInsuranceTimeAnalysis.insuranceTimeInputMethod,
     insuranceTimeInputMethodLabel:
-      insuranceTimeAnalysis.insuranceTimeInputMethodLabel,
-    insuranceTimeDisplay: insuranceTimeAnalysis.insuranceTimeDisplay,
-    totalInsuranceYears: insuranceTimeAnalysis.totalInsuranceYears,
-    totalInsuranceMonths: insuranceTimeAnalysis.totalInsuranceMonths,
-    totalInsuranceDays: insuranceTimeAnalysis.totalInsuranceDays,
+      effectiveInsuranceTimeAnalysis.insuranceTimeInputMethodLabel,
+    insuranceTimeDisplay: effectiveInsuranceTimeAnalysis.insuranceTimeDisplay,
+    totalInsuranceYears: effectiveInsuranceTimeAnalysis.totalInsuranceYears,
+    totalInsuranceMonths: effectiveInsuranceTimeAnalysis.totalInsuranceMonths,
+    totalInsuranceDays: effectiveInsuranceTimeAnalysis.totalInsuranceDays,
     totalInsuranceDaysEquivalent:
-      insuranceTimeAnalysis.totalInsuranceDaysEquivalent,
+      effectiveInsuranceTimeAnalysis.totalInsuranceDaysEquivalent,
     totalInsuranceDecimalYears:
-      insuranceTimeAnalysis.totalInsuranceDecimalYears,
+      effectiveInsuranceTimeAnalysis.totalInsuranceDecimalYears,
 
     insurancePeriodsInputMode:
       insurancePeriodsAnalysis.insurancePeriodsInputMode,
@@ -760,6 +786,14 @@ function analyzeInsurancePeriodsDraft({
   simpleFundInput,
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
+  multiPeriodTimeInputMethod,
+  multiPeriodInsuranceDaysInput,
+  multiPeriodInsuranceYearsInput,
+  multiPeriodInsuranceMonthsInput,
+  multiPeriodInsuranceExtraDaysInput,
+  multiPeriodFundInput,
+  multiPeriodInsuredTypeInput,
+  multiPeriodEmploymentCategoryInput,
   insuranceTimeAnalysis,
 }) {
   const mode = String(insurancePeriodsInputMode || 'disabled').trim();
@@ -787,6 +821,65 @@ function analyzeInsurancePeriodsDraft({
       insurancePeriodsDraft: [],
       insurancePeriodDraftDisplay:
         'Δεν δηλώθηκε κατηγορία συνολικού χρόνου ασφάλισης.',
+    };
+  }
+
+  if (mode === 'multiple') {
+    const periodTimeAnalysis = analyzeInsuranceTime({
+      insuranceTimeInputMethod: multiPeriodTimeInputMethod,
+      insuranceDaysInput: multiPeriodInsuranceDaysInput,
+      insuranceYearsInput: multiPeriodInsuranceYearsInput,
+      insuranceMonthsInput: multiPeriodInsuranceMonthsInput,
+      insuranceExtraDaysInput: multiPeriodInsuranceExtraDaysInput,
+    });
+
+    if (periodTimeAnalysis.error) {
+      return createInsurancePeriodDraftError(periodTimeAnalysis.error, mode);
+    }
+
+    if (!periodTimeAnalysis.hasValue) {
+      return createInsurancePeriodDraftError(
+        'Συμπληρώστε τον χρόνο ασφάλισης της πρώτης περιόδου / ομάδας.',
+        mode
+      );
+    }
+
+    const periodResult = buildValidatedInsurancePeriodDraft({
+      mode,
+      fundInput: multiPeriodFundInput,
+      insuredTypeInput: multiPeriodInsuredTypeInput,
+      employmentCategoryInput: multiPeriodEmploymentCategoryInput,
+      insuranceDays: Math.round(periodTimeAnalysis.totalInsuranceDaysEquivalent),
+      insuranceDaysSource: 'declared_in_period',
+      insuranceDaysSourceLabel: 'δηλώθηκε ξεχωριστά για αυτή την περίοδο / ομάδα',
+    });
+
+    if (periodResult.error) {
+      return periodResult;
+    }
+
+    const period = periodResult.period;
+
+    return {
+      hasValue: true,
+      error: null,
+      warnings: [
+        'Η πρώτη περίοδος / ομάδα στέλνεται μόνο ως insurancePeriodsDraft για έλεγχο και δεν χρησιμοποιείται ακόμα ως κανονικό insurancePeriods από τον calculator.',
+      ],
+      insurancePeriodsInputMode: mode,
+      insurancePeriodsInputModeLabel:
+        INSURANCE_PERIODS_INPUT_MODE_OPTIONS[mode].label,
+      insurancePeriodsDraft: [period],
+      insurancePeriodDraftDisplay:
+        `Περίοδος / ομάδα 1: ${period.fundLabel} - ` +
+        `${period.insuredTypeLabel} - ${period.employmentCategoryLabel}, ` +
+        `${period.insuranceDays} ημέρες (${period.insuranceDaysSourceLabel})`,
+      totalInsuranceTimeAnalysis: {
+        ...periodTimeAnalysis,
+        insuranceTimeDisplay:
+          `${periodTimeAnalysis.insuranceTimeDisplay} ` +
+          '(σύνολο από την πρώτη περίοδο / ομάδα)',
+      },
     };
   }
 
@@ -869,6 +962,76 @@ function analyzeInsurancePeriodsDraft({
   };
 }
 
+function buildValidatedInsurancePeriodDraft({
+  mode,
+  fundInput,
+  insuredTypeInput,
+  employmentCategoryInput,
+  insuranceDays,
+  insuranceDaysSource,
+  insuranceDaysSourceLabel,
+}) {
+  const fund = String(fundInput || '').trim();
+  const insuredType = String(insuredTypeInput || '').trim();
+  const employmentCategory = String(employmentCategoryInput || '').trim();
+
+  if (!fund) {
+    return createInsurancePeriodDraftError('Επιλέξτε φορέα / κατηγορία ασφάλισης.', mode);
+  }
+
+  if (!INSURANCE_PERIOD_FUND_OPTIONS[fund]) {
+    return createInsurancePeriodDraftError('Επιλέξτε έγκυρο φορέα / κατηγορία ασφάλισης.', mode);
+  }
+
+  if (!insuredType) {
+    return createInsurancePeriodDraftError('Επιλέξτε αν ο ασφαλισμένος είναι παλαιός ή νέος.', mode);
+  }
+
+  if (!isAllowedInsuredTypeForFund({ fund, insuredType })) {
+    return createInsurancePeriodDraftError('Η επιλογή παλαιός / νέος δεν ταιριάζει με τον φορέα.', mode);
+  }
+
+  if (!employmentCategory) {
+    return createInsurancePeriodDraftError('Επιλέξτε κατηγορία εργασίας / εισφορών.', mode);
+  }
+
+  if (!isAllowedEmploymentCategoryForFund({ fund, employmentCategory })) {
+    return createInsurancePeriodDraftError('Η κατηγορία εργασίας / εισφορών δεν ταιριάζει με τον φορέα.', mode);
+  }
+
+  if (!Number.isFinite(insuranceDays) || insuranceDays <= 0) {
+    return createInsurancePeriodDraftError('Ο χρόνος της ασφαλιστικής περιόδου πρέπει να είναι μεγαλύτερος από 0.', mode);
+  }
+
+  const category = buildInsurancePeriodCategory({
+    fund,
+    insuredType,
+    employmentCategory,
+  });
+
+  return {
+    error: null,
+    period: {
+      fund,
+      fundLabel: INSURANCE_PERIOD_FUND_OPTIONS[fund].label,
+      insuredType,
+      insuredTypeLabel: INSURED_TYPE_OPTIONS[insuredType].label,
+      employmentCategory,
+      employmentCategoryLabel: EMPLOYMENT_CATEGORY_OPTIONS[employmentCategory].label,
+      fromDate: null,
+      fromDateDisplay: null,
+      toDate: null,
+      toDateDisplay: null,
+      insuranceDays,
+      insuranceDaysSource,
+      insuranceDaysSourceLabel,
+      categoryKey: category.categoryKey,
+      contributionCategory: category.contributionCategory,
+      specialWorkFacts: category.specialWorkFacts,
+    },
+  };
+}
+
 function createInsurancePeriodDraftError(error, mode) {
   return {
     hasValue: true,
@@ -879,6 +1042,7 @@ function createInsurancePeriodDraftError(error, mode) {
       INSURANCE_PERIODS_INPUT_MODE_OPTIONS[mode]?.label || null,
     insurancePeriodsDraft: [],
     insurancePeriodDraftDisplay: null,
+    totalInsuranceTimeAnalysis: null,
   };
 }
 
