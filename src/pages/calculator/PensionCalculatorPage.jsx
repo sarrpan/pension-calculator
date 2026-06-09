@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 import BackendResponsePanel from './components/BackendResponsePanel';
+import MainPensionResultPanel from './components/MainPensionResultPanel';
 import PreparedInputPreview from './components/PreparedInputPreview';
 import ContributoryPensionInputSection from './sections/ContributoryPensionInputSection';
 import InsuranceTimeInputSection from './sections/InsuranceTimeInputSection';
@@ -9,6 +10,7 @@ import { errorSectionStyle } from './utils/calculatorStyles';
 import { analyzePensionForm } from './utils/pensionFormAnalysis';
 
 const PREPARE_PENSION_INPUT_URL = 'http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/preparePensionCalculationInput';
+const CALCULATE_PENSION_URL = 'http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/calculateDeiPension';
 const LOCAL_STORAGE_KEY = 'geodora_pension_calculator_draft_v1';
 
 function PensionCalculatorPage() {
@@ -72,6 +74,10 @@ function PensionCalculatorPage() {
   const [backendResponse, setBackendResponse] = useState(null);
   const [backendError, setBackendError] = useState('');
   const [isSendingToBackend, setIsSendingToBackend] = useState(false);
+
+  const [calculationResponse, setCalculationResponse] = useState(null);
+  const [calculationError, setCalculationError] = useState('');
+  const [isCalculatingPension, setIsCalculatingPension] = useState(false);
 
   const analysis = useMemo(() => {
     return analyzePensionForm({
@@ -152,6 +158,8 @@ function PensionCalculatorPage() {
   function clearBackendResult() {
     setBackendResponse(null);
     setBackendError('');
+    setCalculationResponse(null);
+    setCalculationError('');
   }
 
   function handlePensionTypeChange(value) {
@@ -267,10 +275,50 @@ function PensionCalculatorPage() {
       }
 
       setBackendResponse(data);
+      setCalculationResponse(null);
+      setCalculationError('');
     } catch (error) {
       setBackendError(error.message);
     } finally {
       setIsSendingToBackend(false);
+    }
+  }
+
+  async function handleCalculatePension() {
+    setCalculationResponse(null);
+    setCalculationError('');
+
+    const preparedInput = backendResponse?.preparedInput;
+
+    if (!preparedInput) {
+      setCalculationError(
+        'Δεν υπάρχει preparedInput. Πατήστε πρώτα «Προετοιμασία δεδομένων».'
+      );
+      return;
+    }
+
+    setIsCalculatingPension(true);
+
+    try {
+      const response = await fetch(CALCULATE_PENSION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(preparedInput),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || 'Αποτυχία υπολογισμού σύνταξης.');
+      }
+
+      setCalculationResponse(data);
+    } catch (error) {
+      setCalculationError(error.message);
+    } finally {
+      setIsCalculatingPension(false);
     }
   }
 
@@ -416,6 +464,44 @@ function PensionCalculatorPage() {
       {backendResponse && (
         <BackendResponsePanel backendResponse={backendResponse} />
       )}
+
+      {backendResponse?.preparedInput && (
+        <section
+          style={{
+            marginTop: '1rem',
+            border: '1px solid #cbd5e1',
+            borderRadius: '8px',
+            padding: '1rem',
+            background: '#f8fafc',
+          }}
+        >
+          <h2>Υπολογισμός κύριας σύνταξης</h2>
+          <p style={{ color: '#475569' }}>
+            Αυτό το κουμπί στέλνει το preparedInput στο actual calculator και
+            εμφανίζει εθνική, ανταποδοτική και σύνολο κύριας σύνταξης.
+          </p>
+
+          <button
+            type="button"
+            onClick={handleCalculatePension}
+            disabled={isCalculatingPension}
+            style={{
+              padding: '0.6rem 1rem',
+              cursor: isCalculatingPension ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {isCalculatingPension ? 'Υπολογισμός...' : 'Υπολογισμός σύνταξης'}
+          </button>
+
+          {calculationError && (
+            <p style={{ color: 'crimson' }}>{calculationError}</p>
+          )}
+        </section>
+      )}
+
+      {calculationResponse && (
+        <MainPensionResultPanel calculationResponse={calculationResponse} />
+      )}
     </main>
   );
 }
@@ -450,12 +536,49 @@ function createEmptyYearlyEarningsRows() {
   return rows;
 }
 
+const REAL_YEARLY_EARNINGS_ROWS = [
+  { year: 2002, annualEarnings: '16115', insuranceDays: '300' },
+  { year: 2003, annualEarnings: '16626', insuranceDays: '300' },
+  { year: 2004, annualEarnings: '17897', insuranceDays: '300' },
+  { year: 2005, annualEarnings: '19949', insuranceDays: '300' },
+  { year: 2006, annualEarnings: '22505', insuranceDays: '300' },
+  { year: 2007, annualEarnings: '23591', insuranceDays: '300' },
+  { year: 2008, annualEarnings: '26778', insuranceDays: '300' },
+  { year: 2009, annualEarnings: '30034', insuranceDays: '300' },
+  { year: 2010, annualEarnings: '27565', insuranceDays: '300' },
+  { year: 2011, annualEarnings: '26982', insuranceDays: '300' },
+  { year: 2012, annualEarnings: '27612', insuranceDays: '300' },
+  { year: 2013, annualEarnings: '27392', insuranceDays: '300' },
+  { year: 2014, annualEarnings: '28866', insuranceDays: '300' },
+  { year: 2015, annualEarnings: '29254', insuranceDays: '300' },
+  { year: 2016, annualEarnings: '28778', insuranceDays: '300' },
+  { year: 2017, annualEarnings: '29629', insuranceDays: '300' },
+  { year: 2018, annualEarnings: '29867', insuranceDays: '300' },
+  { year: 2019, annualEarnings: '37902', insuranceDays: '300' },
+  { year: 2020, annualEarnings: '37305', insuranceDays: '300' },
+  { year: 2021, annualEarnings: '50781', insuranceDays: '300' },
+  { year: 2022, annualEarnings: '50438', insuranceDays: '300' },
+  { year: 2023, annualEarnings: '51828', insuranceDays: '300' },
+  { year: 2024, annualEarnings: '55250', insuranceDays: '300' },
+  { year: 2025, annualEarnings: '57497', insuranceDays: '299' },
+];
+
 function createDevelopmentYearlyEarningsRows() {
-  return createEmptyYearlyEarningsRows().map((row) => ({
-    ...row,
-    annualEarnings: '18000',
-    insuranceDays: '300',
-  }));
+  return createEmptyYearlyEarningsRows().map((row) => {
+    const matchingRealRow = REAL_YEARLY_EARNINGS_ROWS.find(
+      (realRow) => String(realRow.year) === String(row.year)
+    );
+
+    if (!matchingRealRow) {
+      return row;
+    }
+
+    return {
+      ...row,
+      annualEarnings: matchingRealRow.annualEarnings,
+      insuranceDays: matchingRealRow.insuranceDays,
+    };
+  });
 }
 
 function getInitialFormStep(savedDraft = {}) {

@@ -31,7 +31,7 @@ function ContributoryPensionInputSection({
             onClick={onLoadDevelopmentYearlyEarnings}
             style={{ marginBottom: '1rem', padding: '0.5rem 0.75rem' }}
           >
-            Φόρτωση δοκιμαστικών αποδοχών
+            Φόρτωση πραγματικών αποδοχών
           </button>
         )}
 
