@@ -15,6 +15,14 @@ function InsurancePeriodsInputSection({
   multiPeriodFundInput,
   multiPeriodInsuredTypeInput,
   multiPeriodEmploymentCategoryInput,
+  multiPeriod2TimeInputMethod,
+  multiPeriod2InsuranceDaysInput,
+  multiPeriod2InsuranceYearsInput,
+  multiPeriod2InsuranceMonthsInput,
+  multiPeriod2InsuranceExtraDaysInput,
+  multiPeriod2FundInput,
+  multiPeriod2InsuredTypeInput,
+  multiPeriod2EmploymentCategoryInput,
   onInsurancePeriodsInputModeChange,
   onSimpleFundChange,
   onSimpleInsuredTypeChange,
@@ -27,12 +35,17 @@ function InsurancePeriodsInputSection({
   onMultiPeriodFundChange,
   onMultiPeriodInsuredTypeChange,
   onMultiPeriodEmploymentCategoryChange,
+  onMultiPeriod2TimeInputMethodChange,
+  onMultiPeriod2InsuranceDaysChange,
+  onMultiPeriod2InsuranceYearsChange,
+  onMultiPeriod2InsuranceMonthsChange,
+  onMultiPeriod2InsuranceExtraDaysChange,
+  onMultiPeriod2FundChange,
+  onMultiPeriod2InsuredTypeChange,
+  onMultiPeriod2EmploymentCategoryChange,
 }) {
   const simpleInsuredTypeOptions = getInsuredTypeOptions(simpleFundInput);
   const simpleEmploymentCategoryOptions = getEmploymentCategoryOptions(simpleFundInput);
-
-  const multiInsuredTypeOptions = getInsuredTypeOptions(multiPeriodFundInput);
-  const multiEmploymentCategoryOptions = getEmploymentCategoryOptions(multiPeriodFundInput);
 
   function handleModeChange(value) {
     onInsurancePeriodsInputModeChange(value);
@@ -44,35 +57,37 @@ function InsurancePeriodsInputSection({
     }
 
     if (value !== 'multiple') {
-      onMultiPeriodTimeInputMethodChange('');
-      onMultiPeriodInsuranceDaysChange('');
-      onMultiPeriodInsuranceYearsChange('');
-      onMultiPeriodInsuranceMonthsChange('');
-      onMultiPeriodInsuranceExtraDaysChange('');
-      onMultiPeriodFundChange('');
-      onMultiPeriodInsuredTypeChange('');
-      onMultiPeriodEmploymentCategoryChange('');
+      clearFirstMultiPeriod();
+      clearSecondMultiPeriod();
     }
+  }
+
+  function clearFirstMultiPeriod() {
+    onMultiPeriodTimeInputMethodChange('');
+    onMultiPeriodInsuranceDaysChange('');
+    onMultiPeriodInsuranceYearsChange('');
+    onMultiPeriodInsuranceMonthsChange('');
+    onMultiPeriodInsuranceExtraDaysChange('');
+    onMultiPeriodFundChange('');
+    onMultiPeriodInsuredTypeChange('');
+    onMultiPeriodEmploymentCategoryChange('');
+  }
+
+  function clearSecondMultiPeriod() {
+    onMultiPeriod2TimeInputMethodChange('');
+    onMultiPeriod2InsuranceDaysChange('');
+    onMultiPeriod2InsuranceYearsChange('');
+    onMultiPeriod2InsuranceMonthsChange('');
+    onMultiPeriod2InsuranceExtraDaysChange('');
+    onMultiPeriod2FundChange('');
+    onMultiPeriod2InsuredTypeChange('');
+    onMultiPeriod2EmploymentCategoryChange('');
   }
 
   function handleSimpleFundChange(value) {
     onSimpleFundChange(value);
     onSimpleInsuredTypeChange('');
     onSimpleEmploymentCategoryChange('');
-  }
-
-  function handleMultiFundChange(value) {
-    onMultiPeriodFundChange(value);
-    onMultiPeriodInsuredTypeChange('');
-    onMultiPeriodEmploymentCategoryChange('');
-  }
-
-  function handleMultiTimeMethodChange(value) {
-    onMultiPeriodTimeInputMethodChange(value);
-    onMultiPeriodInsuranceDaysChange('');
-    onMultiPeriodInsuranceYearsChange('');
-    onMultiPeriodInsuranceMonthsChange('');
-    onMultiPeriodInsuranceExtraDaysChange('');
   }
 
   return (
@@ -143,91 +158,174 @@ function InsurancePeriodsInputSection({
       )}
 
       {insurancePeriodsInputMode === 'multiple' && (
-        <div style={periodBoxStyle}>
-          <h3 style={{ marginTop: 0 }}>Περίοδος / ομάδα 1</h3>
-
+        <div style={{ marginTop: '1rem' }}>
           <p style={{ color: '#475569' }}>
-            Για περισσότερες κατηγορίες δηλώνουμε χρόνο ξεχωριστά για κάθε
-            ομάδα. Σε αυτό το βήμα φτιάχνουμε την πρώτη ομάδα. Το κουμπί
-            προσθήκης δεύτερης ομάδας θα μπει μετά.
+            Στην απλή εκδοχή δηλώνουμε μέχρι δύο ομάδες. Η πρώτη μπορεί να είναι
+            η προηγούμενη ασφάλιση και η δεύτερη η τελευταία / κύρια ασφάλιση.
           </p>
 
-          <div style={gridStyle}>
-            <SelectWithLabel
-              id="multiPeriodTimeInputMethod"
-              label="Τρόπος εισαγωγής χρόνου"
-              value={multiPeriodTimeInputMethod}
-              onChange={handleMultiTimeMethodChange}
-              options={INSURANCE_TIME_METHOD_OPTIONS}
-            />
+          <InsurancePeriodGroupFields
+            groupNumber={1}
+            title="Περίοδος / ομάδα 1"
+            timeInputMethod={multiPeriodTimeInputMethod}
+            insuranceDaysInput={multiPeriodInsuranceDaysInput}
+            insuranceYearsInput={multiPeriodInsuranceYearsInput}
+            insuranceMonthsInput={multiPeriodInsuranceMonthsInput}
+            insuranceExtraDaysInput={multiPeriodInsuranceExtraDaysInput}
+            fundInput={multiPeriodFundInput}
+            insuredTypeInput={multiPeriodInsuredTypeInput}
+            employmentCategoryInput={multiPeriodEmploymentCategoryInput}
+            onTimeInputMethodChange={onMultiPeriodTimeInputMethodChange}
+            onInsuranceDaysChange={onMultiPeriodInsuranceDaysChange}
+            onInsuranceYearsChange={onMultiPeriodInsuranceYearsChange}
+            onInsuranceMonthsChange={onMultiPeriodInsuranceMonthsChange}
+            onInsuranceExtraDaysChange={onMultiPeriodInsuranceExtraDaysChange}
+            onFundChange={onMultiPeriodFundChange}
+            onInsuredTypeChange={onMultiPeriodInsuredTypeChange}
+            onEmploymentCategoryChange={onMultiPeriodEmploymentCategoryChange}
+          />
 
-            {multiPeriodTimeInputMethod === 'insurance_days' && (
-              <TextInputWithLabel
-                id="multiPeriodInsuranceDays"
-                label="Ένσημα / ημέρες ασφάλισης"
-                value={multiPeriodInsuranceDaysInput}
-                onChange={onMultiPeriodInsuranceDaysChange}
-                placeholder="π.χ. 4500"
-              />
-            )}
-
-            {multiPeriodTimeInputMethod === 'years_months_days' && (
-              <>
-                <TextInputWithLabel
-                  id="multiPeriodInsuranceYears"
-                  label="Έτη"
-                  value={multiPeriodInsuranceYearsInput}
-                  onChange={onMultiPeriodInsuranceYearsChange}
-                  placeholder="π.χ. 15"
-                />
-
-                <TextInputWithLabel
-                  id="multiPeriodInsuranceMonths"
-                  label="Μήνες"
-                  value={multiPeriodInsuranceMonthsInput}
-                  onChange={onMultiPeriodInsuranceMonthsChange}
-                  placeholder="0 έως 11"
-                />
-
-                <TextInputWithLabel
-                  id="multiPeriodInsuranceExtraDays"
-                  label="Ημέρες"
-                  value={multiPeriodInsuranceExtraDaysInput}
-                  onChange={onMultiPeriodInsuranceExtraDaysChange}
-                  placeholder="0 έως 24"
-                />
-              </>
-            )}
-
-            <SelectWithLabel
-              id="multiPeriodFund"
-              label="Φορέας / κατηγορία ασφάλισης"
-              value={multiPeriodFundInput}
-              onChange={handleMultiFundChange}
-              options={FUND_OPTIONS}
-            />
-
-            <SelectWithLabel
-              id="multiPeriodInsuredType"
-              label="Ασφαλισμένος"
-              value={multiPeriodInsuredTypeInput}
-              onChange={onMultiPeriodInsuredTypeChange}
-              options={multiInsuredTypeOptions}
-              disabled={!multiPeriodFundInput}
-            />
-
-            <SelectWithLabel
-              id="multiPeriodEmploymentCategory"
-              label="Κατηγορία εργασίας / εισφορών"
-              value={multiPeriodEmploymentCategoryInput}
-              onChange={onMultiPeriodEmploymentCategoryChange}
-              options={multiEmploymentCategoryOptions}
-              disabled={!multiPeriodFundInput}
-            />
-          </div>
+          <InsurancePeriodGroupFields
+            groupNumber={2}
+            title="Περίοδος / ομάδα 2"
+            timeInputMethod={multiPeriod2TimeInputMethod}
+            insuranceDaysInput={multiPeriod2InsuranceDaysInput}
+            insuranceYearsInput={multiPeriod2InsuranceYearsInput}
+            insuranceMonthsInput={multiPeriod2InsuranceMonthsInput}
+            insuranceExtraDaysInput={multiPeriod2InsuranceExtraDaysInput}
+            fundInput={multiPeriod2FundInput}
+            insuredTypeInput={multiPeriod2InsuredTypeInput}
+            employmentCategoryInput={multiPeriod2EmploymentCategoryInput}
+            onTimeInputMethodChange={onMultiPeriod2TimeInputMethodChange}
+            onInsuranceDaysChange={onMultiPeriod2InsuranceDaysChange}
+            onInsuranceYearsChange={onMultiPeriod2InsuranceYearsChange}
+            onInsuranceMonthsChange={onMultiPeriod2InsuranceMonthsChange}
+            onInsuranceExtraDaysChange={onMultiPeriod2InsuranceExtraDaysChange}
+            onFundChange={onMultiPeriod2FundChange}
+            onInsuredTypeChange={onMultiPeriod2InsuredTypeChange}
+            onEmploymentCategoryChange={onMultiPeriod2EmploymentCategoryChange}
+          />
         </div>
       )}
     </fieldset>
+  );
+}
+
+function InsurancePeriodGroupFields({
+  groupNumber,
+  title,
+  timeInputMethod,
+  insuranceDaysInput,
+  insuranceYearsInput,
+  insuranceMonthsInput,
+  insuranceExtraDaysInput,
+  fundInput,
+  insuredTypeInput,
+  employmentCategoryInput,
+  onTimeInputMethodChange,
+  onInsuranceDaysChange,
+  onInsuranceYearsChange,
+  onInsuranceMonthsChange,
+  onInsuranceExtraDaysChange,
+  onFundChange,
+  onInsuredTypeChange,
+  onEmploymentCategoryChange,
+}) {
+  const insuredTypeOptions = getInsuredTypeOptions(fundInput);
+  const employmentCategoryOptions = getEmploymentCategoryOptions(fundInput);
+
+  function handleTimeMethodChange(value) {
+    onTimeInputMethodChange(value);
+    onInsuranceDaysChange('');
+    onInsuranceYearsChange('');
+    onInsuranceMonthsChange('');
+    onInsuranceExtraDaysChange('');
+  }
+
+  function handleFundChange(value) {
+    onFundChange(value);
+    onInsuredTypeChange('');
+    onEmploymentCategoryChange('');
+  }
+
+  return (
+    <div style={periodBoxStyle}>
+      <h3 style={{ marginTop: 0 }}>{title}</h3>
+
+      <div style={gridStyle}>
+        <SelectWithLabel
+          id={`multiPeriod${groupNumber}TimeInputMethod`}
+          label="Τρόπος εισαγωγής χρόνου"
+          value={timeInputMethod}
+          onChange={handleTimeMethodChange}
+          options={INSURANCE_TIME_METHOD_OPTIONS}
+        />
+
+        {timeInputMethod === 'insurance_days' && (
+          <TextInputWithLabel
+            id={`multiPeriod${groupNumber}InsuranceDays`}
+            label="Ένσημα / ημέρες ασφάλισης"
+            value={insuranceDaysInput}
+            onChange={onInsuranceDaysChange}
+            placeholder="π.χ. 4500"
+          />
+        )}
+
+        {timeInputMethod === 'years_months_days' && (
+          <>
+            <TextInputWithLabel
+              id={`multiPeriod${groupNumber}InsuranceYears`}
+              label="Έτη"
+              value={insuranceYearsInput}
+              onChange={onInsuranceYearsChange}
+              placeholder="π.χ. 15"
+            />
+
+            <TextInputWithLabel
+              id={`multiPeriod${groupNumber}InsuranceMonths`}
+              label="Μήνες"
+              value={insuranceMonthsInput}
+              onChange={onInsuranceMonthsChange}
+              placeholder="0 έως 11"
+            />
+
+            <TextInputWithLabel
+              id={`multiPeriod${groupNumber}InsuranceExtraDays`}
+              label="Ημέρες"
+              value={insuranceExtraDaysInput}
+              onChange={onInsuranceExtraDaysChange}
+              placeholder="0 έως 24"
+            />
+          </>
+        )}
+
+        <SelectWithLabel
+          id={`multiPeriod${groupNumber}Fund`}
+          label="Φορέας / κατηγορία ασφάλισης"
+          value={fundInput}
+          onChange={handleFundChange}
+          options={FUND_OPTIONS}
+        />
+
+        <SelectWithLabel
+          id={`multiPeriod${groupNumber}InsuredType`}
+          label="Ασφαλισμένος"
+          value={insuredTypeInput}
+          onChange={onInsuredTypeChange}
+          options={insuredTypeOptions}
+          disabled={!fundInput}
+        />
+
+        <SelectWithLabel
+          id={`multiPeriod${groupNumber}EmploymentCategory`}
+          label="Κατηγορία εργασίας / εισφορών"
+          value={employmentCategoryInput}
+          onChange={onEmploymentCategoryChange}
+          options={employmentCategoryOptions}
+          disabled={!fundInput}
+        />
+      </div>
+    </div>
   );
 }
 
