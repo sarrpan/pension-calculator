@@ -4,6 +4,7 @@ import BackendResponsePanel from './components/BackendResponsePanel';
 import MainPensionResultPanel from './components/MainPensionResultPanel';
 import PreparedInputPreview from './components/PreparedInputPreview';
 import ContributoryPensionInputSection from './sections/ContributoryPensionInputSection';
+import InsurancePeriodsInputSection from './sections/InsurancePeriodsInputSection';
 import InsuranceTimeInputSection from './sections/InsuranceTimeInputSection';
 import NationalPensionInputSection from './sections/NationalPensionInputSection';
 import { errorSectionStyle } from './utils/calculatorStyles';
@@ -61,6 +62,28 @@ function PensionCalculatorPage() {
     savedDraft.residenceYearsInput || ''
   );
 
+  const [insurancePeriodsInputMode, setInsurancePeriodsInputMode] = useState(
+    savedDraft.insurancePeriodsInputMode || 'disabled'
+  );
+  const [simpleFundInput, setSimpleFundInput] = useState(
+    savedDraft.simpleFundInput || ''
+  );
+  const [simpleInsuredTypeInput, setSimpleInsuredTypeInput] = useState(
+    savedDraft.simpleInsuredTypeInput || ''
+  );
+  const [simpleEmploymentCategoryInput, setSimpleEmploymentCategoryInput] = useState(
+    savedDraft.simpleEmploymentCategoryInput || ''
+  );
+  const [simpleFromDateInput, setSimpleFromDateInput] = useState(
+    savedDraft.simpleFromDateInput || ''
+  );
+  const [simpleToDateInput, setSimpleToDateInput] = useState(
+    savedDraft.simpleToDateInput || ''
+  );
+  const [simpleInsuranceDaysInput, setSimpleInsuranceDaysInput] = useState(
+    savedDraft.simpleInsuranceDaysInput || ''
+  );
+
   const [contributoryEarningsInputMethod, setContributoryEarningsInputMethod] =
     useState(savedDraft.contributoryEarningsInputMethod || '');
   const [averageMonthlyPensionableEarningsInput, setAverageMonthlyPensionableEarningsInput] =
@@ -94,6 +117,13 @@ function PensionCalculatorPage() {
       insuranceMonthsInput,
       insuranceExtraDaysInput,
       residenceYearsInput,
+      insurancePeriodsInputMode,
+      simpleFundInput,
+      simpleInsuredTypeInput,
+      simpleEmploymentCategoryInput,
+      simpleFromDateInput,
+      simpleToDateInput,
+      simpleInsuranceDaysInput,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
       yearlyEarningsRows,
@@ -112,6 +142,13 @@ function PensionCalculatorPage() {
     insuranceMonthsInput,
     insuranceExtraDaysInput,
     residenceYearsInput,
+    insurancePeriodsInputMode,
+    simpleFundInput,
+    simpleInsuredTypeInput,
+    simpleEmploymentCategoryInput,
+    simpleFromDateInput,
+    simpleToDateInput,
+    simpleInsuranceDaysInput,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
     yearlyEarningsRows,
@@ -132,6 +169,13 @@ function PensionCalculatorPage() {
       insuranceMonthsInput,
       insuranceExtraDaysInput,
       residenceYearsInput,
+      insurancePeriodsInputMode,
+      simpleFundInput,
+      simpleInsuredTypeInput,
+      simpleEmploymentCategoryInput,
+      simpleFromDateInput,
+      simpleToDateInput,
+      simpleInsuranceDaysInput,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
       yearlyEarningsRows,
@@ -150,6 +194,13 @@ function PensionCalculatorPage() {
     insuranceMonthsInput,
     insuranceExtraDaysInput,
     residenceYearsInput,
+    insurancePeriodsInputMode,
+    simpleFundInput,
+    simpleInsuredTypeInput,
+    simpleEmploymentCategoryInput,
+    simpleFromDateInput,
+    simpleToDateInput,
+    simpleInsuranceDaysInput,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
     yearlyEarningsRows,
@@ -195,6 +246,20 @@ function PensionCalculatorPage() {
 
     if (value !== 'reduced') {
       setEarlyReductionMonthsInput('');
+    }
+  }
+
+  function handleInsurancePeriodsInputModeChange(value) {
+    setInsurancePeriodsInputMode(value);
+    clearBackendResult();
+
+    if (value === 'disabled') {
+      setSimpleFundInput('');
+      setSimpleInsuredTypeInput('');
+      setSimpleEmploymentCategoryInput('');
+      setSimpleFromDateInput('');
+      setSimpleToDateInput('');
+      setSimpleInsuranceDaysInput('');
     }
   }
 
@@ -409,6 +474,41 @@ function PensionCalculatorPage() {
               }}
               onInsuranceExtraDaysChange={(value) => {
                 setInsuranceExtraDaysInput(value);
+                clearBackendResult();
+              }}
+            />
+
+            <InsurancePeriodsInputSection
+              insurancePeriodsInputMode={insurancePeriodsInputMode}
+              simpleFundInput={simpleFundInput}
+              simpleInsuredTypeInput={simpleInsuredTypeInput}
+              simpleEmploymentCategoryInput={simpleEmploymentCategoryInput}
+              simpleFromDateInput={simpleFromDateInput}
+              simpleToDateInput={simpleToDateInput}
+              simpleInsuranceDaysInput={simpleInsuranceDaysInput}
+              onInsurancePeriodsInputModeChange={handleInsurancePeriodsInputModeChange}
+              onSimpleFundChange={(value) => {
+                setSimpleFundInput(value);
+                clearBackendResult();
+              }}
+              onSimpleInsuredTypeChange={(value) => {
+                setSimpleInsuredTypeInput(value);
+                clearBackendResult();
+              }}
+              onSimpleEmploymentCategoryChange={(value) => {
+                setSimpleEmploymentCategoryInput(value);
+                clearBackendResult();
+              }}
+              onSimpleFromDateChange={(value) => {
+                setSimpleFromDateInput(value);
+                clearBackendResult();
+              }}
+              onSimpleToDateChange={(value) => {
+                setSimpleToDateInput(value);
+                clearBackendResult();
+              }}
+              onSimpleInsuranceDaysChange={(value) => {
+                setSimpleInsuranceDaysInput(value);
                 clearBackendResult();
               }}
             />

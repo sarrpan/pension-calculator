@@ -89,6 +89,46 @@ function PreparedInputPreview({ analysis }) {
           </p>
         )}
 
+        {analysis.insurancePeriodsDraft?.length > 0 && (
+          <div style={previewBoxStyle}>
+            <h3 style={{ marginTop: 0 }}>Ασφαλιστική περίοδος</h3>
+
+            {analysis.insurancePeriodsDraft.map((period, index) => (
+              <div key={`${period.fromDate}-${period.toDate}-${index}`}>
+                <p>
+                  <strong>Περίοδος:</strong>{' '}
+                  {period.fromDateDisplay} έως {period.toDateDisplay}
+                </p>
+
+                <p>
+                  <strong>Φορέας / κατηγορία ασφάλισης:</strong>{' '}
+                  {period.fundLabel}
+                </p>
+
+                <p>
+                  <strong>Ασφαλισμένος:</strong>{' '}
+                  {period.insuredTypeLabel}
+                </p>
+
+                <p>
+                  <strong>Κατηγορία εργασίας / εισφορών:</strong>{' '}
+                  {period.employmentCategoryLabel}
+                </p>
+
+                <p>
+                  <strong>Ημέρες / ένσημα:</strong>{' '}
+                  {period.insuranceDays}
+                </p>
+
+                <p>
+                  <strong>Εσωτερικά values:</strong>{' '}
+                  fund={period.fund}, insuredType={period.insuredType}, employmentCategory={period.employmentCategory}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
         {analysis.contributoryEarningsInputMethodLabel && (
           <p>
             <strong>Τρόπος εισαγωγής ανταποδοτικής:</strong>{' '}
@@ -144,5 +184,13 @@ function PreparedInputPreview({ analysis }) {
     </>
   );
 }
+
+const previewBoxStyle = {
+  border: '1px solid #cbd5e1',
+  padding: '0.75rem',
+  marginTop: '1rem',
+  marginBottom: '1rem',
+  backgroundColor: '#f8fafc',
+};
 
 export default PreparedInputPreview;
