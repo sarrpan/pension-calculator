@@ -68,7 +68,7 @@ function PreparedInputPreview({ analysis }) {
         </p>
 
         <p>
-          <strong>Χρόνος ασφάλισης:</strong>{' '}
+          <strong>Χρόνος ασφάλισης που χρησιμοποιείται στον υπολογισμό:</strong>{' '}
           {analysis.insuranceTimeDisplay}
         </p>
 
@@ -91,14 +91,21 @@ function PreparedInputPreview({ analysis }) {
 
         {analysis.insurancePeriodsDraft?.length > 0 && (
           <div style={previewBoxStyle}>
-            <h3 style={{ marginTop: 0 }}>Ασφαλιστική περίοδος</h3>
+            <h3 style={{ marginTop: 0 }}>Κατηγορία συνολικού χρόνου ασφάλισης</h3>
 
             {analysis.insurancePeriodsDraft.map((period, index) => (
-              <div key={`${period.fromDate}-${period.toDate}-${index}`}>
-                <p>
-                  <strong>Περίοδος:</strong>{' '}
-                  {period.fromDateDisplay} έως {period.toDateDisplay}
-                </p>
+              <div key={`${period.fund}-${period.insuredType}-${period.employmentCategory}-${index}`}>
+                {period.fromDateDisplay && period.toDateDisplay ? (
+                  <p>
+                    <strong>Περίοδος:</strong>{' '}
+                    {period.fromDateDisplay} έως {period.toDateDisplay}
+                  </p>
+                ) : (
+                  <p>
+                    <strong>Χρόνος που αποδίδεται:</strong>{' '}
+                    Όλος ο δηλωμένος συνολικός χρόνος ασφάλισης
+                  </p>
+                )}
 
                 <p>
                   <strong>Φορέας / κατηγορία ασφάλισης:</strong>{' '}
@@ -116,9 +123,16 @@ function PreparedInputPreview({ analysis }) {
                 </p>
 
                 <p>
-                  <strong>Ημέρες / ένσημα:</strong>{' '}
+                  <strong>Ημέρες / ένσημα που αποδίδονται:</strong>{' '}
                   {period.insuranceDays}
                 </p>
+
+                {period.insuranceDaysSourceLabel && (
+                  <p>
+                    <strong>Πηγή ημερών:</strong>{' '}
+                    {period.insuranceDaysSourceLabel}
+                  </p>
+                )}
 
                 <p>
                   <strong>Εσωτερικά values:</strong>{' '}
