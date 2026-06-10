@@ -2,6 +2,7 @@ const INSURANCE_DAYS_PER_YEAR = 300;
 const INSURANCE_DAYS_PER_MONTH = 25;
 const MIN_RESIDENCE_YEARS_FOR_OLD_AGE_NATIONAL_PENSION = 15;
 const MAX_EARLY_REDUCTION_MONTHS = 60;
+const MAX_INSURANCE_PERIOD_GROUPS = 10;
 
 const PENSION_TYPE_OPTIONS = {
   old_age: {
@@ -228,6 +229,7 @@ function analyzePensionForm({
   simpleFromDateInput,
   simpleToDateInput,
   simpleInsuranceDaysInput,
+  insurancePeriodGroups,
   multiPeriodTimeInputMethod,
   multiPeriodInsuranceDaysInput,
   multiPeriodInsuranceYearsInput,
@@ -273,6 +275,7 @@ function analyzePensionForm({
     simpleFromDateInput,
     simpleToDateInput,
     simpleInsuranceDaysInput,
+    insurancePeriodGroups,
     multiPeriodTimeInputMethod,
     multiPeriodInsuranceDaysInput,
     multiPeriodInsuranceYearsInput,
@@ -802,6 +805,7 @@ function analyzeInsurancePeriodsDraft({
   simpleFundInput,
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
+  insurancePeriodGroups,
   multiPeriodTimeInputMethod,
   multiPeriodInsuranceDaysInput,
   multiPeriodInsuranceYearsInput,
@@ -849,44 +853,67 @@ function analyzeInsurancePeriodsDraft({
   }
 
   if (mode === 'multiple') {
-    const firstPeriodResult = analyzeMultiInsurancePeriodDraft({
-      mode,
-      groupNumber: 1,
-      timeInputMethod: multiPeriodTimeInputMethod,
-      insuranceDaysInput: multiPeriodInsuranceDaysInput,
-      insuranceYearsInput: multiPeriodInsuranceYearsInput,
-      insuranceMonthsInput: multiPeriodInsuranceMonthsInput,
-      insuranceExtraDaysInput: multiPeriodInsuranceExtraDaysInput,
-      fundInput: multiPeriodFundInput,
-      insuredTypeInput: multiPeriodInsuredTypeInput,
-      employmentCategoryInput: multiPeriodEmploymentCategoryInput,
-      isRequired: true,
+    const groups = normalizeInsurancePeriodGroupsForAnalysis({
+      insurancePeriodGroups,
+      legacyFirstGroup: {
+        timeInputMethod: multiPeriodTimeInputMethod,
+        insuranceDays: multiPeriodInsuranceDaysInput,
+        insuranceYears: multiPeriodInsuranceYearsInput,
+        insuranceMonths: multiPeriodInsuranceMonthsInput,
+        insuranceExtraDays: multiPeriodInsuranceExtraDaysInput,
+        fund: multiPeriodFundInput,
+        insuredType: multiPeriodInsuredTypeInput,
+        employmentCategory: multiPeriodEmploymentCategoryInput,
+      },
+      legacySecondGroup: {
+        timeInputMethod: multiPeriod2TimeInputMethod,
+        insuranceDays: multiPeriod2InsuranceDaysInput,
+        insuranceYears: multiPeriod2InsuranceYearsInput,
+        insuranceMonths: multiPeriod2InsuranceMonthsInput,
+        insuranceExtraDays: multiPeriod2InsuranceExtraDaysInput,
+        fund: multiPeriod2FundInput,
+        insuredType: multiPeriod2InsuredTypeInput,
+        employmentCategory: multiPeriod2EmploymentCategoryInput,
+      },
     });
 
-    if (firstPeriodResult.error) {
-      return firstPeriodResult;
+    if (groups.length === 0) {
+      return createInsurancePeriodDraftError(
+        'Συμπληρώστε τουλάχιστον μία περίοδο / ομάδα ασφάλισης.',
+        mode
+      );
     }
 
-    const secondPeriodResult = analyzeMultiInsurancePeriodDraft({
-      mode,
-      groupNumber: 2,
-      timeInputMethod: multiPeriod2TimeInputMethod,
-      insuranceDaysInput: multiPeriod2InsuranceDaysInput,
-      insuranceYearsInput: multiPeriod2InsuranceYearsInput,
-      insuranceMonthsInput: multiPeriod2InsuranceMonthsInput,
-      insuranceExtraDaysInput: multiPeriod2InsuranceExtraDaysInput,
-      fundInput: multiPeriod2FundInput,
-      insuredTypeInput: multiPeriod2InsuredTypeInput,
-      employmentCategoryInput: multiPeriod2EmploymentCategoryInput,
-      isRequired: false,
-    });
-
-    if (secondPeriodResult.error) {
-      return secondPeriodResult;
+    if (groups.length > MAX_INSURANCE_PERIOD_GROUPS) {
+      return createInsurancePeriodDraftError(
+        `Μπορούν να δηλωθούν μέχρι ${MAX_INSURANCE_PERIOD_GROUPS} περίοδοι / ομάδες ασφάλισης.`,
+        mode
+      );
     }
 
-    const periods = [firstPeriodResult.period, secondPeriodResult.period]
-      .filter(Boolean);
+    const periods = [];
+
+    for (let index = 0; index < groups.length; index += 1) {
+      const periodResult = analyzeMultiInsurancePeriodDraft({
+        mode,
+        groupNumber: index + 1,
+        timeInputMethod: groups[index].timeInputMethod,
+        insuranceDaysInput: groups[index].insuranceDays,
+        insuranceYearsInput: groups[index].insuranceYears,
+        insuranceMonthsInput: groups[index].insuranceMonths,
+        insuranceExtraDaysInput: groups[index].insuranceExtraDays,
+        fundInput: groups[index].fund,
+        insuredTypeInput: groups[index].insuredType,
+        employmentCategoryInput: groups[index].employmentCategory,
+        isRequired: true,
+      });
+
+      if (periodResult.error) {
+        return periodResult;
+      }
+
+      periods.push(periodResult.period);
+    }
 
     const totalInsuranceDaysEquivalent = periods.reduce((sum, period) => {
       return sum + Number(period.insuranceDays || 0);
@@ -993,6 +1020,53 @@ function analyzeInsurancePeriodsDraft({
       `${period.employmentCategoryLabel}, ` +
       `${period.insuranceDays} ημέρες (${period.insuranceDaysSourceLabel})`,
   };
+}
+
+function normalizeInsurancePeriodGroupsForAnalysis({
+  insurancePeriodGroups,
+  legacyFirstGroup,
+  legacySecondGroup,
+}) {
+  if (Array.isArray(insurancePeriodGroups)) {
+    return insurancePeriodGroups
+      .slice(0, MAX_INSURANCE_PERIOD_GROUPS)
+      .map(normalizeInsurancePeriodGroupForAnalysis)
+      .filter((group) => {
+        return hasAnyInsurancePeriodGroupValue(group);
+      });
+  }
+
+  return [legacyFirstGroup, legacySecondGroup]
+    .map(normalizeInsurancePeriodGroupForAnalysis)
+    .filter((group) => {
+      return hasAnyInsurancePeriodGroupValue(group);
+    });
+}
+
+function normalizeInsurancePeriodGroupForAnalysis(group = {}) {
+  return {
+    timeInputMethod: group.timeInputMethod || '',
+    insuranceDays: group.insuranceDays || '',
+    insuranceYears: group.insuranceYears || '',
+    insuranceMonths: group.insuranceMonths || '',
+    insuranceExtraDays: group.insuranceExtraDays || '',
+    fund: group.fund || '',
+    insuredType: group.insuredType || '',
+    employmentCategory: group.employmentCategory || '',
+  };
+}
+
+function hasAnyInsurancePeriodGroupValue(group = {}) {
+  return [
+    group.timeInputMethod,
+    group.insuranceDays,
+    group.insuranceYears,
+    group.insuranceMonths,
+    group.insuranceExtraDays,
+    group.fund,
+    group.insuredType,
+    group.employmentCategory,
+  ].some((value) => String(value || '').trim() !== '');
 }
 
 function analyzeMultiInsurancePeriodDraft({

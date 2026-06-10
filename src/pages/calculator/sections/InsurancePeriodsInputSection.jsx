@@ -7,81 +7,25 @@ function InsurancePeriodsInputSection({
   simpleFundInput,
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
-  multiPeriodTimeInputMethod,
-  multiPeriodInsuranceDaysInput,
-  multiPeriodInsuranceYearsInput,
-  multiPeriodInsuranceMonthsInput,
-  multiPeriodInsuranceExtraDaysInput,
-  multiPeriodFundInput,
-  multiPeriodInsuredTypeInput,
-  multiPeriodEmploymentCategoryInput,
-  multiPeriod2TimeInputMethod,
-  multiPeriod2InsuranceDaysInput,
-  multiPeriod2InsuranceYearsInput,
-  multiPeriod2InsuranceMonthsInput,
-  multiPeriod2InsuranceExtraDaysInput,
-  multiPeriod2FundInput,
-  multiPeriod2InsuredTypeInput,
-  multiPeriod2EmploymentCategoryInput,
+  insurancePeriodGroups,
+  maxInsurancePeriodGroups = 10,
   onInsurancePeriodsInputModeChange,
   onSimpleFundChange,
   onSimpleInsuredTypeChange,
   onSimpleEmploymentCategoryChange,
-  onMultiPeriodTimeInputMethodChange,
-  onMultiPeriodInsuranceDaysChange,
-  onMultiPeriodInsuranceYearsChange,
-  onMultiPeriodInsuranceMonthsChange,
-  onMultiPeriodInsuranceExtraDaysChange,
-  onMultiPeriodFundChange,
-  onMultiPeriodInsuredTypeChange,
-  onMultiPeriodEmploymentCategoryChange,
-  onMultiPeriod2TimeInputMethodChange,
-  onMultiPeriod2InsuranceDaysChange,
-  onMultiPeriod2InsuranceYearsChange,
-  onMultiPeriod2InsuranceMonthsChange,
-  onMultiPeriod2InsuranceExtraDaysChange,
-  onMultiPeriod2FundChange,
-  onMultiPeriod2InsuredTypeChange,
-  onMultiPeriod2EmploymentCategoryChange,
+  onInsurancePeriodGroupChange,
+  onAddInsurancePeriodGroup,
+  onRemoveInsurancePeriodGroup,
 }) {
   const simpleInsuredTypeOptions = getInsuredTypeOptions(simpleFundInput);
   const simpleEmploymentCategoryOptions = getEmploymentCategoryOptions(simpleFundInput);
+  const safeInsurancePeriodGroups =
+    Array.isArray(insurancePeriodGroups) && insurancePeriodGroups.length > 0
+      ? insurancePeriodGroups
+      : [];
 
   function handleModeChange(value) {
     onInsurancePeriodsInputModeChange(value);
-
-    if (value !== 'simple') {
-      onSimpleFundChange('');
-      onSimpleInsuredTypeChange('');
-      onSimpleEmploymentCategoryChange('');
-    }
-
-    if (value !== 'multiple') {
-      clearFirstMultiPeriod();
-      clearSecondMultiPeriod();
-    }
-  }
-
-  function clearFirstMultiPeriod() {
-    onMultiPeriodTimeInputMethodChange('');
-    onMultiPeriodInsuranceDaysChange('');
-    onMultiPeriodInsuranceYearsChange('');
-    onMultiPeriodInsuranceMonthsChange('');
-    onMultiPeriodInsuranceExtraDaysChange('');
-    onMultiPeriodFundChange('');
-    onMultiPeriodInsuredTypeChange('');
-    onMultiPeriodEmploymentCategoryChange('');
-  }
-
-  function clearSecondMultiPeriod() {
-    onMultiPeriod2TimeInputMethodChange('');
-    onMultiPeriod2InsuranceDaysChange('');
-    onMultiPeriod2InsuranceYearsChange('');
-    onMultiPeriod2InsuranceMonthsChange('');
-    onMultiPeriod2InsuranceExtraDaysChange('');
-    onMultiPeriod2FundChange('');
-    onMultiPeriod2InsuredTypeChange('');
-    onMultiPeriod2EmploymentCategoryChange('');
   }
 
   function handleSimpleFundChange(value) {
@@ -160,51 +104,47 @@ function InsurancePeriodsInputSection({
       {insurancePeriodsInputMode === 'multiple' && (
         <div style={{ marginTop: '1rem' }}>
           <p style={{ color: '#475569' }}>
-            Στην απλή εκδοχή δηλώνουμε μέχρι δύο ομάδες. Η πρώτη μπορεί να είναι
-            η προηγούμενη ασφάλιση και η δεύτερη η τελευταία / κύρια ασφάλιση.
+            Στο πλήρες μοντέλο δηλώνουμε όσες ομάδες / περιόδους χρειάζονται,
+            μέχρι {maxInsurancePeriodGroups}. Οι ημέρες όλων των ομάδων
+            αθροίζονται για τον συνολικό χρόνο ασφάλισης.
           </p>
 
-          <InsurancePeriodGroupFields
-            groupNumber={1}
-            title="Περίοδος / ομάδα 1"
-            timeInputMethod={multiPeriodTimeInputMethod}
-            insuranceDaysInput={multiPeriodInsuranceDaysInput}
-            insuranceYearsInput={multiPeriodInsuranceYearsInput}
-            insuranceMonthsInput={multiPeriodInsuranceMonthsInput}
-            insuranceExtraDaysInput={multiPeriodInsuranceExtraDaysInput}
-            fundInput={multiPeriodFundInput}
-            insuredTypeInput={multiPeriodInsuredTypeInput}
-            employmentCategoryInput={multiPeriodEmploymentCategoryInput}
-            onTimeInputMethodChange={onMultiPeriodTimeInputMethodChange}
-            onInsuranceDaysChange={onMultiPeriodInsuranceDaysChange}
-            onInsuranceYearsChange={onMultiPeriodInsuranceYearsChange}
-            onInsuranceMonthsChange={onMultiPeriodInsuranceMonthsChange}
-            onInsuranceExtraDaysChange={onMultiPeriodInsuranceExtraDaysChange}
-            onFundChange={onMultiPeriodFundChange}
-            onInsuredTypeChange={onMultiPeriodInsuredTypeChange}
-            onEmploymentCategoryChange={onMultiPeriodEmploymentCategoryChange}
-          />
+          {safeInsurancePeriodGroups.map((group, index) => (
+            <InsurancePeriodGroupFields
+              key={group.id}
+              groupNumber={index + 1}
+              title={`Περίοδος / ομάδα ${index + 1}`}
+              group={group}
+              canRemove={safeInsurancePeriodGroups.length > 1}
+              onGroupChange={(field, value) => {
+                onInsurancePeriodGroupChange(group.id, field, value);
+              }}
+              onRemove={() => {
+                onRemoveInsurancePeriodGroup(group.id);
+              }}
+            />
+          ))}
 
-          <InsurancePeriodGroupFields
-            groupNumber={2}
-            title="Περίοδος / ομάδα 2"
-            timeInputMethod={multiPeriod2TimeInputMethod}
-            insuranceDaysInput={multiPeriod2InsuranceDaysInput}
-            insuranceYearsInput={multiPeriod2InsuranceYearsInput}
-            insuranceMonthsInput={multiPeriod2InsuranceMonthsInput}
-            insuranceExtraDaysInput={multiPeriod2InsuranceExtraDaysInput}
-            fundInput={multiPeriod2FundInput}
-            insuredTypeInput={multiPeriod2InsuredTypeInput}
-            employmentCategoryInput={multiPeriod2EmploymentCategoryInput}
-            onTimeInputMethodChange={onMultiPeriod2TimeInputMethodChange}
-            onInsuranceDaysChange={onMultiPeriod2InsuranceDaysChange}
-            onInsuranceYearsChange={onMultiPeriod2InsuranceYearsChange}
-            onInsuranceMonthsChange={onMultiPeriod2InsuranceMonthsChange}
-            onInsuranceExtraDaysChange={onMultiPeriod2InsuranceExtraDaysChange}
-            onFundChange={onMultiPeriod2FundChange}
-            onInsuredTypeChange={onMultiPeriod2InsuredTypeChange}
-            onEmploymentCategoryChange={onMultiPeriod2EmploymentCategoryChange}
-          />
+          <button
+            type="button"
+            onClick={onAddInsurancePeriodGroup}
+            disabled={safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups}
+            style={{
+              ...secondaryButtonStyle,
+              cursor:
+                safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups
+                  ? 'not-allowed'
+                  : 'pointer',
+            }}
+          >
+            + Προσθήκη περιόδου / ομάδας
+          </button>
+
+          {safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups && (
+            <p style={{ color: '#8a5a00', marginBottom: 0 }}>
+              Έχει συμπληρωθεί το μέγιστο όριο των {maxInsurancePeriodGroups} ομάδων.
+            </p>
+          )}
         </div>
       )}
     </fieldset>
@@ -214,86 +154,80 @@ function InsurancePeriodsInputSection({
 function InsurancePeriodGroupFields({
   groupNumber,
   title,
-  timeInputMethod,
-  insuranceDaysInput,
-  insuranceYearsInput,
-  insuranceMonthsInput,
-  insuranceExtraDaysInput,
-  fundInput,
-  insuredTypeInput,
-  employmentCategoryInput,
-  onTimeInputMethodChange,
-  onInsuranceDaysChange,
-  onInsuranceYearsChange,
-  onInsuranceMonthsChange,
-  onInsuranceExtraDaysChange,
-  onFundChange,
-  onInsuredTypeChange,
-  onEmploymentCategoryChange,
+  group,
+  canRemove,
+  onGroupChange,
+  onRemove,
 }) {
-  const insuredTypeOptions = getInsuredTypeOptions(fundInput);
-  const employmentCategoryOptions = getEmploymentCategoryOptions(fundInput);
+  const insuredTypeOptions = getInsuredTypeOptions(group.fund);
+  const employmentCategoryOptions = getEmploymentCategoryOptions(group.fund);
 
   function handleTimeMethodChange(value) {
-    onTimeInputMethodChange(value);
-    onInsuranceDaysChange('');
-    onInsuranceYearsChange('');
-    onInsuranceMonthsChange('');
-    onInsuranceExtraDaysChange('');
+    onGroupChange('timeInputMethod', value);
   }
 
   function handleFundChange(value) {
-    onFundChange(value);
-    onInsuredTypeChange('');
-    onEmploymentCategoryChange('');
+    onGroupChange('fund', value);
   }
 
   return (
     <div style={periodBoxStyle}>
-      <h3 style={{ marginTop: 0 }}>{title}</h3>
+      <div style={periodHeaderStyle}>
+        <h3 style={{ marginTop: 0, marginBottom: 0 }}>{title}</h3>
+
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            style={removeButtonStyle}
+          >
+            Αφαίρεση
+          </button>
+        )}
+      </div>
 
       <div style={gridStyle}>
         <SelectWithLabel
           id={`multiPeriod${groupNumber}TimeInputMethod`}
           label="Τρόπος εισαγωγής χρόνου"
-          value={timeInputMethod}
+          value={group.timeInputMethod}
           onChange={handleTimeMethodChange}
           options={INSURANCE_TIME_METHOD_OPTIONS}
         />
 
-        {timeInputMethod === 'insurance_days' && (
+        {group.timeInputMethod === 'insurance_days' && (
           <TextInputWithLabel
             id={`multiPeriod${groupNumber}InsuranceDays`}
             label="Ένσημα / ημέρες ασφάλισης"
-            value={insuranceDaysInput}
-            onChange={onInsuranceDaysChange}
+            value={group.insuranceDays}
+            onChange={(value) => onGroupChange('insuranceDays', value)}
             placeholder="π.χ. 4500"
           />
         )}
 
-        {timeInputMethod === 'years_months_days' && (
+        {group.timeInputMethod === 'years_months_days' && (
           <>
             <TextInputWithLabel
               id={`multiPeriod${groupNumber}InsuranceYears`}
               label="Έτη"
-              value={insuranceYearsInput}
-              onChange={onInsuranceYearsChange}
+              value={group.insuranceYears}
+              onChange={(value) => onGroupChange('insuranceYears', value)}
               placeholder="π.χ. 15"
             />
 
             <TextInputWithLabel
               id={`multiPeriod${groupNumber}InsuranceMonths`}
               label="Μήνες"
-              value={insuranceMonthsInput}
-              onChange={onInsuranceMonthsChange}
+              value={group.insuranceMonths}
+              onChange={(value) => onGroupChange('insuranceMonths', value)}
               placeholder="0 έως 11"
             />
 
             <TextInputWithLabel
               id={`multiPeriod${groupNumber}InsuranceExtraDays`}
               label="Ημέρες"
-              value={insuranceExtraDaysInput}
-              onChange={onInsuranceExtraDaysChange}
+              value={group.insuranceExtraDays}
+              onChange={(value) => onGroupChange('insuranceExtraDays', value)}
               placeholder="0 έως 24"
             />
           </>
@@ -302,7 +236,7 @@ function InsurancePeriodGroupFields({
         <SelectWithLabel
           id={`multiPeriod${groupNumber}Fund`}
           label="Φορέας / κατηγορία ασφάλισης"
-          value={fundInput}
+          value={group.fund}
           onChange={handleFundChange}
           options={FUND_OPTIONS}
         />
@@ -310,19 +244,19 @@ function InsurancePeriodGroupFields({
         <SelectWithLabel
           id={`multiPeriod${groupNumber}InsuredType`}
           label="Ασφαλισμένος"
-          value={insuredTypeInput}
-          onChange={onInsuredTypeChange}
+          value={group.insuredType}
+          onChange={(value) => onGroupChange('insuredType', value)}
           options={insuredTypeOptions}
-          disabled={!fundInput}
+          disabled={!group.fund}
         />
 
         <SelectWithLabel
           id={`multiPeriod${groupNumber}EmploymentCategory`}
           label="Κατηγορία εργασίας / εισφορών"
-          value={employmentCategoryInput}
-          onChange={onEmploymentCategoryChange}
+          value={group.employmentCategory}
+          onChange={(value) => onGroupChange('employmentCategory', value)}
           options={employmentCategoryOptions}
-          disabled={!fundInput}
+          disabled={!group.fund}
         />
       </div>
     </div>
@@ -573,6 +507,23 @@ const periodBoxStyle = {
   border: '1px solid #cbd5e1',
   background: '#f8fafc',
   padding: '0.75rem',
+};
+
+const periodHeaderStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: '1rem',
+  marginBottom: '0.75rem',
+};
+
+const secondaryButtonStyle = {
+  marginTop: '1rem',
+  padding: '0.5rem 0.75rem',
+};
+
+const removeButtonStyle = {
+  padding: '0.35rem 0.6rem',
 };
 
 export default InsurancePeriodsInputSection;

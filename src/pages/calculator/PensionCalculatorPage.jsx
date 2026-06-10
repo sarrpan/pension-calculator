@@ -13,6 +13,7 @@ import { analyzePensionForm } from './utils/pensionFormAnalysis';
 const PREPARE_PENSION_INPUT_URL = 'http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/preparePensionCalculationInput';
 const CALCULATE_PENSION_URL = 'http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/calculateDeiPension';
 const LOCAL_STORAGE_KEY = 'geodora_pension_calculator_draft_v1';
+const MAX_INSURANCE_PERIOD_GROUPS = 10;
 
 function PensionCalculatorPage() {
   const savedDraft = useMemo(() => loadSavedDraft(), []);
@@ -84,55 +85,9 @@ function PensionCalculatorPage() {
     savedDraft.simpleInsuranceDaysInput || ''
   );
 
-  const [multiPeriodTimeInputMethod, setMultiPeriodTimeInputMethod] = useState(
-    savedDraft.multiPeriodTimeInputMethod || ''
-  );
-  const [multiPeriodInsuranceDaysInput, setMultiPeriodInsuranceDaysInput] = useState(
-    savedDraft.multiPeriodInsuranceDaysInput || ''
-  );
-  const [multiPeriodInsuranceYearsInput, setMultiPeriodInsuranceYearsInput] = useState(
-    savedDraft.multiPeriodInsuranceYearsInput || ''
-  );
-  const [multiPeriodInsuranceMonthsInput, setMultiPeriodInsuranceMonthsInput] = useState(
-    savedDraft.multiPeriodInsuranceMonthsInput || ''
-  );
-  const [multiPeriodInsuranceExtraDaysInput, setMultiPeriodInsuranceExtraDaysInput] = useState(
-    savedDraft.multiPeriodInsuranceExtraDaysInput || ''
-  );
-  const [multiPeriodFundInput, setMultiPeriodFundInput] = useState(
-    savedDraft.multiPeriodFundInput || ''
-  );
-  const [multiPeriodInsuredTypeInput, setMultiPeriodInsuredTypeInput] = useState(
-    savedDraft.multiPeriodInsuredTypeInput || ''
-  );
-  const [multiPeriodEmploymentCategoryInput, setMultiPeriodEmploymentCategoryInput] = useState(
-    savedDraft.multiPeriodEmploymentCategoryInput || ''
-  );
-
-  const [multiPeriod2TimeInputMethod, setMultiPeriod2TimeInputMethod] = useState(
-    savedDraft.multiPeriod2TimeInputMethod || ''
-  );
-  const [multiPeriod2InsuranceDaysInput, setMultiPeriod2InsuranceDaysInput] = useState(
-    savedDraft.multiPeriod2InsuranceDaysInput || ''
-  );
-  const [multiPeriod2InsuranceYearsInput, setMultiPeriod2InsuranceYearsInput] = useState(
-    savedDraft.multiPeriod2InsuranceYearsInput || ''
-  );
-  const [multiPeriod2InsuranceMonthsInput, setMultiPeriod2InsuranceMonthsInput] = useState(
-    savedDraft.multiPeriod2InsuranceMonthsInput || ''
-  );
-  const [multiPeriod2InsuranceExtraDaysInput, setMultiPeriod2InsuranceExtraDaysInput] = useState(
-    savedDraft.multiPeriod2InsuranceExtraDaysInput || ''
-  );
-  const [multiPeriod2FundInput, setMultiPeriod2FundInput] = useState(
-    savedDraft.multiPeriod2FundInput || ''
-  );
-  const [multiPeriod2InsuredTypeInput, setMultiPeriod2InsuredTypeInput] = useState(
-    savedDraft.multiPeriod2InsuredTypeInput || ''
-  );
-  const [multiPeriod2EmploymentCategoryInput, setMultiPeriod2EmploymentCategoryInput] = useState(
-    savedDraft.multiPeriod2EmploymentCategoryInput || ''
-  );
+  const [insurancePeriodGroups, setInsurancePeriodGroups] = useState(() => {
+    return normalizeSavedInsurancePeriodGroups(savedDraft);
+  });
 
   const [contributoryEarningsInputMethod, setContributoryEarningsInputMethod] =
     useState(savedDraft.contributoryEarningsInputMethod || '');
@@ -174,22 +129,7 @@ function PensionCalculatorPage() {
       simpleFromDateInput,
       simpleToDateInput,
       simpleInsuranceDaysInput,
-      multiPeriodTimeInputMethod,
-      multiPeriodInsuranceDaysInput,
-      multiPeriodInsuranceYearsInput,
-      multiPeriodInsuranceMonthsInput,
-      multiPeriodInsuranceExtraDaysInput,
-      multiPeriodFundInput,
-      multiPeriodInsuredTypeInput,
-      multiPeriodEmploymentCategoryInput,
-      multiPeriod2TimeInputMethod,
-      multiPeriod2InsuranceDaysInput,
-      multiPeriod2InsuranceYearsInput,
-      multiPeriod2InsuranceMonthsInput,
-      multiPeriod2InsuranceExtraDaysInput,
-      multiPeriod2FundInput,
-      multiPeriod2InsuredTypeInput,
-      multiPeriod2EmploymentCategoryInput,
+      insurancePeriodGroups,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
       yearlyEarningsRows,
@@ -215,22 +155,7 @@ function PensionCalculatorPage() {
     simpleFromDateInput,
     simpleToDateInput,
     simpleInsuranceDaysInput,
-    multiPeriodTimeInputMethod,
-    multiPeriodInsuranceDaysInput,
-    multiPeriodInsuranceYearsInput,
-    multiPeriodInsuranceMonthsInput,
-    multiPeriodInsuranceExtraDaysInput,
-    multiPeriodFundInput,
-    multiPeriodInsuredTypeInput,
-    multiPeriodEmploymentCategoryInput,
-    multiPeriod2TimeInputMethod,
-    multiPeriod2InsuranceDaysInput,
-    multiPeriod2InsuranceYearsInput,
-    multiPeriod2InsuranceMonthsInput,
-    multiPeriod2InsuranceExtraDaysInput,
-    multiPeriod2FundInput,
-    multiPeriod2InsuredTypeInput,
-    multiPeriod2EmploymentCategoryInput,
+    insurancePeriodGroups,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
     yearlyEarningsRows,
@@ -258,22 +183,7 @@ function PensionCalculatorPage() {
       simpleFromDateInput,
       simpleToDateInput,
       simpleInsuranceDaysInput,
-      multiPeriodTimeInputMethod,
-      multiPeriodInsuranceDaysInput,
-      multiPeriodInsuranceYearsInput,
-      multiPeriodInsuranceMonthsInput,
-      multiPeriodInsuranceExtraDaysInput,
-      multiPeriodFundInput,
-      multiPeriodInsuredTypeInput,
-      multiPeriodEmploymentCategoryInput,
-      multiPeriod2TimeInputMethod,
-      multiPeriod2InsuranceDaysInput,
-      multiPeriod2InsuranceYearsInput,
-      multiPeriod2InsuranceMonthsInput,
-      multiPeriod2InsuranceExtraDaysInput,
-      multiPeriod2FundInput,
-      multiPeriod2InsuredTypeInput,
-      multiPeriod2EmploymentCategoryInput,
+      insurancePeriodGroups,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
       yearlyEarningsRows,
@@ -299,22 +209,7 @@ function PensionCalculatorPage() {
     simpleFromDateInput,
     simpleToDateInput,
     simpleInsuranceDaysInput,
-    multiPeriodTimeInputMethod,
-    multiPeriodInsuranceDaysInput,
-    multiPeriodInsuranceYearsInput,
-    multiPeriodInsuranceMonthsInput,
-    multiPeriodInsuranceExtraDaysInput,
-    multiPeriodFundInput,
-    multiPeriodInsuredTypeInput,
-    multiPeriodEmploymentCategoryInput,
-    multiPeriod2TimeInputMethod,
-    multiPeriod2InsuranceDaysInput,
-    multiPeriod2InsuranceYearsInput,
-    multiPeriod2InsuranceMonthsInput,
-    multiPeriod2InsuranceExtraDaysInput,
-    multiPeriod2FundInput,
-    multiPeriod2InsuredTypeInput,
-    multiPeriod2EmploymentCategoryInput,
+    insurancePeriodGroups,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
     yearlyEarningsRows,
@@ -377,23 +272,82 @@ function PensionCalculatorPage() {
     }
 
     if (value !== 'multiple') {
-      setMultiPeriodTimeInputMethod('');
-      setMultiPeriodInsuranceDaysInput('');
-      setMultiPeriodInsuranceYearsInput('');
-      setMultiPeriodInsuranceMonthsInput('');
-      setMultiPeriodInsuranceExtraDaysInput('');
-      setMultiPeriodFundInput('');
-      setMultiPeriodInsuredTypeInput('');
-      setMultiPeriodEmploymentCategoryInput('');
-      setMultiPeriod2TimeInputMethod('');
-      setMultiPeriod2InsuranceDaysInput('');
-      setMultiPeriod2InsuranceYearsInput('');
-      setMultiPeriod2InsuranceMonthsInput('');
-      setMultiPeriod2InsuranceExtraDaysInput('');
-      setMultiPeriod2FundInput('');
-      setMultiPeriod2InsuredTypeInput('');
-      setMultiPeriod2EmploymentCategoryInput('');
+      setInsurancePeriodGroups([createEmptyInsurancePeriodGroup()]);
     }
+
+    if (value === 'multiple') {
+      setInsurancePeriodGroups((currentGroups) => {
+        if (Array.isArray(currentGroups) && currentGroups.length > 0) {
+          return currentGroups.slice(0, MAX_INSURANCE_PERIOD_GROUPS);
+        }
+
+        return [createEmptyInsurancePeriodGroup()];
+      });
+    }
+  }
+
+  function handleInsurancePeriodGroupChange(groupId, field, value) {
+    setInsurancePeriodGroups((currentGroups) => {
+      return currentGroups.map((group) => {
+        if (group.id !== groupId) {
+          return group;
+        }
+
+        if (field === 'timeInputMethod') {
+          return {
+            ...group,
+            timeInputMethod: value,
+            insuranceDays: '',
+            insuranceYears: '',
+            insuranceMonths: '',
+            insuranceExtraDays: '',
+          };
+        }
+
+        if (field === 'fund') {
+          return {
+            ...group,
+            fund: value,
+            insuredType: '',
+            employmentCategory: '',
+          };
+        }
+
+        return {
+          ...group,
+          [field]: value,
+        };
+      });
+    });
+
+    clearBackendResult();
+  }
+
+  function handleAddInsurancePeriodGroup() {
+    setInsurancePeriodGroups((currentGroups) => {
+      if (currentGroups.length >= MAX_INSURANCE_PERIOD_GROUPS) {
+        return currentGroups;
+      }
+
+      return [
+        ...currentGroups,
+        createEmptyInsurancePeriodGroup(),
+      ];
+    });
+
+    clearBackendResult();
+  }
+
+  function handleRemoveInsurancePeriodGroup(groupId) {
+    setInsurancePeriodGroups((currentGroups) => {
+      if (currentGroups.length <= 1) {
+        return [createEmptyInsurancePeriodGroup()];
+      }
+
+      return currentGroups.filter((group) => group.id !== groupId);
+    });
+
+    clearBackendResult();
   }
 
   function handleContributoryEarningsInputMethodChange(value) {
@@ -583,121 +537,6 @@ function PensionCalculatorPage() {
               }}
             />
 
-            <InsurancePeriodsInputSection
-              insurancePeriodsInputMode={insurancePeriodsInputMode}
-              simpleFundInput={simpleFundInput}
-              simpleInsuredTypeInput={simpleInsuredTypeInput}
-              simpleEmploymentCategoryInput={simpleEmploymentCategoryInput}
-              simpleFromDateInput={simpleFromDateInput}
-              simpleToDateInput={simpleToDateInput}
-              simpleInsuranceDaysInput={simpleInsuranceDaysInput}
-              multiPeriodTimeInputMethod={multiPeriodTimeInputMethod}
-              multiPeriodInsuranceDaysInput={multiPeriodInsuranceDaysInput}
-              multiPeriodInsuranceYearsInput={multiPeriodInsuranceYearsInput}
-              multiPeriodInsuranceMonthsInput={multiPeriodInsuranceMonthsInput}
-              multiPeriodInsuranceExtraDaysInput={multiPeriodInsuranceExtraDaysInput}
-              multiPeriodFundInput={multiPeriodFundInput}
-              multiPeriodInsuredTypeInput={multiPeriodInsuredTypeInput}
-              multiPeriodEmploymentCategoryInput={multiPeriodEmploymentCategoryInput}
-              multiPeriod2TimeInputMethod={multiPeriod2TimeInputMethod}
-              multiPeriod2InsuranceDaysInput={multiPeriod2InsuranceDaysInput}
-              multiPeriod2InsuranceYearsInput={multiPeriod2InsuranceYearsInput}
-              multiPeriod2InsuranceMonthsInput={multiPeriod2InsuranceMonthsInput}
-              multiPeriod2InsuranceExtraDaysInput={multiPeriod2InsuranceExtraDaysInput}
-              multiPeriod2FundInput={multiPeriod2FundInput}
-              multiPeriod2InsuredTypeInput={multiPeriod2InsuredTypeInput}
-              multiPeriod2EmploymentCategoryInput={multiPeriod2EmploymentCategoryInput}
-              onInsurancePeriodsInputModeChange={handleInsurancePeriodsInputModeChange}
-              onSimpleFundChange={(value) => {
-                setSimpleFundInput(value);
-                clearBackendResult();
-              }}
-              onSimpleInsuredTypeChange={(value) => {
-                setSimpleInsuredTypeInput(value);
-                clearBackendResult();
-              }}
-              onSimpleEmploymentCategoryChange={(value) => {
-                setSimpleEmploymentCategoryInput(value);
-                clearBackendResult();
-              }}
-              onSimpleFromDateChange={(value) => {
-                setSimpleFromDateInput(value);
-                clearBackendResult();
-              }}
-              onSimpleToDateChange={(value) => {
-                setSimpleToDateInput(value);
-                clearBackendResult();
-              }}
-              onSimpleInsuranceDaysChange={(value) => {
-                setSimpleInsuranceDaysInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriodTimeInputMethodChange={(value) => {
-                setMultiPeriodTimeInputMethod(value);
-                clearBackendResult();
-              }}
-              onMultiPeriodInsuranceDaysChange={(value) => {
-                setMultiPeriodInsuranceDaysInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriodInsuranceYearsChange={(value) => {
-                setMultiPeriodInsuranceYearsInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriodInsuranceMonthsChange={(value) => {
-                setMultiPeriodInsuranceMonthsInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriodInsuranceExtraDaysChange={(value) => {
-                setMultiPeriodInsuranceExtraDaysInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriodFundChange={(value) => {
-                setMultiPeriodFundInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriodInsuredTypeChange={(value) => {
-                setMultiPeriodInsuredTypeInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriodEmploymentCategoryChange={(value) => {
-                setMultiPeriodEmploymentCategoryInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriod2TimeInputMethodChange={(value) => {
-                setMultiPeriod2TimeInputMethod(value);
-                clearBackendResult();
-              }}
-              onMultiPeriod2InsuranceDaysChange={(value) => {
-                setMultiPeriod2InsuranceDaysInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriod2InsuranceYearsChange={(value) => {
-                setMultiPeriod2InsuranceYearsInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriod2InsuranceMonthsChange={(value) => {
-                setMultiPeriod2InsuranceMonthsInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriod2InsuranceExtraDaysChange={(value) => {
-                setMultiPeriod2InsuranceExtraDaysInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriod2FundChange={(value) => {
-                setMultiPeriod2FundInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriod2InsuredTypeChange={(value) => {
-                setMultiPeriod2InsuredTypeInput(value);
-                clearBackendResult();
-              }}
-              onMultiPeriod2EmploymentCategoryChange={(value) => {
-                setMultiPeriod2EmploymentCategoryInput(value);
-                clearBackendResult();
-              }}
-            />
-
             {insurancePeriodsInputMode !== 'multiple' && (
               <InsuranceTimeInputSection
                 insuranceTimeInputMethod={insuranceTimeInputMethod}
@@ -727,6 +566,31 @@ function PensionCalculatorPage() {
                 }}
               />
             )}
+
+            <InsurancePeriodsInputSection
+              insurancePeriodsInputMode={insurancePeriodsInputMode}
+              simpleFundInput={simpleFundInput}
+              simpleInsuredTypeInput={simpleInsuredTypeInput}
+              simpleEmploymentCategoryInput={simpleEmploymentCategoryInput}
+              insurancePeriodGroups={insurancePeriodGroups}
+              maxInsurancePeriodGroups={MAX_INSURANCE_PERIOD_GROUPS}
+              onInsurancePeriodsInputModeChange={handleInsurancePeriodsInputModeChange}
+              onSimpleFundChange={(value) => {
+                setSimpleFundInput(value);
+                clearBackendResult();
+              }}
+              onSimpleInsuredTypeChange={(value) => {
+                setSimpleInsuredTypeInput(value);
+                clearBackendResult();
+              }}
+              onSimpleEmploymentCategoryChange={(value) => {
+                setSimpleEmploymentCategoryInput(value);
+                clearBackendResult();
+              }}
+              onInsurancePeriodGroupChange={handleInsurancePeriodGroupChange}
+              onAddInsurancePeriodGroup={handleAddInsurancePeriodGroup}
+              onRemoveInsurancePeriodGroup={handleRemoveInsurancePeriodGroup}
+            />
           </>
         )}
 
@@ -894,6 +758,117 @@ function createDevelopmentYearlyEarningsRows() {
       insuranceDays: matchingRealRow.insuranceDays,
     };
   });
+}
+
+
+function createEmptyInsurancePeriodGroup() {
+  return {
+    id: createInsurancePeriodGroupId(),
+    timeInputMethod: '',
+    insuranceDays: '',
+    insuranceYears: '',
+    insuranceMonths: '',
+    insuranceExtraDays: '',
+    fund: '',
+    insuredType: '',
+    employmentCategory: '',
+  };
+}
+
+function createInsurancePeriodGroupId() {
+  return `insurance_group_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeSavedInsurancePeriodGroups(savedDraft = {}) {
+  if (Array.isArray(savedDraft.insurancePeriodGroups)) {
+    const normalizedGroups = savedDraft.insurancePeriodGroups
+      .slice(0, MAX_INSURANCE_PERIOD_GROUPS)
+      .map((group) => {
+        return {
+          id: group.id || createInsurancePeriodGroupId(),
+          timeInputMethod: group.timeInputMethod || '',
+          insuranceDays: group.insuranceDays || '',
+          insuranceYears: group.insuranceYears || '',
+          insuranceMonths: group.insuranceMonths || '',
+          insuranceExtraDays: group.insuranceExtraDays || '',
+          fund: group.fund || '',
+          insuredType: group.insuredType || '',
+          employmentCategory: group.employmentCategory || '',
+        };
+      });
+
+    if (normalizedGroups.length > 0) {
+      return normalizedGroups;
+    }
+  }
+
+  const legacyFirstGroup = createLegacyInsurancePeriodGroup({
+    timeInputMethod: savedDraft.multiPeriodTimeInputMethod,
+    insuranceDays: savedDraft.multiPeriodInsuranceDaysInput,
+    insuranceYears: savedDraft.multiPeriodInsuranceYearsInput,
+    insuranceMonths: savedDraft.multiPeriodInsuranceMonthsInput,
+    insuranceExtraDays: savedDraft.multiPeriodInsuranceExtraDaysInput,
+    fund: savedDraft.multiPeriodFundInput,
+    insuredType: savedDraft.multiPeriodInsuredTypeInput,
+    employmentCategory: savedDraft.multiPeriodEmploymentCategoryInput,
+  });
+
+  const legacySecondGroup = createLegacyInsurancePeriodGroup({
+    timeInputMethod: savedDraft.multiPeriod2TimeInputMethod,
+    insuranceDays: savedDraft.multiPeriod2InsuranceDaysInput,
+    insuranceYears: savedDraft.multiPeriod2InsuranceYearsInput,
+    insuranceMonths: savedDraft.multiPeriod2InsuranceMonthsInput,
+    insuranceExtraDays: savedDraft.multiPeriod2InsuranceExtraDaysInput,
+    fund: savedDraft.multiPeriod2FundInput,
+    insuredType: savedDraft.multiPeriod2InsuredTypeInput,
+    employmentCategory: savedDraft.multiPeriod2EmploymentCategoryInput,
+  });
+
+  const legacyGroups = [legacyFirstGroup, legacySecondGroup].filter(Boolean);
+
+  if (legacyGroups.length > 0) {
+    return legacyGroups;
+  }
+
+  return [createEmptyInsurancePeriodGroup()];
+}
+
+function createLegacyInsurancePeriodGroup({
+  timeInputMethod,
+  insuranceDays,
+  insuranceYears,
+  insuranceMonths,
+  insuranceExtraDays,
+  fund,
+  insuredType,
+  employmentCategory,
+}) {
+  const hasAnyValue = [
+    timeInputMethod,
+    insuranceDays,
+    insuranceYears,
+    insuranceMonths,
+    insuranceExtraDays,
+    fund,
+    insuredType,
+    employmentCategory,
+  ].some((value) => String(value || '').trim() !== '');
+
+  if (!hasAnyValue) {
+    return null;
+  }
+
+  return {
+    id: createInsurancePeriodGroupId(),
+    timeInputMethod: timeInputMethod || '',
+    insuranceDays: insuranceDays || '',
+    insuranceYears: insuranceYears || '',
+    insuranceMonths: insuranceMonths || '',
+    insuranceExtraDays: insuranceExtraDays || '',
+    fund: fund || '',
+    insuredType: insuredType || '',
+    employmentCategory: employmentCategory || '',
+  };
 }
 
 function getInitialFormStep(savedDraft = {}) {
