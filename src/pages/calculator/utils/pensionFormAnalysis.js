@@ -229,6 +229,7 @@ function analyzePensionForm({
   simpleFromDateInput,
   simpleToDateInput,
   simpleInsuranceDaysInput,
+  simpleUniformedSpecialTimeDraft,
   insurancePeriodGroups,
   multiPeriodTimeInputMethod,
   multiPeriodInsuranceDaysInput,
@@ -275,6 +276,7 @@ function analyzePensionForm({
     simpleFromDateInput,
     simpleToDateInput,
     simpleInsuranceDaysInput,
+    simpleUniformedSpecialTimeDraft,
     insurancePeriodGroups,
     multiPeriodTimeInputMethod,
     multiPeriodInsuranceDaysInput,
@@ -805,6 +807,7 @@ function analyzeInsurancePeriodsDraft({
   simpleFundInput,
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
+  simpleUniformedSpecialTimeDraft,
   insurancePeriodGroups,
   multiPeriodTimeInputMethod,
   multiPeriodInsuranceDaysInput,
@@ -905,6 +908,7 @@ function analyzeInsurancePeriodsDraft({
         fundInput: groups[index].fund,
         insuredTypeInput: groups[index].insuredType,
         employmentCategoryInput: groups[index].employmentCategory,
+        uniformedSpecialTimeDraft: groups[index].uniformedSpecialTimeDraft,
         isRequired: true,
       });
 
@@ -971,6 +975,15 @@ function analyzeInsurancePeriodsDraft({
     return createInsurancePeriodDraftError('Η κατηγορία εργασίας / εισφορών δεν ταιριάζει με τον φορέα.', mode);
   }
 
+  const uniformedSpecialTimeValidation = validateUniformedSpecialTimeDraftForAnalysis({
+    fund,
+    uniformedSpecialTimeDraft: simpleUniformedSpecialTimeDraft,
+  });
+
+  if (uniformedSpecialTimeValidation.error) {
+    return createInsurancePeriodDraftError(uniformedSpecialTimeValidation.error, mode);
+  }
+
   const totalDays = Number(insuranceTimeAnalysis?.totalInsuranceDaysEquivalent || 0);
 
   if (!Number.isFinite(totalDays) || totalDays <= 0) {
@@ -1003,6 +1016,10 @@ function analyzeInsurancePeriodsDraft({
     categoryKey: category.categoryKey,
     contributionCategory: category.contributionCategory,
     specialWorkFacts: category.specialWorkFacts,
+    uniformedSpecialTimeDraft:
+      fund === 'uniformed'
+        ? normalizeUniformedSpecialTimeDraft(simpleUniformedSpecialTimeDraft)
+        : null,
   };
 
   return {
@@ -1053,6 +1070,8 @@ function normalizeInsurancePeriodGroupForAnalysis(group = {}) {
     fund: group.fund || '',
     insuredType: group.insuredType || '',
     employmentCategory: group.employmentCategory || '',
+    uniformedSpecialTimeDraft:
+      normalizeUniformedSpecialTimeDraft(group.uniformedSpecialTimeDraft),
   };
 }
 
@@ -1066,6 +1085,9 @@ function hasAnyInsurancePeriodGroupValue(group = {}) {
     group.fund,
     group.insuredType,
     group.employmentCategory,
+    hasActiveUniformedSpecialTimeDraft(group.uniformedSpecialTimeDraft)
+      ? 'uniformed_special_time'
+      : '',
   ].some((value) => String(value || '').trim() !== '');
 }
 
@@ -1080,6 +1102,7 @@ function analyzeMultiInsurancePeriodDraft({
   fundInput,
   insuredTypeInput,
   employmentCategoryInput,
+  uniformedSpecialTimeDraft,
   isRequired,
 }) {
   const hasAnyValue = [
@@ -1091,6 +1114,9 @@ function analyzeMultiInsurancePeriodDraft({
     fundInput,
     insuredTypeInput,
     employmentCategoryInput,
+    hasActiveUniformedSpecialTimeDraft(uniformedSpecialTimeDraft)
+      ? 'uniformed_special_time'
+      : '',
   ].some((value) => String(value || '').trim() !== '');
 
   if (!isRequired && !hasAnyValue) {
@@ -1127,6 +1153,7 @@ function analyzeMultiInsurancePeriodDraft({
     fundInput,
     insuredTypeInput,
     employmentCategoryInput,
+    uniformedSpecialTimeDraft,
     insuranceDays: Math.round(periodTimeAnalysis.totalInsuranceDaysEquivalent),
     insuranceDaysSource: 'declared_in_period',
     insuranceDaysSourceLabel: `δηλώθηκε ξεχωριστά για την περίοδο / ομάδα ${groupNumber}`,
@@ -1183,6 +1210,7 @@ function buildValidatedInsurancePeriodDraft({
   fundInput,
   insuredTypeInput,
   employmentCategoryInput,
+  uniformedSpecialTimeDraft,
   insuranceDays,
   insuranceDaysSource,
   insuranceDaysSourceLabel,
@@ -1219,6 +1247,15 @@ function buildValidatedInsurancePeriodDraft({
     return createInsurancePeriodDraftError('Ο χρόνος της ασφαλιστικής περιόδου πρέπει να είναι μεγαλύτερος από 0.', mode);
   }
 
+  const uniformedSpecialTimeValidation = validateUniformedSpecialTimeDraftForAnalysis({
+    fund,
+    uniformedSpecialTimeDraft,
+  });
+
+  if (uniformedSpecialTimeValidation.error) {
+    return createInsurancePeriodDraftError(uniformedSpecialTimeValidation.error, mode);
+  }
+
   const category = buildInsurancePeriodCategory({
     fund,
     insuredType,
@@ -1244,6 +1281,10 @@ function buildValidatedInsurancePeriodDraft({
       categoryKey: category.categoryKey,
       contributionCategory: category.contributionCategory,
       specialWorkFacts: category.specialWorkFacts,
+      uniformedSpecialTimeDraft:
+        fund === 'uniformed'
+          ? normalizeUniformedSpecialTimeDraft(uniformedSpecialTimeDraft)
+          : null,
     },
   };
 }
@@ -1274,6 +1315,8 @@ function createBackendSafeInsurancePeriodDraft(period) {
     categoryKey: period.categoryKey,
     contributionCategory: period.contributionCategory,
     specialWorkFacts: period.specialWorkFacts,
+    uniformedSpecialTimeDraft:
+      period.uniformedSpecialTimeDraft || null,
   };
 }
 
@@ -2023,8 +2066,232 @@ function roundToDecimals(value, decimals) {
   return Math.round((Number(value || 0) + Number.EPSILON) * factor) / factor;
 }
 
+function validateUniformedSpecialTimeDraftForAnalysis({
+  fund,
+  uniformedSpecialTimeDraft,
+}) {
+  if (fund !== 'uniformed') {
+    return {
+      error: null,
+    };
+  }
+
+  const normalizedDraft = normalizeUniformedSpecialTimeDraft(
+    uniformedSpecialTimeDraft
+  );
+
+  const combatDaysResult = getCombatFiveYearServiceDaysForAnalysis(
+    normalizedDraft.combatFiveYearService
+  );
+
+  if (combatDaysResult.error) {
+    return {
+      error: combatDaysResult.error,
+    };
+  }
+
+  const semestersDaysResult = getSpecialSemestersDaysForAnalysis(
+    normalizedDraft.specialSemesters
+  );
+
+  if (semestersDaysResult.error) {
+    return {
+      error: semestersDaysResult.error,
+    };
+  }
+
+  const maxCombinedDays = 7 * INSURANCE_DAYS_PER_YEAR;
+  const totalSpecialDays = combatDaysResult.days + semestersDaysResult.days;
+
+  if (totalSpecialDays > maxCombinedDays) {
+    return {
+      error: 'Η μάχιμη πενταετία μαζί με τα εξάμηνα δεν μπορεί να ξεπερνά συνολικά τα 7 έτη.',
+    };
+  }
+
+  return {
+    error: null,
+  };
+}
+
+function getCombatFiveYearServiceDaysForAnalysis(combatFiveYearService = {}) {
+  const status = String(combatFiveYearService.status || 'none').trim();
+
+  if (status === 'none') {
+    return {
+      days: 0,
+      error: null,
+    };
+  }
+
+  if (status === 'full') {
+    return {
+      days: 5 * INSURANCE_DAYS_PER_YEAR,
+      error: null,
+    };
+  }
+
+  if (status !== 'partial') {
+    return {
+      days: 0,
+      error: 'Η επιλογή μάχιμης πενταετίας δεν είναι έγκυρη.',
+    };
+  }
+
+  const years = parseNonNegativeIntegerOrEmpty(
+    combatFiveYearService.years
+  );
+  const months = parseNonNegativeIntegerOrEmpty(
+    combatFiveYearService.months
+  );
+  const days = parseNonNegativeIntegerOrEmpty(
+    combatFiveYearService.days
+  );
+
+  if (!years.isValid || !months.isValid || !days.isValid) {
+    return {
+      days: 0,
+      error: 'Ο μερικός χρόνος μάχιμης πενταετίας πρέπει να δηλωθεί με ακέραια έτη, μήνες και ημέρες.',
+    };
+  }
+
+  if (years.value === 0 && months.value === 0 && days.value === 0) {
+    return {
+      days: 0,
+      error: 'Αν η μάχιμη πενταετία είναι μερική, πρέπει να δηλωθεί τουλάχιστον ένας χρόνος.',
+    };
+  }
+
+  if (months.value > 11) {
+    return {
+      days: 0,
+      error: 'Οι μήνες της μερικής μάχιμης πενταετίας πρέπει να είναι από 0 έως 11.',
+    };
+  }
+
+  if (days.value > 24) {
+    return {
+      days: 0,
+      error: 'Οι ημέρες της μερικής μάχιμης πενταετίας πρέπει να είναι από 0 έως 24.',
+    };
+  }
+
+  const totalCombatFiveYearDays =
+    years.value * INSURANCE_DAYS_PER_YEAR +
+    months.value * INSURANCE_DAYS_PER_MONTH +
+    days.value;
+
+  if (totalCombatFiveYearDays > 5 * INSURANCE_DAYS_PER_YEAR) {
+    return {
+      days: 0,
+      error: 'Η μερική μάχιμη πενταετία δεν μπορεί να ξεπερνά τα 5 έτη.',
+    };
+  }
+
+  return {
+    days: totalCombatFiveYearDays,
+    error: null,
+  };
+}
+
+function getSpecialSemestersDaysForAnalysis(specialSemesters = {}) {
+  const status = String(specialSemesters.status || 'none').trim();
+
+  if (status === 'none') {
+    return {
+      days: 0,
+      error: null,
+    };
+  }
+
+  if (status !== 'yes') {
+    return {
+      days: 0,
+      error: 'Η επιλογή εξαμήνων δεν είναι έγκυρη.',
+    };
+  }
+
+  const semestersCount = parseNonNegativeIntegerOrEmpty(
+    specialSemesters.semestersCount
+  );
+
+  if (!semestersCount.isValid || semestersCount.value <= 0) {
+    return {
+      days: 0,
+      error: 'Το πλήθος εξαμήνων πρέπει να είναι ακέραιος αριθμός μεγαλύτερος από 0.',
+    };
+  }
+
+  if (semestersCount.value > 14) {
+    return {
+      days: 0,
+      error: 'Τα εξάμηνα δεν μπορούν να είναι περισσότερα από 14.',
+    };
+  }
+
+  return {
+    days: semestersCount.value * 6 * INSURANCE_DAYS_PER_MONTH,
+    error: null,
+  };
+}
+
+function createEmptyUniformedSpecialTimeDraft() {
+  return {
+    combatFiveYearService: {
+      status: 'none',
+      years: '',
+      months: '',
+      days: '',
+      recognitionPeriod: '',
+      paidAmount: '',
+    },
+    specialSemesters: {
+      status: 'none',
+      semestersCount: '',
+      recognitionPeriod: '',
+      paidAmount: '',
+    },
+  };
+}
+
+function normalizeUniformedSpecialTimeDraft(value) {
+  const defaultValue = createEmptyUniformedSpecialTimeDraft();
+
+  if (!value || typeof value !== 'object') {
+    return defaultValue;
+  }
+
+  const normalizedDraft = {
+    combatFiveYearService: {
+      ...defaultValue.combatFiveYearService,
+      ...(value.combatFiveYearService || {}),
+    },
+    specialSemesters: {
+      ...defaultValue.specialSemesters,
+      ...(value.specialSemesters || {}),
+    },
+  };
+
+  if (normalizedDraft.combatFiveYearService.recognitionPeriod === 'before_2002') {
+    normalizedDraft.combatFiveYearService.paidAmount = '0';
+  }
+
+  if (normalizedDraft.specialSemesters.recognitionPeriod === 'before_2002') {
+    normalizedDraft.specialSemesters.paidAmount = '0';
+  }
+
+  return normalizedDraft;
+}
+
+function hasActiveUniformedSpecialTimeDraft(value) {
+  const normalizedDraft = normalizeUniformedSpecialTimeDraft(value);
+
+  return (
+    normalizedDraft.combatFiveYearService.status !== 'none' ||
+    normalizedDraft.specialSemesters.status !== 'none'
+  );
+}
+
 export {
   analyzePensionForm,
 };
-
-

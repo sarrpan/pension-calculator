@@ -7,18 +7,23 @@ function InsurancePeriodsInputSection({
   simpleFundInput,
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
+  simpleUniformedSpecialTimeDraft,
   insurancePeriodGroups,
   maxInsurancePeriodGroups = 10,
   onInsurancePeriodsInputModeChange,
   onSimpleFundChange,
   onSimpleInsuredTypeChange,
   onSimpleEmploymentCategoryChange,
+  onSimpleUniformedSpecialTimeDraftChange,
   onInsurancePeriodGroupChange,
   onAddInsurancePeriodGroup,
   onRemoveInsurancePeriodGroup,
 }) {
   const simpleInsuredTypeOptions = getInsuredTypeOptions(simpleFundInput);
   const simpleEmploymentCategoryOptions = getEmploymentCategoryOptions(simpleFundInput);
+  const isSimpleUniformedFund = isUniformedFund(simpleFundInput);
+  const isSimpleContributionBasedFund = isContributionBasedFund(simpleFundInput);
+
   const safeInsurancePeriodGroups =
     Array.isArray(insurancePeriodGroups) && insurancePeriodGroups.length > 0
       ? insurancePeriodGroups
@@ -30,8 +35,24 @@ function InsurancePeriodsInputSection({
 
   function handleSimpleFundChange(value) {
     onSimpleFundChange(value);
+
+    if (isContributionBasedFund(value)) {
+      onSimpleInsuredTypeChange('not_applicable');
+      onSimpleEmploymentCategoryChange('contributions');
+      onSimpleUniformedSpecialTimeDraftChange(createEmptyUniformedSpecialTimeDraft());
+      return;
+    }
+
+    if (isUniformedFund(value)) {
+      onSimpleInsuredTypeChange('');
+      onSimpleEmploymentCategoryChange('common');
+      onSimpleUniformedSpecialTimeDraftChange(createEmptyUniformedSpecialTimeDraft());
+      return;
+    }
+
     onSimpleInsuredTypeChange('');
     onSimpleEmploymentCategoryChange('');
+    onSimpleUniformedSpecialTimeDraftChange(createEmptyUniformedSpecialTimeDraft());
   }
 
   return (
@@ -75,24 +96,36 @@ function InsurancePeriodsInputSection({
               options={FUND_OPTIONS}
             />
 
-            <SelectWithLabel
-              id="simpleInsuredType"
-              label="Ασφαλισμένος"
-              value={simpleInsuredTypeInput}
-              onChange={onSimpleInsuredTypeChange}
-              options={simpleInsuredTypeOptions}
-              disabled={!simpleFundInput}
-            />
+            {!isSimpleContributionBasedFund && (
+              <SelectWithLabel
+                id="simpleInsuredType"
+                label="Ασφαλισμένος"
+                value={simpleInsuredTypeInput}
+                onChange={onSimpleInsuredTypeChange}
+                options={simpleInsuredTypeOptions}
+                disabled={!simpleFundInput}
+              />
+            )}
 
-            <SelectWithLabel
-              id="simpleEmploymentCategory"
-              label="Κατηγορία εργασίας / εισφορών"
-              value={simpleEmploymentCategoryInput}
-              onChange={onSimpleEmploymentCategoryChange}
-              options={simpleEmploymentCategoryOptions}
-              disabled={!simpleFundInput}
-            />
+            {!isSimpleUniformedFund && !isSimpleContributionBasedFund && (
+              <SelectWithLabel
+                id="simpleEmploymentCategory"
+                label="Κατηγορία εργασίας / εισφορών"
+                value={simpleEmploymentCategoryInput}
+                onChange={onSimpleEmploymentCategoryChange}
+                options={simpleEmploymentCategoryOptions}
+                disabled={!simpleFundInput}
+              />
+            )}
           </div>
+
+          {isSimpleUniformedFund && (
+            <UniformedSpecialTimeFields
+              idPrefix="simpleUniformed"
+              value={simpleUniformedSpecialTimeDraft}
+              onChange={onSimpleUniformedSpecialTimeDraftChange}
+            />
+          )}
 
           <p style={{ color: '#475569', marginBottom: 0 }}>
             Ο χρόνος ασφάλισης δηλώνεται μία φορά στο πεδίο «Χρόνος ασφάλισης».
@@ -104,7 +137,7 @@ function InsurancePeriodsInputSection({
       {insurancePeriodsInputMode === 'multiple' && (
         <div style={{ marginTop: '1rem' }}>
           <p style={{ color: '#475569' }}>
-            Στο πλήρες μοντέλο δηλώνουμε όσες ομάδες / περιόδους χρειάζονται,
+            Στο πλήρες μοντέλο δηλώνουμε όσες ομάδες / περίοδοι χρειάζονται,
             μέχρι {maxInsurancePeriodGroups}. Οι ημέρες όλων των ομάδων
             αθροίζονται για τον συνολικό χρόνο ασφάλισης.
           </p>
@@ -161,13 +194,29 @@ function InsurancePeriodGroupFields({
 }) {
   const insuredTypeOptions = getInsuredTypeOptions(group.fund);
   const employmentCategoryOptions = getEmploymentCategoryOptions(group.fund);
-
-  function handleTimeMethodChange(value) {
-    onGroupChange('timeInputMethod', value);
-  }
+  const isCurrentUniformedFund = isUniformedFund(group.fund);
+  const isCurrentContributionBasedFund = isContributionBasedFund(group.fund);
 
   function handleFundChange(value) {
     onGroupChange('fund', value);
+
+    if (isContributionBasedFund(value)) {
+      onGroupChange('insuredType', 'not_applicable');
+      onGroupChange('employmentCategory', 'contributions');
+      onGroupChange('uniformedSpecialTimeDraft', createEmptyUniformedSpecialTimeDraft());
+      return;
+    }
+
+    if (isUniformedFund(value)) {
+      onGroupChange('insuredType', '');
+      onGroupChange('employmentCategory', 'common');
+      onGroupChange('uniformedSpecialTimeDraft', createEmptyUniformedSpecialTimeDraft());
+      return;
+    }
+
+    onGroupChange('insuredType', '');
+    onGroupChange('employmentCategory', '');
+    onGroupChange('uniformedSpecialTimeDraft', createEmptyUniformedSpecialTimeDraft());
   }
 
   return (
@@ -188,10 +237,40 @@ function InsurancePeriodGroupFields({
 
       <div style={gridStyle}>
         <SelectWithLabel
+          id={`multiPeriod${groupNumber}Fund`}
+          label="Φορέας / κατηγορία ασφάλισης"
+          value={group.fund}
+          onChange={handleFundChange}
+          options={FUND_OPTIONS}
+        />
+
+        {!isCurrentContributionBasedFund && (
+          <SelectWithLabel
+            id={`multiPeriod${groupNumber}InsuredType`}
+            label="Ασφαλισμένος"
+            value={group.insuredType}
+            onChange={(value) => onGroupChange('insuredType', value)}
+            options={insuredTypeOptions}
+            disabled={!group.fund}
+          />
+        )}
+
+        {!isCurrentUniformedFund && !isCurrentContributionBasedFund && (
+          <SelectWithLabel
+            id={`multiPeriod${groupNumber}EmploymentCategory`}
+            label="Κατηγορία εργασίας / εισφορών"
+            value={group.employmentCategory}
+            onChange={(value) => onGroupChange('employmentCategory', value)}
+            options={employmentCategoryOptions}
+            disabled={!group.fund}
+          />
+        )}
+
+        <SelectWithLabel
           id={`multiPeriod${groupNumber}TimeInputMethod`}
           label="Τρόπος εισαγωγής χρόνου"
           value={group.timeInputMethod}
-          onChange={handleTimeMethodChange}
+          onChange={(value) => onGroupChange('timeInputMethod', value)}
           options={INSURANCE_TIME_METHOD_OPTIONS}
         />
 
@@ -232,35 +311,364 @@ function InsurancePeriodGroupFields({
             />
           </>
         )}
+      </div>
 
-        <SelectWithLabel
-          id={`multiPeriod${groupNumber}Fund`}
-          label="Φορέας / κατηγορία ασφάλισης"
-          value={group.fund}
-          onChange={handleFundChange}
-          options={FUND_OPTIONS}
+      {isCurrentUniformedFund && (
+        <UniformedSpecialTimeFields
+          idPrefix={`multiPeriod${groupNumber}Uniformed`}
+          value={group.uniformedSpecialTimeDraft}
+          onChange={(nextValue) => {
+            onGroupChange('uniformedSpecialTimeDraft', nextValue);
+          }}
         />
+      )}
+    </div>
+  );
+}
 
-        <SelectWithLabel
-          id={`multiPeriod${groupNumber}InsuredType`}
-          label="Ασφαλισμένος"
-          value={group.insuredType}
-          onChange={(value) => onGroupChange('insuredType', value)}
-          options={insuredTypeOptions}
-          disabled={!group.fund}
-        />
+function UniformedSpecialTimeFields({
+  idPrefix,
+  value,
+  onChange,
+}) {
+  const safeValue = normalizeUniformedSpecialTimeDraft(value);
 
-        <SelectWithLabel
-          id={`multiPeriod${groupNumber}EmploymentCategory`}
-          label="Κατηγορία εργασίας / εισφορών"
-          value={group.employmentCategory}
-          onChange={(value) => onGroupChange('employmentCategory', value)}
-          options={employmentCategoryOptions}
-          disabled={!group.fund}
-        />
+  function updateCombatFiveYearService(field, fieldValue) {
+    const nextCombatFiveYearService = {
+      ...safeValue.combatFiveYearService,
+      [field]: fieldValue,
+    };
+
+    if (field === 'recognitionPeriod' && fieldValue === 'before_2002') {
+      nextCombatFiveYearService.paidAmount = '0';
+    }
+
+    onChange({
+      ...safeValue,
+      combatFiveYearService: nextCombatFiveYearService,
+    });
+  }
+
+  function updateSpecialSemesters(field, fieldValue) {
+    const nextSpecialSemesters = {
+      ...safeValue.specialSemesters,
+      [field]: fieldValue,
+    };
+
+    if (field === 'recognitionPeriod' && fieldValue === 'before_2002') {
+      nextSpecialSemesters.paidAmount = '0';
+    }
+
+    onChange({
+      ...safeValue,
+      specialSemesters: nextSpecialSemesters,
+    });
+  }
+
+  const combatStatus = safeValue.combatFiveYearService.status;
+  const semestersStatus = safeValue.specialSemesters.status;
+  const hasCombatFiveYearService = combatStatus !== 'none';
+  const hasSpecialSemesters = semestersStatus === 'yes';
+  const shouldAskCombatPaidAmount =
+    hasCombatFiveYearService &&
+    safeValue.combatFiveYearService.recognitionPeriod &&
+    safeValue.combatFiveYearService.recognitionPeriod !== 'before_2002';
+  const shouldAskSemestersPaidAmount =
+    hasSpecialSemesters &&
+    safeValue.specialSemesters.recognitionPeriod &&
+    safeValue.specialSemesters.recognitionPeriod !== 'before_2002';
+  const validationError = getUniformedSpecialTimeValidationError(safeValue);
+
+  return (
+    <div style={uniformedBoxStyle}>
+      <h4 style={{ marginTop: 0 }}>
+        Ειδικοί χρόνοι ενστόλων
+      </h4>
+
+      {validationError && (
+        <p style={{ color: 'crimson', marginTop: 0 }}>
+          {validationError}
+        </p>
+      )}
+
+      <div style={uniformedSubBoxStyle}>
+        <h5 style={{ marginTop: 0 }}>
+          Μάχιμη πενταετία / διπλός χρόνος
+        </h5>
+
+        <div style={gridStyle}>
+          <SelectWithLabel
+            id={`${idPrefix}CombatFiveYearServiceStatus`}
+            label="Υπάρχει μάχιμη πενταετία;"
+            value={combatStatus}
+            onChange={(fieldValue) => updateCombatFiveYearService('status', fieldValue)}
+            options={COMBAT_FIVE_YEAR_STATUS_OPTIONS}
+          />
+
+          {combatStatus === 'partial' && (
+            <>
+              <TextInputWithLabel
+                id={`${idPrefix}CombatFiveYearServiceYears`}
+                label="Έτη"
+                value={safeValue.combatFiveYearService.years}
+                onChange={(fieldValue) => updateCombatFiveYearService('years', fieldValue)}
+                placeholder="0 έως 5"
+                required
+              />
+
+              <TextInputWithLabel
+                id={`${idPrefix}CombatFiveYearServiceMonths`}
+                label="Μήνες"
+                value={safeValue.combatFiveYearService.months}
+                onChange={(fieldValue) => updateCombatFiveYearService('months', fieldValue)}
+                placeholder="0 έως 11"
+              />
+
+              <TextInputWithLabel
+                id={`${idPrefix}CombatFiveYearServiceDays`}
+                label="Ημέρες"
+                value={safeValue.combatFiveYearService.days}
+                onChange={(fieldValue) => updateCombatFiveYearService('days', fieldValue)}
+                placeholder="0 έως 24"
+              />
+            </>
+          )}
+
+          {hasCombatFiveYearService && (
+            <>
+              <SelectWithLabel
+                id={`${idPrefix}CombatFiveYearServiceRecognitionPeriod`}
+                label="Πότε αναγνωρίστηκε / εξαγοράστηκε;"
+                value={safeValue.combatFiveYearService.recognitionPeriod}
+                onChange={(fieldValue) => updateCombatFiveYearService('recognitionPeriod', fieldValue)}
+                options={RECOGNITION_PERIOD_OPTIONS}
+                required
+              />
+
+              {shouldAskCombatPaidAmount && (
+                <TextInputWithLabel
+                  id={`${idPrefix}CombatFiveYearServicePaidAmount`}
+                  label="Ποσό που πληρώθηκε"
+                  value={safeValue.combatFiveYearService.paidAmount}
+                  onChange={(fieldValue) => updateCombatFiveYearService('paidAmount', fieldValue)}
+                  placeholder="π.χ. 3000"
+                  required
+                />
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div style={uniformedSubBoxStyle}>
+        <h5 style={{ marginTop: 0 }}>
+          Εξάμηνα
+        </h5>
+
+        <div style={gridStyle}>
+          <SelectWithLabel
+            id={`${idPrefix}SpecialSemestersStatus`}
+            label="Υπάρχουν εξάμηνα;"
+            value={semestersStatus}
+            onChange={(fieldValue) => updateSpecialSemesters('status', fieldValue)}
+            options={SPECIAL_SEMESTERS_STATUS_OPTIONS}
+          />
+
+          {hasSpecialSemesters && (
+            <>
+              <TextInputWithLabel
+                id={`${idPrefix}SpecialSemestersCount`}
+                label="Πλήθος εξαμήνων"
+                value={safeValue.specialSemesters.semestersCount}
+                onChange={(fieldValue) => updateSpecialSemesters('semestersCount', fieldValue)}
+                placeholder="π.χ. 4, έως 14"
+                required
+              />
+
+              <SelectWithLabel
+                id={`${idPrefix}SpecialSemestersRecognitionPeriod`}
+                label="Πότε αναγνωρίστηκαν / εξαγοράστηκαν;"
+                value={safeValue.specialSemesters.recognitionPeriod}
+                onChange={(fieldValue) => updateSpecialSemesters('recognitionPeriod', fieldValue)}
+                options={RECOGNITION_PERIOD_OPTIONS}
+                required
+              />
+
+              {shouldAskSemestersPaidAmount && (
+                <TextInputWithLabel
+                  id={`${idPrefix}SpecialSemestersPaidAmount`}
+                  label="Ποσό που πληρώθηκε"
+                  value={safeValue.specialSemesters.paidAmount}
+                  onChange={(fieldValue) => updateSpecialSemesters('paidAmount', fieldValue)}
+                  placeholder="π.χ. 1200"
+                  required
+                />
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
+}
+
+
+function getUniformedSpecialTimeValidationError(value) {
+  const normalizedValue = normalizeUniformedSpecialTimeDraft(value);
+  const combatFiveYearService = normalizedValue.combatFiveYearService;
+  const specialSemesters = normalizedValue.specialSemesters;
+
+  const combatDaysResult = getCombatFiveYearServiceDays(combatFiveYearService);
+
+  if (combatDaysResult.error) {
+    return combatDaysResult.error;
+  }
+
+  const semestersDaysResult = getSpecialSemestersDays(specialSemesters);
+
+  if (semestersDaysResult.error) {
+    return semestersDaysResult.error;
+  }
+
+  const maxCombinedDays = 7 * 300;
+  const totalSpecialDays = combatDaysResult.days + semestersDaysResult.days;
+
+  if (totalSpecialDays > maxCombinedDays) {
+    return 'Η μάχιμη πενταετία μαζί με τα εξάμηνα δεν μπορεί να ξεπερνά συνολικά τα 7 έτη.';
+  }
+
+  return null;
+}
+
+function getCombatFiveYearServiceDays(combatFiveYearService = {}) {
+  const status = combatFiveYearService.status || 'none';
+
+  if (status === 'none') {
+    return {
+      days: 0,
+      error: null,
+    };
+  }
+
+  if (status === 'full') {
+    return {
+      days: 5 * 300,
+      error: null,
+    };
+  }
+
+  if (status !== 'partial') {
+    return {
+      days: 0,
+      error: 'Η επιλογή μάχιμης πενταετίας δεν είναι έγκυρη.',
+    };
+  }
+
+  const years = parseNonNegativeIntegerOrEmpty(combatFiveYearService.years);
+  const months = parseNonNegativeIntegerOrEmpty(combatFiveYearService.months);
+  const days = parseNonNegativeIntegerOrEmpty(combatFiveYearService.days);
+
+  if (!years.isValid || !months.isValid || !days.isValid) {
+    return {
+      days: 0,
+      error: 'Ο μερικός χρόνος μάχιμης πενταετίας πρέπει να δηλωθεί με ακέραια έτη, μήνες και ημέρες.',
+    };
+  }
+
+  if (months.value > 11) {
+    return {
+      days: 0,
+      error: 'Οι μήνες της μερικής μάχιμης πενταετίας πρέπει να είναι από 0 έως 11.',
+    };
+  }
+
+  if (days.value > 24) {
+    return {
+      days: 0,
+      error: 'Οι ημέρες της μερικής μάχιμης πενταετίας πρέπει να είναι από 0 έως 24.',
+    };
+  }
+
+  const totalDays =
+    years.value * 300 +
+    months.value * 25 +
+    days.value;
+
+  if (totalDays > 5 * 300) {
+    return {
+      days: 0,
+      error: 'Η μερική μάχιμη πενταετία δεν μπορεί να ξεπερνά τα 5 έτη.',
+    };
+  }
+
+  return {
+    days: totalDays,
+    error: null,
+  };
+}
+
+function getSpecialSemestersDays(specialSemesters = {}) {
+  const status = specialSemesters.status || 'none';
+
+  if (status === 'none') {
+    return {
+      days: 0,
+      error: null,
+    };
+  }
+
+  if (status !== 'yes') {
+    return {
+      days: 0,
+      error: 'Η επιλογή εξαμήνων δεν είναι έγκυρη.',
+    };
+  }
+
+  const semestersCount = parseNonNegativeIntegerOrEmpty(
+    specialSemesters.semestersCount
+  );
+
+  if (!semestersCount.isValid || semestersCount.value <= 0) {
+    return {
+      days: 0,
+      error: 'Το πλήθος εξαμήνων πρέπει να είναι ακέραιος αριθμός μεγαλύτερος από 0.',
+    };
+  }
+
+  if (semestersCount.value > 14) {
+    return {
+      days: 0,
+      error: 'Τα εξάμηνα δεν μπορούν να είναι περισσότερα από 14.',
+    };
+  }
+
+  return {
+    days: semestersCount.value * 6 * 25,
+    error: null,
+  };
+}
+
+function parseNonNegativeIntegerOrEmpty(value) {
+  const text = String(value || '').trim();
+
+  if (!text) {
+    return {
+      isValid: true,
+      value: 0,
+    };
+  }
+
+  if (!/^\d+$/.test(text)) {
+    return {
+      isValid: false,
+      value: 0,
+    };
+  }
+
+  return {
+    isValid: true,
+    value: Number(text),
+  };
 }
 
 function SelectWithLabel({
@@ -270,10 +678,14 @@ function SelectWithLabel({
   onChange,
   options,
   disabled = false,
+  required = false,
 }) {
   return (
     <div style={{ marginBottom: '0.75rem' }}>
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>
+        {label}
+        {required ? ' *' : ''}
+      </label>
 
       <br />
 
@@ -283,6 +695,7 @@ function SelectWithLabel({
         onChange={(event) => onChange(event.target.value)}
         style={selectStyle}
         disabled={disabled}
+        required={required}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -300,10 +713,14 @@ function TextInputWithLabel({
   value,
   onChange,
   placeholder,
+  required = false,
 }) {
   return (
     <div style={{ marginBottom: '0.75rem' }}>
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>
+        {label}
+        {required ? ' *' : ''}
+      </label>
 
       <br />
 
@@ -313,6 +730,7 @@ function TextInputWithLabel({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         style={inputStyle}
+        required={required}
       />
     </div>
   );
@@ -393,6 +811,24 @@ const INSURANCE_TIME_METHOD_OPTIONS = [
   },
 ];
 
+const COMBAT_FIVE_YEAR_STATUS_OPTIONS = [
+  { value: 'none', label: 'Όχι' },
+  { value: 'full', label: 'Ναι, ολόκληρη' },
+  { value: 'partial', label: 'Ναι, μέρος της' },
+];
+
+const SPECIAL_SEMESTERS_STATUS_OPTIONS = [
+  { value: 'none', label: 'Όχι' },
+  { value: 'yes', label: 'Ναι' },
+];
+
+const RECOGNITION_PERIOD_OPTIONS = [
+  { value: '', label: 'Επιλέξτε' },
+  { value: 'before_2002', label: 'Πριν το 2002' },
+  { value: 'between_2002_2016', label: 'Από 2002 έως 2016' },
+  { value: 'after_2016', label: 'Μετά το 2016' },
+];
+
 const DEFAULT_EMPTY_OPTION = {
   value: '',
   label: 'Επιλέξτε πρώτα φορέα',
@@ -409,11 +845,6 @@ const OLD_NEW_INSURED_OPTIONS = [
   { value: 'new', label: 'Νέος' },
 ];
 
-const NOT_APPLICABLE_INSURED_OPTIONS = [
-  SELECT_OPTION,
-  { value: 'not_applicable', label: 'Δεν απαιτείται για αυτή την κατηγορία' },
-];
-
 const SIMPLE_VAE_YVAE_OPTIONS = [
   SELECT_OPTION,
   { value: 'common', label: 'Απλή / κοινή ασφάλιση' },
@@ -426,24 +857,25 @@ const BANKING_EMPLOYMENT_OPTIONS = [
   { value: 'common', label: 'Απλή / διοικητική ασφάλιση' },
 ];
 
-const CONTRIBUTION_BASED_OPTIONS = [
-  SELECT_OPTION,
-  { value: 'contributions', label: 'Με εισφορές / ασφαλιστική κατηγορία' },
+const CONTRIBUTION_BASED_FUNDS = [
+  'oaee',
+  'etaa',
+  'tsmede',
+  'tsay',
+  'oga',
 ];
+
+function isUniformedFund(fund) {
+  return fund === 'uniformed';
+}
+
+function isContributionBasedFund(fund) {
+  return CONTRIBUTION_BASED_FUNDS.includes(fund);
+}
 
 function getInsuredTypeOptions(fund) {
   if (!fund) {
     return [DEFAULT_EMPTY_OPTION];
-  }
-
-  if (
-    fund === 'oaee' ||
-    fund === 'etaa' ||
-    fund === 'tsmede' ||
-    fund === 'tsay' ||
-    fund === 'oga'
-  ) {
-    return NOT_APPLICABLE_INSURED_OPTIONS;
   }
 
   return OLD_NEW_INSURED_OPTIONS;
@@ -457,7 +889,6 @@ function getEmploymentCategoryOptions(fund) {
   if (
     fund === 'ika' ||
     fund === 'public_sector' ||
-    fund === 'uniformed' ||
     fund === 'tap_dei' ||
     fund === 'deko' ||
     fund === 'nat' ||
@@ -471,17 +902,55 @@ function getEmploymentCategoryOptions(fund) {
     return BANKING_EMPLOYMENT_OPTIONS;
   }
 
-  if (
-    fund === 'oaee' ||
-    fund === 'etaa' ||
-    fund === 'tsmede' ||
-    fund === 'tsay' ||
-    fund === 'oga'
-  ) {
-    return CONTRIBUTION_BASED_OPTIONS;
+  return [SELECT_OPTION];
+}
+
+function createEmptyUniformedSpecialTimeDraft() {
+  return {
+    combatFiveYearService: {
+      status: 'none',
+      years: '',
+      months: '',
+      days: '',
+      recognitionPeriod: '',
+      paidAmount: '',
+    },
+    specialSemesters: {
+      status: 'none',
+      semestersCount: '',
+      recognitionPeriod: '',
+      paidAmount: '',
+    },
+  };
+}
+
+function normalizeUniformedSpecialTimeDraft(value) {
+  const defaultValue = createEmptyUniformedSpecialTimeDraft();
+
+  if (!value || typeof value !== 'object') {
+    return defaultValue;
   }
 
-  return [SELECT_OPTION];
+  const normalizedDraft = {
+    combatFiveYearService: {
+      ...defaultValue.combatFiveYearService,
+      ...(value.combatFiveYearService || {}),
+    },
+    specialSemesters: {
+      ...defaultValue.specialSemesters,
+      ...(value.specialSemesters || {}),
+    },
+  };
+
+  if (normalizedDraft.combatFiveYearService.recognitionPeriod === 'before_2002') {
+    normalizedDraft.combatFiveYearService.paidAmount = '0';
+  }
+
+  if (normalizedDraft.specialSemesters.recognitionPeriod === 'before_2002') {
+    normalizedDraft.specialSemesters.paidAmount = '0';
+  }
+
+  return normalizedDraft;
 }
 
 const gridStyle = {
@@ -515,6 +984,20 @@ const periodHeaderStyle = {
   alignItems: 'center',
   gap: '1rem',
   marginBottom: '0.75rem',
+};
+
+const uniformedBoxStyle = {
+  marginTop: '1rem',
+  border: '1px solid #cbd5e1',
+  background: '#ffffff',
+  padding: '0.75rem',
+  borderRadius: '6px',
+};
+
+const uniformedSubBoxStyle = {
+  marginTop: '0.75rem',
+  borderTop: '1px solid #e2e8f0',
+  paddingTop: '0.75rem',
 };
 
 const secondaryButtonStyle = {
