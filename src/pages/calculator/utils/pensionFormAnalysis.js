@@ -2080,6 +2080,29 @@ function validateUniformedSpecialTimeDraftForAnalysis({
     uniformedSpecialTimeDraft
   );
 
+  const insuranceRegime = String(
+    normalizedDraft.insuranceRegime || ''
+  ).trim();
+
+  if (!['old_public', 'new_ika'].includes(insuranceRegime)) {
+    return {
+      error: 'Επιλέξτε καθεστώς κατάταξης ενστόλου.',
+    };
+  }
+
+  const article36ACategory = String(
+    normalizedDraft.article36ACategory || ''
+  ).trim();
+
+  if (
+    article36ACategory &&
+    !isValidArticle36ACategoryForAnalysis(article36ACategory)
+  ) {
+    return {
+      error: 'Η κατηγορία άρθρου 36Α δεν είναι έγκυρη.',
+    };
+  }
+
   const combatDaysResult = getCombatFiveYearServiceDaysForAnalysis(
     normalizedDraft.combatFiveYearService
   );
@@ -2090,8 +2113,18 @@ function validateUniformedSpecialTimeDraftForAnalysis({
     };
   }
 
+  const combatEarningsValidation = validateUniformedRecognitionEarningsForAnalysis(
+    normalizedDraft.combatFiveYearService,
+    'τη μάχιμη πενταετία'
+  );
+
+  if (combatEarningsValidation.error) {
+    return { error: combatEarningsValidation.error };
+  }
+
   const semestersDaysResult = getSpecialSemestersDaysForAnalysis(
-    normalizedDraft.specialSemesters
+    normalizedDraft.specialSemesters,
+    insuranceRegime
   );
 
   if (semestersDaysResult.error) {
@@ -2100,13 +2133,24 @@ function validateUniformedSpecialTimeDraftForAnalysis({
     };
   }
 
-  const maxCombinedDays = 7 * INSURANCE_DAYS_PER_YEAR;
-  const totalSpecialDays = combatDaysResult.days + semestersDaysResult.days;
+  const semestersEarningsValidation = validateUniformedRecognitionEarningsForAnalysis(
+    normalizedDraft.specialSemesters,
+    'τα εξάμηνα'
+  );
 
-  if (totalSpecialDays > maxCombinedDays) {
-    return {
-      error: 'Η μάχιμη πενταετία μαζί με τα εξάμηνα δεν μπορεί να ξεπερνά συνολικά τα 7 έτη.',
-    };
+  if (semestersEarningsValidation.error) {
+    return { error: semestersEarningsValidation.error };
+  }
+
+  if (insuranceRegime === 'new_ika') {
+    const maxCombinedDays = 7 * INSURANCE_DAYS_PER_YEAR;
+    const totalSpecialDays = combatDaysResult.days + semestersDaysResult.days;
+
+    if (totalSpecialDays > maxCombinedDays) {
+      return {
+        error: 'Για κατάταξη από 01/01/2011, η μάχιμη πενταετία μαζί με τα εξάμηνα δεν μπορεί να ξεπερνά συνολικά τα 7 έτη.',
+      };
+    }
   }
 
   return {
@@ -2194,7 +2238,7 @@ function getCombatFiveYearServiceDaysForAnalysis(combatFiveYearService = {}) {
   };
 }
 
-function getSpecialSemestersDaysForAnalysis(specialSemesters = {}) {
+function getSpecialSemestersDaysForAnalysis(specialSemesters = {}, insuranceRegime = '') {
   const status = String(specialSemesters.status || 'none').trim();
 
   if (status === 'none') {
@@ -2211,6 +2255,17 @@ function getSpecialSemestersDaysForAnalysis(specialSemesters = {}) {
     };
   }
 
+  const semestersType = String(
+    specialSemesters.specialSemestersType || ''
+  ).trim();
+
+  if (!isValidSpecialSemestersTypeForAnalysis(semestersType)) {
+    return {
+      days: 0,
+      error: 'Επιλέξτε τύπο εξαμήνων.',
+    };
+  }
+
   const semestersCount = parseNonNegativeIntegerOrEmpty(
     specialSemesters.semestersCount
   );
@@ -2222,10 +2277,21 @@ function getSpecialSemestersDaysForAnalysis(specialSemesters = {}) {
     };
   }
 
-  if (semestersCount.value > 14) {
+  if (insuranceRegime === 'new_ika' && semestersCount.value > 14) {
     return {
       days: 0,
-      error: 'Τα εξάμηνα δεν μπορούν να είναι περισσότερα από 14.',
+      error: 'Για κατάταξη από 01/01/2011, τα εξάμηνα δεν μπορούν να είναι περισσότερα από 14.',
+    };
+  }
+
+  const milestoneCompletionYear = String(
+    specialSemesters.milestoneCompletionYear || ''
+  ).trim();
+
+  if (milestoneCompletionYear && !/^\d{4}$/.test(milestoneCompletionYear)) {
+    return {
+      days: 0,
+      error: 'Το έτος συμπλήρωσης πραγματικής υπηρεσίας πρέπει να έχει 4 ψηφία.',
     };
   }
 
@@ -2235,8 +2301,54 @@ function getSpecialSemestersDaysForAnalysis(specialSemesters = {}) {
   };
 }
 
+function validateUniformedRecognitionEarningsForAnalysis(value = {}, label) {
+  const status = String(value.status || 'none').trim();
+  const recognitionPeriod = String(value.recognitionPeriod || '').trim();
+
+  if (status === 'none' || recognitionPeriod === 'before_2002' || !recognitionPeriod) {
+    return { error: null };
+  }
+
+  const paidAmount = parseNonNegativeDecimal(value.paidAmount);
+  if (!paidAmount.isValid || paidAmount.value <= 0) {
+    return { error: `Για ${label} μετά το 2002, το ποσό που πληρώθηκε πρέπει να είναι μεγαλύτερο από 0.` };
+  }
+
+  const explicitBaseText = String(value.explicitPensionableEarningsBase || '').trim();
+  const rateText = String(value.contributionRatePercent || '').trim();
+  const hasExplicitBase = explicitBaseText !== '';
+  const hasRate = rateText !== '';
+
+  if (!hasExplicitBase && !hasRate) {
+    return { error: `Για ${label} μετά το 2002, δηλώστε είτε την ασφαλιστέα βάση της πράξης είτε το πραγματικό ποσοστό εισφοράς.` };
+  }
+
+  if (hasExplicitBase) {
+    const explicitBase = parseNonNegativeDecimal(explicitBaseText);
+    if (!explicitBase.isValid || explicitBase.value <= 0) {
+      return { error: `Η ασφαλιστέα βάση για ${label} πρέπει να είναι αριθμός μεγαλύτερος από 0.` };
+    }
+  }
+
+  if (hasRate) {
+    const rate = parseNonNegativeDecimal(rateText);
+    if (!rate.isValid || rate.value <= 0 || rate.value > 100) {
+      return { error: `Το ποσοστό εισφοράς για ${label} πρέπει να είναι μεγαλύτερο από 0 και έως 100.` };
+    }
+  }
+
+  const referenceYear = parseNonNegativeInteger(String(value.earningsReferenceYear || '').trim());
+  if (!referenceYear.isValid || referenceYear.value < 2002 || referenceYear.value > 2100) {
+    return { error: `Το έτος αναφοράς για ${label} πρέπει να είναι έγκυρο έτος από το 2002 και μετά.` };
+  }
+
+  return { error: null };
+}
+
 function createEmptyUniformedSpecialTimeDraft() {
   return {
+    insuranceRegime: '',
+    article36ACategory: '',
     combatFiveYearService: {
       status: 'none',
       years: '',
@@ -2244,12 +2356,20 @@ function createEmptyUniformedSpecialTimeDraft() {
       days: '',
       recognitionPeriod: '',
       paidAmount: '',
+      contributionRatePercent: '',
+      explicitPensionableEarningsBase: '',
+      earningsReferenceYear: '',
     },
     specialSemesters: {
       status: 'none',
+      specialSemestersType: '',
       semestersCount: '',
+      milestoneCompletionYear: '',
       recognitionPeriod: '',
       paidAmount: '',
+      contributionRatePercent: '',
+      explicitPensionableEarningsBase: '',
+      earningsReferenceYear: '',
     },
   };
 }
@@ -2262,6 +2382,8 @@ function normalizeUniformedSpecialTimeDraft(value) {
   }
 
   const normalizedDraft = {
+    insuranceRegime: value.insuranceRegime || '',
+    article36ACategory: value.article36ACategory || '',
     combatFiveYearService: {
       ...defaultValue.combatFiveYearService,
       ...(value.combatFiveYearService || {}),
@@ -2274,13 +2396,44 @@ function normalizeUniformedSpecialTimeDraft(value) {
 
   if (normalizedDraft.combatFiveYearService.recognitionPeriod === 'before_2002') {
     normalizedDraft.combatFiveYearService.paidAmount = '0';
+    normalizedDraft.combatFiveYearService.contributionRatePercent = '';
+    normalizedDraft.combatFiveYearService.explicitPensionableEarningsBase = '';
+    normalizedDraft.combatFiveYearService.earningsReferenceYear = '';
+  }
+
+  if (normalizedDraft.specialSemesters.status === 'none') {
+    normalizedDraft.specialSemesters.specialSemestersType = '';
   }
 
   if (normalizedDraft.specialSemesters.recognitionPeriod === 'before_2002') {
     normalizedDraft.specialSemesters.paidAmount = '0';
+    normalizedDraft.specialSemesters.contributionRatePercent = '';
+    normalizedDraft.specialSemesters.explicitPensionableEarningsBase = '';
+    normalizedDraft.specialSemesters.earningsReferenceYear = '';
   }
 
   return normalizedDraft;
+}
+
+function isValidSpecialSemestersTypeForAnalysis(value) {
+  return [
+    'flight',
+    'diving',
+    'paratrooper_or_special_forces',
+    'mine_clearance',
+    'other_special_category',
+  ].includes(value);
+}
+
+function isValidArticle36ACategoryForAnalysis(value) {
+  return [
+    'flight',
+    'submarine_or_diving',
+    'paratrooper',
+    'underwater_demolition_or_special_ops',
+    'mine_clearance_or_eod',
+    'other_confirmed',
+  ].includes(value);
 }
 
 function hasActiveUniformedSpecialTimeDraft(value) {
