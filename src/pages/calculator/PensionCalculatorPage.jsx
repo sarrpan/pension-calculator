@@ -81,8 +81,23 @@ function PensionCalculatorPage() {
   const [simpleToDateInput, setSimpleToDateInput] = useState(
     savedDraft.simpleToDateInput || ''
   );
+  const [simpleTimeInputMethod, setSimpleTimeInputMethod] = useState(
+    savedDraft.simpleTimeInputMethod || ''
+  );
   const [simpleInsuranceDaysInput, setSimpleInsuranceDaysInput] = useState(
     savedDraft.simpleInsuranceDaysInput || ''
+  );
+  const [simpleInsuranceYearsInput, setSimpleInsuranceYearsInput] = useState(
+    savedDraft.simpleInsuranceYearsInput || ''
+  );
+  const [simpleInsuranceMonthsInput, setSimpleInsuranceMonthsInput] = useState(
+    savedDraft.simpleInsuranceMonthsInput || ''
+  );
+  const [simpleInsuranceExtraDaysInput, setSimpleInsuranceExtraDaysInput] = useState(
+    savedDraft.simpleInsuranceExtraDaysInput || ''
+  );
+  const [simpleUniformedSpecialTimeDraft, setSimpleUniformedSpecialTimeDraft] = useState(
+    normalizeSavedUniformedSpecialTimeDraft(savedDraft.simpleUniformedSpecialTimeDraft)
   );
 
   const [insurancePeriodGroups, setInsurancePeriodGroups] = useState(() => {
@@ -116,11 +131,26 @@ function PensionCalculatorPage() {
       pensionModeInput,
       earlyReductionMonthsInput,
       disabilityCategoryInput,
-      insuranceTimeInputMethod,
-      insuranceDaysInput,
-      insuranceYearsInput,
-      insuranceMonthsInput,
-      insuranceExtraDaysInput,
+      insuranceTimeInputMethod:
+        insurancePeriodsInputMode === 'simple'
+          ? simpleTimeInputMethod
+          : insuranceTimeInputMethod,
+      insuranceDaysInput:
+        insurancePeriodsInputMode === 'simple'
+          ? simpleInsuranceDaysInput
+          : insuranceDaysInput,
+      insuranceYearsInput:
+        insurancePeriodsInputMode === 'simple'
+          ? simpleInsuranceYearsInput
+          : insuranceYearsInput,
+      insuranceMonthsInput:
+        insurancePeriodsInputMode === 'simple'
+          ? simpleInsuranceMonthsInput
+          : insuranceMonthsInput,
+      insuranceExtraDaysInput:
+        insurancePeriodsInputMode === 'simple'
+          ? simpleInsuranceExtraDaysInput
+          : insuranceExtraDaysInput,
       residenceYearsInput,
       insurancePeriodsInputMode,
       simpleFundInput,
@@ -128,7 +158,12 @@ function PensionCalculatorPage() {
       simpleEmploymentCategoryInput,
       simpleFromDateInput,
       simpleToDateInput,
+      simpleTimeInputMethod,
       simpleInsuranceDaysInput,
+      simpleInsuranceYearsInput,
+      simpleInsuranceMonthsInput,
+      simpleInsuranceExtraDaysInput,
+      simpleUniformedSpecialTimeDraft,
       insurancePeriodGroups,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
@@ -154,7 +189,12 @@ function PensionCalculatorPage() {
     simpleEmploymentCategoryInput,
     simpleFromDateInput,
     simpleToDateInput,
+    simpleTimeInputMethod,
     simpleInsuranceDaysInput,
+    simpleInsuranceYearsInput,
+    simpleInsuranceMonthsInput,
+    simpleInsuranceExtraDaysInput,
+    simpleUniformedSpecialTimeDraft,
     insurancePeriodGroups,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
@@ -182,7 +222,12 @@ function PensionCalculatorPage() {
       simpleEmploymentCategoryInput,
       simpleFromDateInput,
       simpleToDateInput,
+      simpleTimeInputMethod,
       simpleInsuranceDaysInput,
+      simpleInsuranceYearsInput,
+      simpleInsuranceMonthsInput,
+      simpleInsuranceExtraDaysInput,
+      simpleUniformedSpecialTimeDraft,
       insurancePeriodGroups,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
@@ -208,7 +253,12 @@ function PensionCalculatorPage() {
     simpleEmploymentCategoryInput,
     simpleFromDateInput,
     simpleToDateInput,
+    simpleTimeInputMethod,
     simpleInsuranceDaysInput,
+    simpleInsuranceYearsInput,
+    simpleInsuranceMonthsInput,
+    simpleInsuranceExtraDaysInput,
+    simpleUniformedSpecialTimeDraft,
     insurancePeriodGroups,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
@@ -268,7 +318,12 @@ function PensionCalculatorPage() {
       setSimpleEmploymentCategoryInput('');
       setSimpleFromDateInput('');
       setSimpleToDateInput('');
+      setSimpleTimeInputMethod('');
       setSimpleInsuranceDaysInput('');
+      setSimpleInsuranceYearsInput('');
+      setSimpleInsuranceMonthsInput('');
+      setSimpleInsuranceExtraDaysInput('');
+      setSimpleUniformedSpecialTimeDraft(createEmptyUniformedSpecialTimeDraft());
     }
 
     if (value !== 'multiple') {
@@ -284,6 +339,15 @@ function PensionCalculatorPage() {
         return [createEmptyInsurancePeriodGroup()];
       });
     }
+  }
+
+  function handleSimpleTimeInputMethodChange(value) {
+    setSimpleTimeInputMethod(value);
+    setSimpleInsuranceDaysInput('');
+    setSimpleInsuranceYearsInput('');
+    setSimpleInsuranceMonthsInput('');
+    setSimpleInsuranceExtraDaysInput('');
+    clearBackendResult();
   }
 
   function handleInsurancePeriodGroupChange(groupId, field, value) {
@@ -537,7 +601,7 @@ function PensionCalculatorPage() {
               }}
             />
 
-            {insurancePeriodsInputMode !== 'multiple' && (
+            {insurancePeriodsInputMode === 'disabled' && (
               <InsuranceTimeInputSection
                 insuranceTimeInputMethod={insuranceTimeInputMethod}
                 insuranceDaysInput={insuranceDaysInput}
@@ -572,6 +636,14 @@ function PensionCalculatorPage() {
               simpleFundInput={simpleFundInput}
               simpleInsuredTypeInput={simpleInsuredTypeInput}
               simpleEmploymentCategoryInput={simpleEmploymentCategoryInput}
+              simpleFromDateInput={simpleFromDateInput}
+              simpleToDateInput={simpleToDateInput}
+              simpleTimeInputMethod={simpleTimeInputMethod}
+              simpleInsuranceDaysInput={simpleInsuranceDaysInput}
+              simpleInsuranceYearsInput={simpleInsuranceYearsInput}
+              simpleInsuranceMonthsInput={simpleInsuranceMonthsInput}
+              simpleInsuranceExtraDaysInput={simpleInsuranceExtraDaysInput}
+              simpleUniformedSpecialTimeDraft={simpleUniformedSpecialTimeDraft}
               insurancePeriodGroups={insurancePeriodGroups}
               maxInsurancePeriodGroups={MAX_INSURANCE_PERIOD_GROUPS}
               onInsurancePeriodsInputModeChange={handleInsurancePeriodsInputModeChange}
@@ -585,6 +657,37 @@ function PensionCalculatorPage() {
               }}
               onSimpleEmploymentCategoryChange={(value) => {
                 setSimpleEmploymentCategoryInput(value);
+                clearBackendResult();
+              }}
+              onSimpleFromDateChange={(value) => {
+                setSimpleFromDateInput(value);
+                clearBackendResult();
+              }}
+              onSimpleToDateChange={(value) => {
+                setSimpleToDateInput(value);
+                clearBackendResult();
+              }}
+              onSimpleTimeInputMethodChange={handleSimpleTimeInputMethodChange}
+              onSimpleInsuranceDaysChange={(value) => {
+                setSimpleInsuranceDaysInput(value);
+                clearBackendResult();
+              }}
+              onSimpleInsuranceYearsChange={(value) => {
+                setSimpleInsuranceYearsInput(value);
+                clearBackendResult();
+              }}
+              onSimpleInsuranceMonthsChange={(value) => {
+                setSimpleInsuranceMonthsInput(value);
+                clearBackendResult();
+              }}
+              onSimpleInsuranceExtraDaysChange={(value) => {
+                setSimpleInsuranceExtraDaysInput(value);
+                clearBackendResult();
+              }}
+              onSimpleUniformedSpecialTimeDraftChange={(value) => {
+                setSimpleUniformedSpecialTimeDraft(
+                  normalizeSavedUniformedSpecialTimeDraft(value)
+                );
                 clearBackendResult();
               }}
               onInsurancePeriodGroupChange={handleInsurancePeriodGroupChange}
@@ -760,7 +863,6 @@ function createDevelopmentYearlyEarningsRows() {
   });
 }
 
-
 function createEmptyInsurancePeriodGroup() {
   return {
     id: createInsurancePeriodGroupId(),
@@ -772,6 +874,7 @@ function createEmptyInsurancePeriodGroup() {
     fund: '',
     insuredType: '',
     employmentCategory: '',
+    uniformedSpecialTimeDraft: createEmptyUniformedSpecialTimeDraft(),
   };
 }
 
@@ -794,6 +897,10 @@ function normalizeSavedInsurancePeriodGroups(savedDraft = {}) {
           fund: group.fund || '',
           insuredType: group.insuredType || '',
           employmentCategory: group.employmentCategory || '',
+          uniformedSpecialTimeDraft:
+            normalizeSavedUniformedSpecialTimeDraft(
+              group.uniformedSpecialTimeDraft
+            ),
         };
       });
 
@@ -868,6 +975,45 @@ function createLegacyInsurancePeriodGroup({
     fund: fund || '',
     insuredType: insuredType || '',
     employmentCategory: employmentCategory || '',
+    uniformedSpecialTimeDraft: createEmptyUniformedSpecialTimeDraft(),
+  };
+}
+
+function createEmptyUniformedSpecialTimeDraft() {
+  return {
+    combatFiveYearService: {
+      status: 'none',
+      years: '',
+      months: '',
+      days: '',
+      recognitionPeriod: '',
+      paidAmount: '',
+    },
+    specialSemesters: {
+      status: 'none',
+      semestersCount: '',
+      recognitionPeriod: '',
+      paidAmount: '',
+    },
+  };
+}
+
+function normalizeSavedUniformedSpecialTimeDraft(value) {
+  const defaultValue = createEmptyUniformedSpecialTimeDraft();
+
+  if (!value || typeof value !== 'object') {
+    return defaultValue;
+  }
+
+  return {
+    combatFiveYearService: {
+      ...defaultValue.combatFiveYearService,
+      ...(value.combatFiveYearService || {}),
+    },
+    specialSemesters: {
+      ...defaultValue.specialSemesters,
+      ...(value.specialSemesters || {}),
+    },
   };
 }
 
@@ -919,3 +1065,5 @@ function saveDraft(draft) {
 }
 
 export default PensionCalculatorPage;
+
+

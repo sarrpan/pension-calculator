@@ -7,6 +7,13 @@ function InsurancePeriodsInputSection({
   simpleFundInput,
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
+  simpleFromDateInput,
+  simpleToDateInput,
+  simpleTimeInputMethod,
+  simpleInsuranceDaysInput,
+  simpleInsuranceYearsInput,
+  simpleInsuranceMonthsInput,
+  simpleInsuranceExtraDaysInput,
   simpleUniformedSpecialTimeDraft,
   insurancePeriodGroups,
   maxInsurancePeriodGroups = 10,
@@ -14,6 +21,13 @@ function InsurancePeriodsInputSection({
   onSimpleFundChange,
   onSimpleInsuredTypeChange,
   onSimpleEmploymentCategoryChange,
+  onSimpleFromDateChange,
+  onSimpleToDateChange,
+  onSimpleTimeInputMethodChange,
+  onSimpleInsuranceDaysChange,
+  onSimpleInsuranceYearsChange,
+  onSimpleInsuranceMonthsChange,
+  onSimpleInsuranceExtraDaysChange,
   onSimpleUniformedSpecialTimeDraftChange,
   onInsurancePeriodGroupChange,
   onAddInsurancePeriodGroup,
@@ -117,6 +131,68 @@ function InsurancePeriodsInputSection({
                 disabled={!simpleFundInput}
               />
             )}
+
+            <TextInputWithLabel
+              id="simpleFromDate"
+              label="Ημερομηνία έναρξης περιόδου"
+              value={simpleFromDateInput}
+              onChange={onSimpleFromDateChange}
+              placeholder="π.χ. 01/01/2002"
+            />
+
+            <TextInputWithLabel
+              id="simpleToDate"
+              label="Ημερομηνία λήξης περιόδου"
+              value={simpleToDateInput}
+              onChange={onSimpleToDateChange}
+              placeholder="π.χ. 31/12/2025"
+            />
+
+            <SelectWithLabel
+              id="simpleTimeInputMethod"
+              label="Τρόπος εισαγωγής χρόνου"
+              value={simpleTimeInputMethod}
+              onChange={onSimpleTimeInputMethodChange}
+              options={INSURANCE_TIME_METHOD_OPTIONS}
+            />
+
+            {simpleTimeInputMethod === 'insurance_days' && (
+              <TextInputWithLabel
+                id="simpleInsuranceDays"
+                label="Ένσημα / ημέρες ασφάλισης"
+                value={simpleInsuranceDaysInput}
+                onChange={onSimpleInsuranceDaysChange}
+                placeholder="π.χ. 8000"
+              />
+            )}
+
+            {simpleTimeInputMethod === 'years_months_days' && (
+              <>
+                <TextInputWithLabel
+                  id="simpleInsuranceYears"
+                  label="Έτη"
+                  value={simpleInsuranceYearsInput}
+                  onChange={onSimpleInsuranceYearsChange}
+                  placeholder="π.χ. 15"
+                />
+
+                <TextInputWithLabel
+                  id="simpleInsuranceMonths"
+                  label="Μήνες"
+                  value={simpleInsuranceMonthsInput}
+                  onChange={onSimpleInsuranceMonthsChange}
+                  placeholder="0 έως 11"
+                />
+
+                <TextInputWithLabel
+                  id="simpleInsuranceExtraDays"
+                  label="Ημέρες"
+                  value={simpleInsuranceExtraDaysInput}
+                  onChange={onSimpleInsuranceExtraDaysChange}
+                  placeholder="0 έως 24"
+                />
+              </>
+            )}
           </div>
 
           {isSimpleUniformedFund && (
@@ -128,8 +204,9 @@ function InsurancePeriodsInputSection({
           )}
 
           <p style={{ color: '#475569', marginBottom: 0 }}>
-            Ο χρόνος ασφάλισης δηλώνεται μία φορά στο πεδίο «Χρόνος ασφάλισης».
-            Όλος αυτός ο χρόνος αποδίδεται στην παραπάνω κατηγορία.
+            Οι ημερομηνίες περιγράφουν πότε ίσχυε η κατηγορία. Ο πραγματικός
+            ασφαλιστικός χρόνος προκύπτει από τα ένσημα / ημέρες ή από τα έτη,
+            τους μήνες και τις ημέρες που δηλώνονται παραπάνω.
           </p>
         </div>
       )}
@@ -265,6 +342,22 @@ function InsurancePeriodGroupFields({
             disabled={!group.fund}
           />
         )}
+
+        <TextInputWithLabel
+          id={`multiPeriod${groupNumber}FromDate`}
+          label="Ημερομηνία έναρξης"
+          value={group.fromDate || ''}
+          onChange={(value) => onGroupChange('fromDate', value)}
+          placeholder="π.χ. 01/01/2025"
+        />
+
+        <TextInputWithLabel
+          id={`multiPeriod${groupNumber}ToDate`}
+          label="Ημερομηνία λήξης"
+          value={group.toDate || ''}
+          onChange={(value) => onGroupChange('toDate', value)}
+          placeholder="π.χ. 31/12/2025"
+        />
 
         <SelectWithLabel
           id={`multiPeriod${groupNumber}TimeInputMethod`}
