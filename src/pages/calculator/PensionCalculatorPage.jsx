@@ -15,7 +15,7 @@ const CALCULATE_PENSION_URL = 'http://127.0.0.1:5001/pension-calculator-f8e60/us
 const LOCAL_STORAGE_KEY = 'geodora_pension_calculator_draft_v1';
 const MAX_INSURANCE_PERIOD_GROUPS = 10;
 
-function PensionCalculatorPage() {
+function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
   const savedDraft = useMemo(() => loadSavedDraft(), []);
 
   const [currentFormStep, setCurrentFormStep] = useState(
@@ -99,6 +99,12 @@ function PensionCalculatorPage() {
   const [simpleUniformedSpecialTimeDraft, setSimpleUniformedSpecialTimeDraft] = useState(
     normalizeSavedUniformedSpecialTimeDraft(savedDraft.simpleUniformedSpecialTimeDraft)
   );
+  const [article30SpecialRegimeUsageInput, setArticle30SpecialRegimeUsageInput] =
+    useState(
+      normalizeSavedArticle30SpecialRegimeUsageInput(
+        savedDraft.article30SpecialRegimeUsageInput
+      )
+    );
 
   const [insurancePeriodGroups, setInsurancePeriodGroups] = useState(() => {
     return normalizeSavedInsurancePeriodGroups(savedDraft);
@@ -125,6 +131,7 @@ function PensionCalculatorPage() {
   const analysis = useMemo(() => {
     return analyzePensionForm({
       currentFormStep,
+      calculatorEdition,
       pensionStartDateInput,
       pensionTypeInput,
       oldAgeCategoryInput,
@@ -164,6 +171,7 @@ function PensionCalculatorPage() {
       simpleInsuranceMonthsInput,
       simpleInsuranceExtraDaysInput,
       simpleUniformedSpecialTimeDraft,
+      article30SpecialRegimeUsageInput,
       insurancePeriodGroups,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
@@ -171,6 +179,7 @@ function PensionCalculatorPage() {
     });
   }, [
     currentFormStep,
+    calculatorEdition,
     pensionStartDateInput,
     pensionTypeInput,
     oldAgeCategoryInput,
@@ -195,6 +204,7 @@ function PensionCalculatorPage() {
     simpleInsuranceMonthsInput,
     simpleInsuranceExtraDaysInput,
     simpleUniformedSpecialTimeDraft,
+    article30SpecialRegimeUsageInput,
     insurancePeriodGroups,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
@@ -228,6 +238,7 @@ function PensionCalculatorPage() {
       simpleInsuranceMonthsInput,
       simpleInsuranceExtraDaysInput,
       simpleUniformedSpecialTimeDraft,
+      article30SpecialRegimeUsageInput,
       insurancePeriodGroups,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
@@ -259,6 +270,7 @@ function PensionCalculatorPage() {
     simpleInsuranceMonthsInput,
     simpleInsuranceExtraDaysInput,
     simpleUniformedSpecialTimeDraft,
+    article30SpecialRegimeUsageInput,
     insurancePeriodGroups,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
@@ -644,6 +656,8 @@ function PensionCalculatorPage() {
               simpleInsuranceMonthsInput={simpleInsuranceMonthsInput}
               simpleInsuranceExtraDaysInput={simpleInsuranceExtraDaysInput}
               simpleUniformedSpecialTimeDraft={simpleUniformedSpecialTimeDraft}
+              calculatorEdition={calculatorEdition}
+              article30SpecialRegimeUsageInput={article30SpecialRegimeUsageInput}
               insurancePeriodGroups={insurancePeriodGroups}
               maxInsurancePeriodGroups={MAX_INSURANCE_PERIOD_GROUPS}
               onInsurancePeriodsInputModeChange={handleInsurancePeriodsInputModeChange}
@@ -688,6 +702,15 @@ function PensionCalculatorPage() {
                 setSimpleUniformedSpecialTimeDraft(
                   normalizeSavedUniformedSpecialTimeDraft(value)
                 );
+                clearBackendResult();
+              }}
+              onArticle30SpecialRegimeUsageChange={(premiumType, value) => {
+                setArticle30SpecialRegimeUsageInput((currentValue) => ({
+                  ...normalizeSavedArticle30SpecialRegimeUsageInput(
+                    currentValue
+                  ),
+                  [premiumType]: value,
+                }));
                 clearBackendResult();
               }}
               onInsurancePeriodGroupChange={handleInsurancePeriodGroupChange}
@@ -1014,6 +1037,30 @@ function normalizeSavedUniformedSpecialTimeDraft(value) {
       ...defaultValue.specialSemesters,
       ...(value.specialSemesters || {}),
     },
+  };
+}
+
+function normalizeSavedArticle30SpecialRegimeUsageInput(value) {
+  if (typeof value === 'string') {
+    return {
+      vae: value,
+      yvae: value,
+      ota_cleaning: value,
+    };
+  }
+
+  if (!value || typeof value !== 'object') {
+    return {
+      vae: '',
+      yvae: '',
+      ota_cleaning: '',
+    };
+  }
+
+  return {
+    vae: value.vae || '',
+    yvae: value.yvae || '',
+    ota_cleaning: value.ota_cleaning || '',
   };
 }
 

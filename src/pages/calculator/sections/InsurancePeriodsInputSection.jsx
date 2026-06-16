@@ -15,6 +15,8 @@ function InsurancePeriodsInputSection({
   simpleInsuranceMonthsInput,
   simpleInsuranceExtraDaysInput,
   simpleUniformedSpecialTimeDraft,
+  calculatorEdition = 'professional',
+  article30SpecialRegimeUsageInput,
   insurancePeriodGroups,
   maxInsurancePeriodGroups = 10,
   onInsurancePeriodsInputModeChange,
@@ -29,6 +31,7 @@ function InsurancePeriodsInputSection({
   onSimpleInsuranceMonthsChange,
   onSimpleInsuranceExtraDaysChange,
   onSimpleUniformedSpecialTimeDraftChange,
+  onArticle30SpecialRegimeUsageChange,
   onInsurancePeriodGroupChange,
   onAddInsurancePeriodGroup,
   onRemoveInsurancePeriodGroup,
@@ -37,11 +40,21 @@ function InsurancePeriodsInputSection({
   const simpleEmploymentCategoryOptions = getEmploymentCategoryOptions(simpleFundInput);
   const isSimpleUniformedFund = isUniformedFund(simpleFundInput);
   const isSimpleContributionBasedFund = isContributionBasedFund(simpleFundInput);
+  const isSimpleArticle30MainContributionFund =
+    isArticle30MainContributionFund(simpleFundInput);
 
   const safeInsurancePeriodGroups =
     Array.isArray(insurancePeriodGroups) && insurancePeriodGroups.length > 0
       ? insurancePeriodGroups
       : [];
+
+  const conditionalPremiumPresence = getConditionalPremiumPresence({
+    insurancePeriodsInputMode,
+    simpleEmploymentCategoryInput,
+    insurancePeriodGroups: safeInsurancePeriodGroups,
+  });
+  const normalizedSpecialRegimeUsageInput =
+    normalizeSpecialRegimeUsageInput(article30SpecialRegimeUsageInput);
 
   function handleModeChange(value) {
     onInsurancePeriodsInputModeChange(value);
@@ -58,6 +71,13 @@ function InsurancePeriodsInputSection({
     }
 
     if (isUniformedFund(value)) {
+      onSimpleInsuredTypeChange('');
+      onSimpleEmploymentCategoryChange('common');
+      onSimpleUniformedSpecialTimeDraftChange(createEmptyUniformedSpecialTimeDraft());
+      return;
+    }
+
+    if (isArticle30MainContributionFund(value)) {
       onSimpleInsuredTypeChange('');
       onSimpleEmploymentCategoryChange('common');
       onSimpleUniformedSpecialTimeDraftChange(createEmptyUniformedSpecialTimeDraft());
@@ -121,7 +141,9 @@ function InsurancePeriodsInputSection({
               />
             )}
 
-            {!isSimpleUniformedFund && !isSimpleContributionBasedFund && (
+            {!isSimpleUniformedFund &&
+              !isSimpleContributionBasedFund &&
+              !isSimpleArticle30MainContributionFund && (
               <SelectWithLabel
                 id="simpleEmploymentCategory"
                 label="Κατηγορία εργασίας / εισφορών"
@@ -257,6 +279,63 @@ function InsurancePeriodsInputSection({
           )}
         </div>
       )}
+
+      {calculatorEdition !== 'free' &&
+        conditionalPremiumPresence.hasAny && (
+          <div style={specialRegimeBoxStyle}>
+            <h3 style={{ marginTop: 0 }}>
+              Ειδικές διατάξεις και επασφάλιστρο
+            </h3>
+
+            {conditionalPremiumPresence.vae && (
+              <SelectWithLabel
+                id="article30SpecialRegimeUsageVae"
+                label="Η συνταξιοδότηση γίνεται με ειδικές διατάξεις ΒΑΕ;"
+                value={normalizedSpecialRegimeUsageInput.vae}
+                onChange={(value) =>
+                  onArticle30SpecialRegimeUsageChange('vae', value)
+                }
+                options={SPECIAL_REGIME_USAGE_OPTIONS}
+              />
+            )}
+
+            {conditionalPremiumPresence.yvae && (
+              <SelectWithLabel
+                id="article30SpecialRegimeUsageYvae"
+                label="Η συνταξιοδότηση γίνεται με ειδικές διατάξεις ΥΒΑΕ;"
+                value={normalizedSpecialRegimeUsageInput.yvae}
+                onChange={(value) =>
+                  onArticle30SpecialRegimeUsageChange('yvae', value)
+                }
+                options={SPECIAL_REGIME_USAGE_OPTIONS}
+              />
+            )}
+
+            {conditionalPremiumPresence.ota_cleaning && (
+              <SelectWithLabel
+                id="article30SpecialRegimeUsageOtaCleaning"
+                label="Η συνταξιοδότηση γίνεται με τις ειδικές διατάξεις καθαριότητας / υγιεινής ΟΤΑ;"
+                value={normalizedSpecialRegimeUsageInput.ota_cleaning}
+                onChange={(value) =>
+                  onArticle30SpecialRegimeUsageChange(
+                    'ota_cleaning',
+                    value
+                  )
+                }
+                options={SPECIAL_REGIME_USAGE_OPTIONS}
+              />
+            )}
+
+            <p style={{ color: '#475569', marginBottom: 0 }}>
+              Για κάθε ειδική κατηγορία δηλώνεται ξεχωριστά αν
+              χρησιμοποιείται η αντίστοιχη ειδική διάταξη εξόδου. Με «Ναι»
+              δεν υπολογίζεται ξανά η ίδια πρόσθετη εισφορά. Με «Δεν
+              γνωρίζω» το συγκεκριμένο επασφάλιστρο δεν προστίθεται και
+              εμφανίζεται προειδοποίηση.
+            </p>
+          </div>
+        )}
+
     </fieldset>
   );
 }
@@ -273,6 +352,8 @@ function InsurancePeriodGroupFields({
   const employmentCategoryOptions = getEmploymentCategoryOptions(group.fund);
   const isCurrentUniformedFund = isUniformedFund(group.fund);
   const isCurrentContributionBasedFund = isContributionBasedFund(group.fund);
+  const isCurrentArticle30MainContributionFund =
+    isArticle30MainContributionFund(group.fund);
 
   function handleFundChange(value) {
     onGroupChange('fund', value);
@@ -285,6 +366,13 @@ function InsurancePeriodGroupFields({
     }
 
     if (isUniformedFund(value)) {
+      onGroupChange('insuredType', '');
+      onGroupChange('employmentCategory', 'common');
+      onGroupChange('uniformedSpecialTimeDraft', createEmptyUniformedSpecialTimeDraft());
+      return;
+    }
+
+    if (isArticle30MainContributionFund(value)) {
       onGroupChange('insuredType', '');
       onGroupChange('employmentCategory', 'common');
       onGroupChange('uniformedSpecialTimeDraft', createEmptyUniformedSpecialTimeDraft());
@@ -332,7 +420,9 @@ function InsurancePeriodGroupFields({
           />
         )}
 
-        {!isCurrentUniformedFund && !isCurrentContributionBasedFund && (
+        {!isCurrentUniformedFund &&
+          !isCurrentContributionBasedFund &&
+          !isCurrentArticle30MainContributionFund && (
           <SelectWithLabel
             id={`multiPeriod${groupNumber}EmploymentCategory`}
             label="Κατηγορία εργασίας / εισφορών"
@@ -1045,7 +1135,11 @@ const FUND_OPTIONS = [
   },
   {
     value: 'public_sector',
-    label: 'Δημόσιο / ΟΤΑ',
+    label: 'Δημόσιο (γενική κατηγορία)',
+  },
+  {
+    value: 'ota',
+    label: 'ΟΤΑ / υπηρεσίες καθαριότητας και υγιεινής',
   },
   {
     value: 'uniformed',
@@ -1056,8 +1150,52 @@ const FUND_OPTIONS = [
     label: 'ΤΑΠ-ΔΕΗ',
   },
   {
+    value: 'ika_tsp_hsap',
+    label: 'τ. ΤΣΠ-ΗΣΑΠ',
+  },
+  {
+    value: 'ika_tsp_ete',
+    label: 'τ. ΤΣΠ-ΕΤΕ',
+  },
+  {
+    value: 'ika_tap_etba',
+    label: 'τ. ΤΑΠ-ΕΤΒΑ',
+  },
+  {
+    value: 'tapae_ethniki',
+    label: 'ΤΑΠΑΕ «Η Εθνική»',
+  },
+  {
+    value: 'tseapgso',
+    label: 'τ. ΤΣΕΑΠΓΣΟ',
+  },
+  {
+    value: 'ika_tap_ote_ote',
+    label: 'τ. ΤΑΠ-ΟΤΕ — ΟΤΕ',
+  },
+  {
+    value: 'ika_tap_ote_ose_elta',
+    label: 'τ. ΤΑΠ-ΟΤΕ — ΟΣΕ / ΕΛΤΑ',
+  },
+  {
+    value: 'ika_tap_ote_staff',
+    label: 'τ. ΤΑΠ-ΟΤΕ — υπάλληλοι τ. ΤΑΠΟΤΕ',
+  },
+  {
+    value: 'ika_npdd_special',
+    label: 'Τακτικοί υπάλληλοι ΙΚΑ / ΝΠΔΔ ειδικού καθεστώτος',
+  },
+  {
+    value: 'etap_mme_tattath',
+    label: 'ΕΤΑΠ-ΜΜΕ / πρώην ΤΑΤΤΑΘ',
+  },
+  {
+    value: 'tanpy',
+    label: 'ΤΑΝΠΥ / έμμισθοι ναυτικοί πράκτορες',
+  },
+  {
     value: 'deko',
-    label: 'ΔΕΚΟ / οργανισμοί κοινής ωφέλειας',
+    label: 'Άλλη ΔΕΚΟ / οργανισμός κοινής ωφέλειας',
   },
   {
     value: 'nat',
@@ -1074,7 +1212,7 @@ const FUND_OPTIONS = [
 
   {
     value: 'banking_funds',
-    label: 'Τραπεζικά ταμεία / συνεταιρισμοί',
+    label: 'Άλλο τραπεζικό ταμείο / συνεταιρισμός',
   },
 
   {
@@ -1109,6 +1247,13 @@ const INSURANCE_TIME_METHOD_OPTIONS = [
     value: 'years_months_days',
     label: 'Με έτη, μήνες και ημέρες',
   },
+];
+
+const SPECIAL_REGIME_USAGE_OPTIONS = [
+  { value: '', label: 'Επιλέξτε' },
+  { value: 'yes', label: 'Ναι' },
+  { value: 'no', label: 'Όχι' },
+  { value: 'unknown', label: 'Δεν γνωρίζω' },
 ];
 
 const COMBAT_FIVE_YEAR_STATUS_OPTIONS = [
@@ -1199,12 +1344,40 @@ const SIMPLE_VAE_YVAE_OPTIONS = [
   SELECT_OPTION,
   { value: 'common', label: 'Απλή / κοινή ασφάλιση' },
   { value: 'vae', label: 'ΒΑΕ' },
-  { value: 'yvae', label: 'ΥΒΑΕ / ειδικού κινδύνου' },
+  {
+    value: 'yvae',
+    label: 'ΥΒΑΕ / υπόγειες στοές / υποθαλάσσιες εργασίες',
+  },
 ];
 
-const BANKING_EMPLOYMENT_OPTIONS = [
+const OTA_EMPLOYMENT_OPTIONS = [
+  SELECT_OPTION,
+  { value: 'common', label: 'Απλή / κοινή ασφάλιση ΟΤΑ' },
+  {
+    value: 'ota_cleaning',
+    label: 'Καθαριότητα / υγιεινή ΟΤΑ',
+  },
+];
+
+const COMMON_ONLY_EMPLOYMENT_OPTIONS = [
   SELECT_OPTION,
   { value: 'common', label: 'Απλή / διοικητική ασφάλιση' },
+];
+
+const ARTICLE30_MAIN_CONTRIBUTION_FUNDS = [
+  'ika_tsp_hsap',
+  'ika_tsp_ete',
+  'ika_tap_etba',
+  'tapae_ethniki',
+  'tseapgso',
+  'ika_tap_ote_ote',
+  'ika_tap_ote_ose_elta',
+  'ika_tap_ote_staff',
+  'aviation',
+  'artistic',
+  'ika_npdd_special',
+  'etap_mme_tattath',
+  'tanpy',
 ];
 
 const CONTRIBUTION_BASED_FUNDS = [
@@ -1223,6 +1396,10 @@ function isContributionBasedFund(fund) {
   return CONTRIBUTION_BASED_FUNDS.includes(fund);
 }
 
+function isArticle30MainContributionFund(fund) {
+  return ARTICLE30_MAIN_CONTRIBUTION_FUNDS.includes(fund);
+}
+
 function getInsuredTypeOptions(fund) {
   if (!fund) {
     return [DEFAULT_EMPTY_OPTION];
@@ -1236,23 +1413,78 @@ function getEmploymentCategoryOptions(fund) {
     return [DEFAULT_EMPTY_OPTION];
   }
 
-  if (
-    fund === 'ika' ||
-    fund === 'public_sector' ||
-    fund === 'tap_dei' ||
-    fund === 'deko' ||
-    fund === 'nat' ||
-    fund === 'aviation' ||
-    fund === 'artistic'
-  ) {
+  if (fund === 'ika' || fund === 'tap_dei') {
     return SIMPLE_VAE_YVAE_OPTIONS;
   }
 
-  if (fund === 'banking_funds') {
-    return BANKING_EMPLOYMENT_OPTIONS;
+  if (fund === 'ota') {
+    return OTA_EMPLOYMENT_OPTIONS;
+  }
+
+  if (
+    fund === 'public_sector' ||
+    fund === 'deko' ||
+    fund === 'nat' ||
+    fund === 'banking_funds' ||
+    isArticle30MainContributionFund(fund)
+  ) {
+    return COMMON_ONLY_EMPLOYMENT_OPTIONS;
   }
 
   return [SELECT_OPTION];
+}
+
+function getConditionalPremiumPresence({
+  insurancePeriodsInputMode,
+  simpleEmploymentCategoryInput,
+  insurancePeriodGroups,
+}) {
+  const categories = [];
+
+  if (insurancePeriodsInputMode === 'simple') {
+    categories.push(simpleEmploymentCategoryInput);
+  }
+
+  if (insurancePeriodsInputMode === 'multiple') {
+    for (const group of insurancePeriodGroups) {
+      categories.push(group?.employmentCategory);
+    }
+  }
+
+  const presence = {
+    vae: categories.includes('vae'),
+    yvae: categories.includes('yvae'),
+    ota_cleaning: categories.includes('ota_cleaning'),
+  };
+
+  return {
+    ...presence,
+    hasAny: Object.values(presence).some(Boolean),
+  };
+}
+
+function normalizeSpecialRegimeUsageInput(value) {
+  if (typeof value === 'string') {
+    return {
+      vae: value,
+      yvae: value,
+      ota_cleaning: value,
+    };
+  }
+
+  if (!value || typeof value !== 'object') {
+    return {
+      vae: '',
+      yvae: '',
+      ota_cleaning: '',
+    };
+  }
+
+  return {
+    vae: value.vae || '',
+    yvae: value.yvae || '',
+    ota_cleaning: value.ota_cleaning || '',
+  };
 }
 
 function createEmptyUniformedSpecialTimeDraft() {
@@ -1339,6 +1571,14 @@ const inputStyle = {
   marginTop: '0.5rem',
   padding: '0.5rem',
   width: '220px',
+};
+
+const specialRegimeBoxStyle = {
+  marginTop: '1rem',
+  padding: '1rem',
+  border: '1px solid #f59e0b',
+  borderRadius: '8px',
+  background: '#fffbeb',
 };
 
 const periodBoxStyle = {

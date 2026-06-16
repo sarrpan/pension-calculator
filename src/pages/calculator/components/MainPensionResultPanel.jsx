@@ -3,16 +3,50 @@ import React from 'react';
 function MainPensionResultPanel({ calculationResponse }) {
   const nationalPension = calculationResponse?.nationalPension || {};
   const contributoryPension = calculationResponse?.contributoryPension || {};
+  const article30Increase = calculationResponse?.article30Increase || {};
   const totals = calculationResponse?.totals || {};
 
   const nationalAmount = toNumberOrNull(nationalPension.amount);
   const contributoryAmount = toNumberOrNull(contributoryPension.amount);
+  const article30Amount = toNumberOrNull(article30Increase.amount);
+  const article30MainContributionAmount = toNumberOrNull(
+    article30Increase.mainContributionAmount
+  );
+  const article30PremiumContributionAmount = toNumberOrNull(
+    article30Increase.premiumContributionAmount
+  );
   const grossMainPension = toNumberOrNull(totals.grossMainPension);
+
   const pensionableMonthlyEarnings = toNumberOrNull(
     contributoryPension.pensionableMonthlyEarnings
   );
-  const replacementRatePercentage = toNumberOrNull(
+
+  const baseReplacementRatePercentage = firstNumberOrNull(
+    article30Increase.baseReplacementRatePercentage,
     contributoryPension.replacementRatePercentage
+  );
+
+  const mainContributionReplacementRatePercentage = toNumberOrNull(
+    article30Increase.mainContributionReplacementRatePercentage
+  );
+  const premiumContributionReplacementRatePercentage = toNumberOrNull(
+    article30Increase.premiumContributionReplacementRatePercentage
+  );
+
+  const additionalReplacementRatePercentage = firstNumberOrNull(
+    article30Increase.additionalReplacementRatePercentage,
+    sumNumbersOrNull(
+      article30Increase.mainContributionReplacementRatePercentage,
+      article30Increase.premiumContributionReplacementRatePercentage
+    )
+  );
+
+  const combinedReplacementRatePercentage = firstNumberOrNull(
+    article30Increase.combinedReplacementRatePercentage,
+    sumNumbersOrNull(
+      baseReplacementRatePercentage,
+      additionalReplacementRatePercentage
+    )
   );
 
   return (
@@ -40,8 +74,12 @@ function MainPensionResultPanel({ calculationResponse }) {
           value={formatMoney(nationalAmount)}
         />
         <ResultCard
-          title="Ανταποδοτική σύνταξη"
+          title="Βασική ανταποδοτική σύνταξη"
           value={formatMoney(contributoryAmount)}
+        />
+        <ResultCard
+          title="Προσαύξηση άρθρου 30"
+          value={formatMoney(article30Amount)}
         />
         <ResultCard
           title="Σύνολο κύριας σύνταξης"
@@ -57,10 +95,57 @@ function MainPensionResultPanel({ calculationResponse }) {
           </p>
         )}
 
-        {replacementRatePercentage !== null && (
+        {article30MainContributionAmount !== null &&
+          article30MainContributionAmount > 0 && (
+            <p>
+              Προσαύξηση βασικών αυξημένων εισφορών:{' '}
+              <strong>{formatMoney(article30MainContributionAmount)}</strong>
+              {mainContributionReplacementRatePercentage !== null && (
+                <>
+                  {' '}({formatPercentage(
+                    mainContributionReplacementRatePercentage
+                  )})
+                </>
+              )}
+            </p>
+          )}
+
+        {shouldShowPremiumDetails(article30Increase) && (
           <p>
-            Ποσοστό αναπλήρωσης:{' '}
-            <strong>{formatPercentage(replacementRatePercentage)}</strong>
+            Προσαύξηση επασφαλίστρου / ειδικής εισφοράς:{' '}
+            <strong>{formatMoney(article30PremiumContributionAmount)}</strong>
+            {premiumContributionReplacementRatePercentage !== null && (
+              <>
+                {' '}({formatPercentage(
+                  premiumContributionReplacementRatePercentage
+                )})
+              </>
+            )}
+          </p>
+        )}
+
+        {baseReplacementRatePercentage !== null && (
+          <p>
+            Βασικό ποσοστό αναπλήρωσης:{' '}
+            <strong>{formatPercentage(baseReplacementRatePercentage)}</strong>
+          </p>
+        )}
+
+        {additionalReplacementRatePercentage !== null && (
+          <p>
+            Πρόσθετο ποσοστό αναπλήρωσης άρθρου 30:{' '}
+            <strong>
+              {formatPercentage(additionalReplacementRatePercentage)}
+            </strong>
+          </p>
+        )}
+
+        {combinedReplacementRatePercentage !== null && (
+          <p>
+            Συνολικό ποσοστό αναπλήρωσης:{' '}
+            <strong>
+              {formatPercentage(combinedReplacementRatePercentage)}
+            </strong>
           </p>
         )}
       </div>
@@ -95,6 +180,16 @@ function MainPensionResultPanel({ calculationResponse }) {
   );
 }
 
+function shouldShowPremiumDetails(article30Increase = {}) {
+  const amount = toNumberOrNull(article30Increase.premiumContributionAmount);
+  const status = String(article30Increase.premiumEligibilityStatus || '').trim();
+
+  return (
+    (amount !== null && amount > 0) ||
+    ['yes', 'no', 'unknown', 'mixed'].includes(status)
+  );
+}
+
 function ResultCard({ title, value }) {
   return (
     <div
@@ -119,6 +214,30 @@ function toNumberOrNull(value) {
   }
 
   return numberValue;
+}
+
+function firstNumberOrNull(...values) {
+  for (const value of values) {
+    const numberValue = toNumberOrNull(value);
+
+    if (numberValue !== null) {
+      return numberValue;
+    }
+  }
+
+  return null;
+}
+
+function sumNumbersOrNull(...values) {
+  const numberValues = values
+    .map((value) => toNumberOrNull(value))
+    .filter((value) => value !== null);
+
+  if (numberValues.length === 0) {
+    return null;
+  }
+
+  return numberValues.reduce((sum, value) => sum + value, 0);
 }
 
 function formatMoney(value) {
