@@ -145,6 +145,19 @@ function PreparedInputPreview({ analysis }) {
           </div>
         )}
 
+        {Array.isArray(analysis.etaaExtraBenefitDisplay) &&
+          analysis.etaaExtraBenefitDisplay.length > 0 && (
+            <div style={previewBoxStyle}>
+              <h3 style={{ marginTop: 0 }}>
+                Πρόσθετη παροχή πρώην ΕΤΑΑ
+              </h3>
+
+              {analysis.etaaExtraBenefitDisplay.map((item, index) => (
+                <p key={`${item}_${index}`}>{item}</p>
+              ))}
+            </div>
+          )}
+
         {analysis.contributoryEarningsInputMethodLabel && (
           <p>
             <strong>Τρόπος εισαγωγής ανταποδοτικής:</strong>{' '}

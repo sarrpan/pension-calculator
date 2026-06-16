@@ -4,6 +4,7 @@ import BackendResponsePanel from './components/BackendResponsePanel';
 import MainPensionResultPanel from './components/MainPensionResultPanel';
 import PreparedInputPreview from './components/PreparedInputPreview';
 import ContributoryPensionInputSection from './sections/ContributoryPensionInputSection';
+import EtaaExtraBenefitInputSection from './sections/EtaaExtraBenefitInputSection';
 import InsurancePeriodsInputSection from './sections/InsurancePeriodsInputSection';
 import InsuranceTimeInputSection from './sections/InsuranceTimeInputSection';
 import NationalPensionInputSection from './sections/NationalPensionInputSection';
@@ -110,6 +111,10 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
     return normalizeSavedInsurancePeriodGroups(savedDraft);
   });
 
+  const [etaaExtraBenefitDraft, setEtaaExtraBenefitDraft] = useState(
+    normalizeSavedEtaaExtraBenefitDraft(savedDraft.etaaExtraBenefitDraft)
+  );
+
   const [contributoryEarningsInputMethod, setContributoryEarningsInputMethod] =
     useState(savedDraft.contributoryEarningsInputMethod || '');
   const [averageMonthlyPensionableEarningsInput, setAverageMonthlyPensionableEarningsInput] =
@@ -173,6 +178,7 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
       simpleUniformedSpecialTimeDraft,
       article30SpecialRegimeUsageInput,
       insurancePeriodGroups,
+      etaaExtraBenefitDraft,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
       yearlyEarningsRows,
@@ -206,6 +212,7 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
     simpleUniformedSpecialTimeDraft,
     article30SpecialRegimeUsageInput,
     insurancePeriodGroups,
+    etaaExtraBenefitDraft,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
     yearlyEarningsRows,
@@ -240,6 +247,7 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
       simpleUniformedSpecialTimeDraft,
       article30SpecialRegimeUsageInput,
       insurancePeriodGroups,
+      etaaExtraBenefitDraft,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
       yearlyEarningsRows,
@@ -272,6 +280,7 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
     simpleUniformedSpecialTimeDraft,
     article30SpecialRegimeUsageInput,
     insurancePeriodGroups,
+    etaaExtraBenefitDraft,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
     yearlyEarningsRows,
@@ -717,6 +726,29 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
               onAddInsurancePeriodGroup={handleAddInsurancePeriodGroup}
               onRemoveInsurancePeriodGroup={handleRemoveInsurancePeriodGroup}
             />
+
+            <EtaaExtraBenefitInputSection
+              insurancePeriodsInputMode={insurancePeriodsInputMode}
+              simpleFundInput={simpleFundInput}
+              insurancePeriodGroups={insurancePeriodGroups}
+              value={etaaExtraBenefitDraft}
+              onChange={(benefitKey, field, value) => {
+                setEtaaExtraBenefitDraft((currentValue) => {
+                  const normalizedValue = normalizeSavedEtaaExtraBenefitDraft(
+                    currentValue
+                  );
+
+                  return {
+                    ...normalizedValue,
+                    [benefitKey]: {
+                      ...normalizedValue[benefitKey],
+                      [field]: value,
+                    },
+                  };
+                });
+                clearBackendResult();
+              }}
+            />
           </>
         )}
 
@@ -1064,6 +1096,45 @@ function normalizeSavedArticle30SpecialRegimeUsageInput(value) {
   };
 }
 
+function normalizeSavedEtaaExtraBenefitDraft(value) {
+  const defaultValue = {
+    tsmede: {
+      status: '',
+      baseAmount: '',
+      contributionYears: '',
+      contributionMonths: '',
+      hasHigherSalariedRateBefore2007: 'no',
+      higherRateYears: '',
+      higherRateMonths: '',
+      additionalPointsAboveTwelve: '',
+      hasAdditionalTwoPercent: 'no',
+      additionalTwoPercentYears: '',
+      additionalTwoPercentMonths: '',
+    },
+    tsay: {
+      status: '',
+      baseAmount: '',
+      contributionYears: '',
+      contributionMonths: '',
+    },
+  };
+
+  if (!value || typeof value !== 'object') {
+    return defaultValue;
+  }
+
+  return {
+    tsmede: {
+      ...defaultValue.tsmede,
+      ...(value.tsmede || {}),
+    },
+    tsay: {
+      ...defaultValue.tsay,
+      ...(value.tsay || {}),
+    },
+  };
+}
+
 function getInitialFormStep(savedDraft = {}) {
   if (
     savedDraft.currentFormStep === 'contributory_yearly' &&
@@ -1112,5 +1183,3 @@ function saveDraft(draft) {
 }
 
 export default PensionCalculatorPage;
-
-

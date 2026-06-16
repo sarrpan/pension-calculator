@@ -4,11 +4,16 @@ function MainPensionResultPanel({ calculationResponse }) {
   const nationalPension = calculationResponse?.nationalPension || {};
   const contributoryPension = calculationResponse?.contributoryPension || {};
   const article30Increase = calculationResponse?.article30Increase || {};
+  const etaaExtraBenefits = calculationResponse?.etaaExtraBenefits || {};
   const totals = calculationResponse?.totals || {};
 
   const nationalAmount = toNumberOrNull(nationalPension.amount);
   const contributoryAmount = toNumberOrNull(contributoryPension.amount);
   const article30Amount = toNumberOrNull(article30Increase.amount);
+  const etaaExtraBenefitAmount = toNumberOrNull(etaaExtraBenefits.amount);
+  const etaaExtraBenefitEntries = Array.isArray(etaaExtraBenefits.entries)
+    ? etaaExtraBenefits.entries
+    : [];
   const article30MainContributionAmount = toNumberOrNull(
     article30Increase.mainContributionAmount
   );
@@ -81,6 +86,12 @@ function MainPensionResultPanel({ calculationResponse }) {
           title="Προσαύξηση άρθρου 30"
           value={formatMoney(article30Amount)}
         />
+        {etaaExtraBenefitEntries.length > 0 && (
+          <ResultCard
+            title="Πρόσθετη παροχή πρώην ΕΤΑΑ"
+            value={formatMoney(etaaExtraBenefitAmount)}
+          />
+        )}
         <ResultCard
           title="Σύνολο κύριας σύνταξης"
           value={formatMoney(grossMainPension)}
@@ -123,6 +134,20 @@ function MainPensionResultPanel({ calculationResponse }) {
             )}
           </p>
         )}
+
+        {etaaExtraBenefitEntries.map((entry, index) => (
+          <p key={`${entry.benefitType || 'etaa'}_${index}`}>
+            {getEtaaBenefitLabel(entry.benefitType)}:{' '}
+            <strong>{formatMoney(toNumberOrNull(entry.amount))}</strong>
+            {toNumberOrNull(entry.benefitRatePercentage) !== null && (
+              <>
+                {' '}({formatPercentage(
+                  toNumberOrNull(entry.benefitRatePercentage)
+                )})
+              </>
+            )}
+          </p>
+        ))}
 
         {baseReplacementRatePercentage !== null && (
           <p>
@@ -178,6 +203,16 @@ function MainPensionResultPanel({ calculationResponse }) {
       </details>
     </section>
   );
+}
+
+function getEtaaBenefitLabel(benefitType) {
+  const labels = {
+    tsmede_special_increase: 'ΤΣΜΕΔΕ — Ειδική Προσαύξηση',
+    tsay_single_pensioner_branch:
+      'ΤΣΑΥ — Κλάδος Μονοσυνταξιούχων',
+  };
+
+  return labels[benefitType] || 'Πρόσθετη παροχή πρώην ΕΤΑΑ';
 }
 
 function shouldShowPremiumDetails(article30Increase = {}) {

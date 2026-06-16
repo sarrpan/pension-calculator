@@ -284,6 +284,15 @@ const CONTRIBUTION_BASED_FUNDS = [
   'oga',
 ];
 
+const ETAA_EXTRA_BENEFIT_TYPES = {
+  TSMEDE_SPECIAL_INCREASE: 'tsmede_special_increase',
+  TSAY_SINGLE_PENSIONER_BRANCH: 'tsay_single_pensioner_branch',
+};
+
+const TSMEDE_DEFAULT_EXTRA_CONTRIBUTION_POINTS = 12;
+const TSAY_ADMINISTRATIVE_EXTRA_CONTRIBUTION_POINTS = 10;
+const TSMEDE_ADDITIONAL_TWO_PERCENT_MAX_YEARS = 4.5;
+
 function analyzePensionForm({
   currentFormStep = 'main',
   calculatorEdition = 'professional',
@@ -316,6 +325,7 @@ function analyzePensionForm({
   simpleUniformedSpecialTimeDraft,
   article30SpecialRegimeUsageInput,
   insurancePeriodGroups,
+  etaaExtraBenefitDraft,
   multiPeriodTimeInputMethod,
   multiPeriodInsuranceDaysInput,
   multiPeriodInsuranceYearsInput,
@@ -404,6 +414,11 @@ function analyzePensionForm({
     insurancePeriodsDraft: insurancePeriodsAnalysis.insurancePeriodsDraft,
   });
 
+  const etaaExtraBenefitAnalysis = analyzeEtaaExtraBenefits({
+    insurancePeriodsDraft: insurancePeriodsAnalysis.insurancePeriodsDraft,
+    etaaExtraBenefitDraft,
+  });
+
   const errors = [
     dateAnalysis.error,
     pensionTypeAnalysis.error,
@@ -412,6 +427,7 @@ function analyzePensionForm({
     isMultipleInsuranceMode ? null : insuranceTimeAnalysis.error,
     insurancePeriodsAnalysis.error,
     article30SpecialRegimeAnalysis.error,
+    etaaExtraBenefitAnalysis.error,
     contributoryAnalysis.error,
   ].filter(Boolean);
 
@@ -432,6 +448,7 @@ function analyzePensionForm({
     effectiveInsuranceTimeAnalysis.hasValue &&
     insurancePeriodsAnalysis.hasValue &&
     article30SpecialRegimeAnalysis.hasValue &&
+    etaaExtraBenefitAnalysis.hasValue &&
     contributoryAnalysis.hasValue;
 
   if (!isReady) {
@@ -449,6 +466,7 @@ function analyzePensionForm({
     ...insuranceTimeAnalysis.warnings,
     ...insurancePeriodsAnalysis.warnings,
     ...article30SpecialRegimeAnalysis.warnings,
+    ...etaaExtraBenefitAnalysis.warnings,
     ...contributoryAnalysis.warnings,
   ];
 
@@ -484,6 +502,8 @@ function analyzePensionForm({
     ),
     article30SpecialRegimeData:
       article30SpecialRegimeAnalysis.article30SpecialRegimeData,
+    etaaExtraBenefitData:
+      etaaExtraBenefitAnalysis.etaaExtraBenefitData,
   };
 
   return {
@@ -533,6 +553,11 @@ function analyzePensionForm({
       insurancePeriodsAnalysis.insurancePeriodsDraft.length,
     insurancePeriodDraftDisplay:
       insurancePeriodsAnalysis.insurancePeriodDraftDisplay,
+
+    etaaExtraBenefitEntries:
+      etaaExtraBenefitAnalysis.etaaExtraBenefitEntries,
+    etaaExtraBenefitDisplay:
+      etaaExtraBenefitAnalysis.etaaExtraBenefitDisplay,
 
     contributoryEarningsInputMethod:
       contributoryAnalysis.contributoryEarningsInputMethod,
@@ -1877,6 +1902,413 @@ function buildCanonicalContributionCategory({
   }
 
   return fallbackCategoryKey;
+}
+
+function analyzeEtaaExtraBenefits({
+  insurancePeriodsDraft,
+  etaaExtraBenefitDraft,
+}) {
+  const periods = Array.isArray(insurancePeriodsDraft)
+    ? insurancePeriodsDraft
+    : [];
+
+  const presence = {
+    tsmede: periods.some((period) => period?.fund === 'tsmede'),
+    tsay: periods.some((period) => period?.fund === 'tsay'),
+  };
+
+  if (!presence.tsmede && !presence.tsay) {
+    return {
+      hasValue: true,
+      error: null,
+      warnings: [],
+      etaaExtraBenefitEntries: [],
+      etaaExtraBenefitDisplay: [],
+      etaaExtraBenefitData: {
+        entries: [],
+      },
+    };
+  }
+
+  const draft = normalizeEtaaExtraBenefitDraft(etaaExtraBenefitDraft);
+  const entries = [];
+  const displayEntries = [];
+  const warnings = [];
+
+  if (presence.tsmede) {
+    const tsmedeResult = analyzeTsmedeExtraBenefit(draft.tsmede);
+
+    if (tsmedeResult.error) {
+      return createEtaaExtraBenefitError(tsmedeResult.error);
+    }
+
+    if (tsmedeResult.entry) {
+      entries.push(tsmedeResult.entry);
+      displayEntries.push(tsmedeResult.displayEntry);
+    }
+  }
+
+  if (presence.tsay) {
+    const tsayResult = analyzeTsayExtraBenefit(draft.tsay);
+
+    if (tsayResult.error) {
+      return createEtaaExtraBenefitError(tsayResult.error);
+    }
+
+    if (tsayResult.entry) {
+      entries.push(tsayResult.entry);
+      displayEntries.push(tsayResult.displayEntry);
+      warnings.push(
+        'Ο Κλάδος Μονοσυνταξιούχων ΤΣΑΥ θα υπολογιστεί με 10 επιπλέον μονάδες εισφοράς, σύμφωνα με την τρέχουσα διοικητική πρακτική του e-ΕΦΚΑ. Η χρήση των 10 μονάδων αμφισβητείται δικαστικά.'
+      );
+    }
+  }
+
+  return {
+    hasValue: true,
+    error: null,
+    warnings,
+    etaaExtraBenefitEntries: displayEntries,
+    etaaExtraBenefitDisplay: displayEntries.map((entry) => entry.summary),
+    etaaExtraBenefitData: {
+      entries,
+    },
+  };
+}
+
+function analyzeTsmedeExtraBenefit(value = {}) {
+  const status = String(value.status || '').trim();
+
+  if (!status) {
+    return {
+      error:
+        'Δηλώστε αν υπήρχε υπαγωγή στην Ειδική Προσαύξηση ΤΣΜΕΔΕ.',
+    };
+  }
+
+  if (!['yes', 'no'].includes(status)) {
+    return {
+      error: 'Η επιλογή για την Ειδική Προσαύξηση ΤΣΜΕΔΕ δεν είναι έγκυρη.',
+    };
+  }
+
+  if (status === 'no') {
+    return {
+      error: null,
+      entry: null,
+      displayEntry: null,
+    };
+  }
+
+  const baseAmountResult = parsePositiveDecimalForEtaa(
+    value.baseAmount,
+    'Η μέση μηνιαία βάση της Ειδικής Προσαύξησης ΤΣΜΕΔΕ'
+  );
+
+  if (baseAmountResult.error) {
+    return { error: baseAmountResult.error };
+  }
+
+  const totalDurationResult = analyzeEtaaDuration({
+    yearsValue: value.contributionYears,
+    monthsValue: value.contributionMonths,
+    label: 'Ο συνολικός χρόνος Ειδικής Προσαύξησης ΤΣΜΕΔΕ',
+  });
+
+  if (totalDurationResult.error) {
+    return { error: totalDurationResult.error };
+  }
+
+  const contributionPeriods = [
+    {
+      years: totalDurationResult.decimalYears,
+      extraContributionPoints: TSMEDE_DEFAULT_EXTRA_CONTRIBUTION_POINTS,
+      reason: 'Βασική Ειδική Προσαύξηση ΤΣΜΕΔΕ — 12 μονάδες',
+    },
+  ];
+
+  const higherRateStatus = String(
+    value.hasHigherSalariedRateBefore2007 || 'no'
+  ).trim();
+
+  if (!['yes', 'no'].includes(higherRateStatus)) {
+    return {
+      error:
+        'Δηλώστε αν καταβλήθηκε υψηλότερο ασφάλιστρο έμμισθου ΤΣΜΕΔΕ πριν από 1/1/2007.',
+    };
+  }
+
+  if (higherRateStatus === 'yes') {
+    const higherRateDurationResult = analyzeEtaaDuration({
+      yearsValue: value.higherRateYears,
+      monthsValue: value.higherRateMonths,
+      label: 'Ο χρόνος υψηλότερου ασφαλίστρου έμμισθου ΤΣΜΕΔΕ',
+    });
+
+    if (higherRateDurationResult.error) {
+      return { error: higherRateDurationResult.error };
+    }
+
+    if (
+      higherRateDurationResult.decimalYears >
+      totalDurationResult.decimalYears
+    ) {
+      return {
+        error:
+          'Ο χρόνος υψηλότερου ασφαλίστρου πριν από το 2007 δεν μπορεί να υπερβαίνει τον συνολικό χρόνο Ειδικής Προσαύξησης ΤΣΜΕΔΕ.',
+      };
+    }
+
+    const extraPointsResult = parsePositiveDecimalForEtaa(
+      value.additionalPointsAboveTwelve,
+      'Οι πρόσθετες μονάδες του υψηλότερου ασφαλίστρου ΤΣΜΕΔΕ πάνω από τις 12'
+    );
+
+    if (extraPointsResult.error) {
+      return { error: extraPointsResult.error };
+    }
+
+    contributionPeriods.push({
+      years: higherRateDurationResult.decimalYears,
+      extraContributionPoints: extraPointsResult.value,
+      reason:
+        'Πρόσθετη διαφορά υψηλότερου ασφαλίστρου έμμισθου πριν από 1/1/2007',
+    });
+  }
+
+  const additionalTwoPercentStatus = String(
+    value.hasAdditionalTwoPercent || 'no'
+  ).trim();
+
+  if (!['yes', 'no'].includes(additionalTwoPercentStatus)) {
+    return {
+      error:
+        'Δηλώστε αν καταβλήθηκε η πρόσθετη εισφορά 2% ΤΣΜΕΔΕ για το διάστημα 1/7/2011–31/12/2015.',
+    };
+  }
+
+  if (additionalTwoPercentStatus === 'yes') {
+    const twoPercentDurationResult = analyzeEtaaDuration({
+      yearsValue: value.additionalTwoPercentYears,
+      monthsValue: value.additionalTwoPercentMonths,
+      label: 'Ο χρόνος καταβολής της πρόσθετης εισφοράς 2% ΤΣΜΕΔΕ',
+    });
+
+    if (twoPercentDurationResult.error) {
+      return { error: twoPercentDurationResult.error };
+    }
+
+    if (
+      twoPercentDurationResult.decimalYears >
+      TSMEDE_ADDITIONAL_TWO_PERCENT_MAX_YEARS
+    ) {
+      return {
+        error:
+          'Η πρόσθετη εισφορά 2% ΤΣΜΕΔΕ μπορεί να δηλωθεί μέχρι 4 έτη και 6 μήνες για το διάστημα 1/7/2011–31/12/2015.',
+      };
+    }
+
+    contributionPeriods.push({
+      years: twoPercentDurationResult.decimalYears,
+      extraContributionPoints: 2,
+      reason: 'Πρόσθετη εισφορά 2% ΤΣΜΕΔΕ 1/7/2011–31/12/2015',
+    });
+  }
+
+  const baseAmount = roundToDecimals(baseAmountResult.value, 2);
+
+  return {
+    error: null,
+    entry: {
+      benefitType: ETAA_EXTRA_BENEFIT_TYPES.TSMEDE_SPECIAL_INCREASE,
+      baseAmount,
+      contributionPeriods,
+      calculationPolicy: 'documented_tsmede_rules',
+    },
+    displayEntry: {
+      benefitType: ETAA_EXTRA_BENEFIT_TYPES.TSMEDE_SPECIAL_INCREASE,
+      label: 'ΤΣΜΕΔΕ — Ειδική Προσαύξηση',
+      baseAmount,
+      contributionYears: totalDurationResult.decimalYears,
+      summary:
+        `ΤΣΜΕΔΕ Ειδική Προσαύξηση: βάση ${baseAmount.toFixed(2)} €, ` +
+        `${formatEtaaDuration(totalDurationResult)} με βασικές 12 μονάδες` +
+        `${higherRateStatus === 'yes' ? ', συν πρόσθετη διαφορά υψηλότερου ασφαλίστρου πριν από το 2007' : ''}` +
+        `${additionalTwoPercentStatus === 'yes' ? ', συν πρόσθετη εισφορά 2%' : ''}.`,
+    },
+  };
+}
+
+function analyzeTsayExtraBenefit(value = {}) {
+  const status = String(value.status || '').trim();
+
+  if (!status) {
+    return {
+      error:
+        'Δηλώστε αν υπήρχε υπαγωγή στον Κλάδο Μονοσυνταξιούχων ΤΣΑΥ.',
+    };
+  }
+
+  if (!['yes', 'no'].includes(status)) {
+    return {
+      error:
+        'Η επιλογή για τον Κλάδο Μονοσυνταξιούχων ΤΣΑΥ δεν είναι έγκυρη.',
+    };
+  }
+
+  if (status === 'no') {
+    return {
+      error: null,
+      entry: null,
+      displayEntry: null,
+    };
+  }
+
+  const baseAmountResult = parsePositiveDecimalForEtaa(
+    value.baseAmount,
+    'Η μέση μηνιαία βάση του Κλάδου Μονοσυνταξιούχων ΤΣΑΥ'
+  );
+
+  if (baseAmountResult.error) {
+    return { error: baseAmountResult.error };
+  }
+
+  const durationResult = analyzeEtaaDuration({
+    yearsValue: value.contributionYears,
+    monthsValue: value.contributionMonths,
+    label: 'Ο χρόνος καταβολής εισφοράς Μονοσυνταξιούχων ΤΣΑΥ',
+  });
+
+  if (durationResult.error) {
+    return { error: durationResult.error };
+  }
+
+  const baseAmount = roundToDecimals(baseAmountResult.value, 2);
+
+  return {
+    error: null,
+    entry: {
+      benefitType: ETAA_EXTRA_BENEFIT_TYPES.TSAY_SINGLE_PENSIONER_BRANCH,
+      baseAmount,
+      contributionYears: durationResult.decimalYears,
+      extraContributionPoints:
+        TSAY_ADMINISTRATIVE_EXTRA_CONTRIBUTION_POINTS,
+      calculationPolicy: 'efka_administrative_10_points',
+    },
+    displayEntry: {
+      benefitType: ETAA_EXTRA_BENEFIT_TYPES.TSAY_SINGLE_PENSIONER_BRANCH,
+      label: 'ΤΣΑΥ — Κλάδος Μονοσυνταξιούχων',
+      baseAmount,
+      contributionYears: durationResult.decimalYears,
+      extraContributionPoints:
+        TSAY_ADMINISTRATIVE_EXTRA_CONTRIBUTION_POINTS,
+      summary:
+        `ΤΣΑΥ Μονοσυνταξιούχων: βάση ${baseAmount.toFixed(2)} €, ` +
+        `${formatEtaaDuration(durationResult)}, υπολογισμός με 10 μονάδες εισφοράς.`,
+    },
+  };
+}
+
+function analyzeEtaaDuration({ yearsValue, monthsValue, label }) {
+  const yearsResult = parseNonNegativeIntegerOrEmpty(yearsValue);
+  const monthsResult = parseNonNegativeIntegerOrEmpty(monthsValue);
+
+  if (!yearsResult.isValid || !monthsResult.isValid) {
+    return {
+      error: `${label} πρέπει να δηλωθεί με ακέραια έτη και μήνες.`,
+    };
+  }
+
+  if (monthsResult.value > 11) {
+    return {
+      error: `Οι μήνες για ${label.toLowerCase()} πρέπει να είναι από 0 έως 11.`,
+    };
+  }
+
+  if (yearsResult.value === 0 && monthsResult.value === 0) {
+    return {
+      error: `${label} πρέπει να είναι μεγαλύτερος από 0.`,
+    };
+  }
+
+  return {
+    error: null,
+    years: yearsResult.value,
+    months: monthsResult.value,
+    decimalYears: roundToDecimals(
+      yearsResult.value + monthsResult.value / 12,
+      6
+    ),
+  };
+}
+
+function parsePositiveDecimalForEtaa(value, label) {
+  const result = parseNonNegativeDecimal(String(value || '').trim());
+
+  if (!result.isValid || result.value <= 0) {
+    return {
+      error: `${label} πρέπει να είναι αριθμός μεγαλύτερος από 0.`,
+    };
+  }
+
+  return {
+    error: null,
+    value: result.value,
+  };
+}
+
+function normalizeEtaaExtraBenefitDraft(value) {
+  const defaultValue = {
+    tsmede: {
+      status: '',
+      baseAmount: '',
+      contributionYears: '',
+      contributionMonths: '',
+      hasHigherSalariedRateBefore2007: 'no',
+      higherRateYears: '',
+      higherRateMonths: '',
+      additionalPointsAboveTwelve: '',
+      hasAdditionalTwoPercent: 'no',
+      additionalTwoPercentYears: '',
+      additionalTwoPercentMonths: '',
+    },
+    tsay: {
+      status: '',
+      baseAmount: '',
+      contributionYears: '',
+      contributionMonths: '',
+    },
+  };
+
+  if (!value || typeof value !== 'object') {
+    return defaultValue;
+  }
+
+  return {
+    tsmede: {
+      ...defaultValue.tsmede,
+      ...(value.tsmede || {}),
+    },
+    tsay: {
+      ...defaultValue.tsay,
+      ...(value.tsay || {}),
+    },
+  };
+}
+
+function createEtaaExtraBenefitError(error) {
+  return {
+    hasValue: true,
+    error,
+    warnings: [],
+    etaaExtraBenefitEntries: [],
+    etaaExtraBenefitDisplay: [],
+    etaaExtraBenefitData: null,
+  };
+}
+
+function formatEtaaDuration(duration) {
+  return `${duration.years} έτη και ${duration.months} μήνες`;
 }
 
 function analyzeInsuranceDaysInput({
