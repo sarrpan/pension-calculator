@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 
 import { fieldsetStyle } from '../utils/calculatorStyles';
@@ -40,7 +41,10 @@ function InsurancePeriodsInputSection({
   onRemoveInsurancePeriodGroup,
 }) {
   const simpleInsuredTypeOptions = getInsuredTypeOptions(simpleFundInput);
-  const simpleEmploymentCategoryOptions = getEmploymentCategoryOptions(simpleFundInput);
+  const simpleEmploymentCategoryOptions = getEmploymentCategoryOptions(
+    simpleFundInput,
+    simpleInsuredTypeInput
+  );
   const isSimpleUniformedFund = isUniformedFund(simpleFundInput);
   const isSimpleContributionBasedFund = isContributionBasedFund(simpleFundInput);
   const isSimpleArticle30MainContributionFund =
@@ -61,6 +65,18 @@ function InsurancePeriodsInputSection({
 
   function handleModeChange(value) {
     onInsurancePeriodsInputModeChange(value);
+  }
+
+  function handleSimpleInsuredTypeChange(value) {
+    onSimpleInsuredTypeChange(value);
+
+    if (
+      simpleFundInput === 'ota' &&
+      value === 'new' &&
+      simpleEmploymentCategoryInput === 'ota_ika_yvae'
+    ) {
+      onSimpleEmploymentCategoryChange('');
+    }
   }
 
   function handleSimpleFundChange(value) {
@@ -139,7 +155,7 @@ function InsurancePeriodsInputSection({
                 id="simpleInsuredType"
                 label="Ασφαλισμένος"
                 value={simpleInsuredTypeInput}
-                onChange={onSimpleInsuredTypeChange}
+                onChange={handleSimpleInsuredTypeChange}
                 options={simpleInsuredTypeOptions}
                 disabled={!simpleFundInput}
               />
@@ -325,14 +341,44 @@ function InsurancePeriodsInputSection({
               />
             )}
 
-            {conditionalPremiumPresence.ota_cleaning && (
+            {conditionalPremiumPresence.ota_ika_vae && (
               <SelectWithLabel
-                id="article30SpecialRegimeUsageOtaCleaning"
-                label="Η συνταξιοδότηση γίνεται με τις ειδικές διατάξεις καθαριότητας / υγιεινής ΟΤΑ;"
-                value={normalizedSpecialRegimeUsageInput.ota_cleaning}
+                id="article30SpecialRegimeUsageOtaIkaVae"
+                label="Η συνταξιοδότηση γίνεται με τις ειδικές διατάξεις ΒΑΕ ΟΤΑ του πρώην ΙΚΑ;"
+                value={normalizedSpecialRegimeUsageInput.ota_ika_vae}
                 onChange={(value) =>
                   onArticle30SpecialRegimeUsageChange(
-                    'ota_cleaning',
+                    'ota_ika_vae',
+                    value
+                  )
+                }
+                options={SPECIAL_REGIME_USAGE_OPTIONS}
+              />
+            )}
+
+            {conditionalPremiumPresence.ota_public_vae && (
+              <SelectWithLabel
+                id="article30SpecialRegimeUsageOtaPublicVae"
+                label="Η συνταξιοδότηση γίνεται με τις ειδικές διατάξεις ΒΑΕ ΟΤΑ του καθεστώτος Δημοσίου;"
+                value={normalizedSpecialRegimeUsageInput.ota_public_vae}
+                onChange={(value) =>
+                  onArticle30SpecialRegimeUsageChange(
+                    'ota_public_vae',
+                    value
+                  )
+                }
+                options={SPECIAL_REGIME_USAGE_OPTIONS}
+              />
+            )}
+
+            {conditionalPremiumPresence.ota_ika_yvae && (
+              <SelectWithLabel
+                id="article30SpecialRegimeUsageOtaIkaYvae"
+                label="Η συνταξιοδότηση γίνεται με τις ειδικές διατάξεις ΥΒΑΕ καθαριότητας / αποκομιδής ΟΤΑ;"
+                value={normalizedSpecialRegimeUsageInput.ota_ika_yvae}
+                onChange={(value) =>
+                  onArticle30SpecialRegimeUsageChange(
+                    'ota_ika_yvae',
                     value
                   )
                 }
@@ -363,7 +409,10 @@ function InsurancePeriodGroupFields({
   onRemove,
 }) {
   const insuredTypeOptions = getInsuredTypeOptions(group.fund);
-  const employmentCategoryOptions = getEmploymentCategoryOptions(group.fund);
+  const employmentCategoryOptions = getEmploymentCategoryOptions(
+    group.fund,
+    group.insuredType
+  );
   const isCurrentUniformedFund = isUniformedFund(group.fund);
   const isCurrentContributionBasedFund = isContributionBasedFund(group.fund);
   const isCurrentArticle30MainContributionFund =
@@ -429,7 +478,17 @@ function InsurancePeriodGroupFields({
             id={`multiPeriod${groupNumber}InsuredType`}
             label="Ασφαλισμένος"
             value={group.insuredType}
-            onChange={(value) => onGroupChange('insuredType', value)}
+            onChange={(value) => {
+              onGroupChange('insuredType', value);
+
+              if (
+                group.fund === 'ota' &&
+                value === 'new' &&
+                group.employmentCategory === 'ota_ika_yvae'
+              ) {
+                onGroupChange('employmentCategory', '');
+              }
+            }}
             options={insuredTypeOptions}
             disabled={!group.fund}
           />
@@ -1391,11 +1450,10 @@ const SIMPLE_VAE_YVAE_OPTIONS = [
 
 const OTA_EMPLOYMENT_OPTIONS = [
   SELECT_OPTION,
-  { value: 'common', label: 'Απλή / κοινή ασφάλιση ΟΤΑ' },
-  {
-    value: 'ota_cleaning',
-    label: 'Καθαριότητα / υγιεινή ΟΤΑ',
-  },
+  { value: 'common', label: 'Απλά' },
+  { value: 'ota_ika_vae', label: 'ΒΑΕ με καθεστώς ΟΤΑ' },
+  { value: 'ota_public_vae', label: 'ΒΑΕ με καθεστώς Δημοσίου' },
+  { value: 'ota_ika_yvae', label: 'ΥΒΑΕ μόνο για παλαιούς' },
 ];
 
 const COMMON_ONLY_EMPLOYMENT_OPTIONS = [
@@ -1447,7 +1505,7 @@ function getInsuredTypeOptions(fund) {
   return OLD_NEW_INSURED_OPTIONS;
 }
 
-function getEmploymentCategoryOptions(fund) {
+function getEmploymentCategoryOptions(fund, insuredType) {
   if (!fund) {
     return [DEFAULT_EMPTY_OPTION];
   }
@@ -1457,6 +1515,12 @@ function getEmploymentCategoryOptions(fund) {
   }
 
   if (fund === 'ota') {
+    if (insuredType === 'new') {
+      return OTA_EMPLOYMENT_OPTIONS.filter((option) => {
+        return option.value !== 'ota_ika_yvae';
+      });
+    }
+
     return OTA_EMPLOYMENT_OPTIONS;
   }
 
@@ -1493,7 +1557,9 @@ function getConditionalPremiumPresence({
   const presence = {
     vae: categories.includes('vae'),
     yvae: categories.includes('yvae'),
-    ota_cleaning: categories.includes('ota_cleaning'),
+    ota_ika_vae: categories.includes('ota_ika_vae'),
+    ota_public_vae: categories.includes('ota_public_vae'),
+    ota_ika_yvae: categories.includes('ota_ika_yvae'),
   };
 
   return {
@@ -1507,7 +1573,9 @@ function normalizeSpecialRegimeUsageInput(value) {
     return {
       vae: value,
       yvae: value,
-      ota_cleaning: value,
+      ota_ika_vae: value,
+      ota_public_vae: value,
+      ota_ika_yvae: value,
     };
   }
 
@@ -1515,14 +1583,18 @@ function normalizeSpecialRegimeUsageInput(value) {
     return {
       vae: '',
       yvae: '',
-      ota_cleaning: '',
+      ota_ika_vae: '',
+      ota_public_vae: '',
+      ota_ika_yvae: '',
     };
   }
 
   return {
     vae: value.vae || '',
     yvae: value.yvae || '',
-    ota_cleaning: value.ota_cleaning || '',
+    ota_ika_vae: value.ota_ika_vae || '',
+    ota_public_vae: value.ota_public_vae || '',
+    ota_ika_yvae: value.ota_ika_yvae || value.ota_cleaning || '',
   };
 }
 

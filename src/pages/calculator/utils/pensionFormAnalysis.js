@@ -1,4 +1,5 @@
 
+
 const INSURANCE_DAYS_PER_YEAR = 300;
 const INSURANCE_DAYS_PER_MONTH = 25;
 const MIN_RESIDENCE_YEARS_FOR_OLD_AGE_NATIONAL_PENSION = 15;
@@ -251,9 +252,17 @@ const EMPLOYMENT_CATEGORY_OPTIONS = {
     value: 'yvae',
     label: 'ΥΒΑΕ / ειδικού κινδύνου',
   },
-  ota_cleaning: {
-    value: 'ota_cleaning',
-    label: 'Καθαριότητα / υγιεινή ΟΤΑ',
+  ota_ika_vae: {
+    value: 'ota_ika_vae',
+    label: 'ΒΑΕ με καθεστώς ΟΤΑ',
+  },
+  ota_public_vae: {
+    value: 'ota_public_vae',
+    label: 'ΒΑΕ με καθεστώς Δημοσίου',
+  },
+  ota_ika_yvae: {
+    value: 'ota_ika_yvae',
+    label: 'ΥΒΑΕ μόνο για παλαιούς',
   },
   contributions: {
     value: 'contributions',
@@ -957,15 +966,17 @@ function analyzeArticle30SpecialRegimeUsage({
     : [];
 
   const presence = {
-    vae: periods.some((period) => {
-      return period?.employmentCategory === 'vae';
-    }),
-    yvae: periods.some((period) => {
-      return period?.employmentCategory === 'yvae';
-    }),
-    ota_cleaning: periods.some((period) => {
-      return period?.employmentCategory === 'ota_cleaning';
-    }),
+    vae: periods.some((period) => period?.employmentCategory === 'vae'),
+    yvae: periods.some((period) => period?.employmentCategory === 'yvae'),
+    ota_ika_vae: periods.some(
+      (period) => period?.employmentCategory === 'ota_ika_vae'
+    ),
+    ota_public_vae: periods.some(
+      (period) => period?.employmentCategory === 'ota_public_vae'
+    ),
+    ota_ika_yvae: periods.some(
+      (period) => period?.employmentCategory === 'ota_ika_yvae'
+    ),
   };
 
   const hasConditionalPremiumPeriods = Object.values(presence).some(Boolean);
@@ -975,18 +986,15 @@ function analyzeArticle30SpecialRegimeUsage({
       hasValue: true,
       error: null,
       warnings: [],
-      article30SpecialRegimeData: {
+      article30SpecialRegimeData: buildArticle30SpecialRegimeData({
         calculatorEdition: normalizedEdition,
-        hasVaePeriods: false,
-        hasYvaePeriods: false,
-        hasOtaCleaningPeriods: false,
-        usageByRegime: {
-          vae: 'not_applicable',
-          yvae: 'not_applicable',
-          ota_cleaning: 'not_applicable',
-        },
+        presence,
+        usageByRegime: createArticle30UsageByRegime(
+          presence,
+          'not_applicable'
+        ),
         source: 'not_applicable',
-      },
+      }),
     };
   }
 
@@ -995,22 +1003,14 @@ function analyzeArticle30SpecialRegimeUsage({
       hasValue: true,
       error: null,
       warnings: [
-        'Στη δωρεάν έκδοση δεν ζητείται από τον χρήστη να γνωρίζει αν συνταξιοδοτείται με ειδικές διατάξεις ΒΑΕ, ΥΒΑΕ ή καθαριότητας ΟΤΑ. Μέχρι να υπάρχει αυτόματος έλεγχος θεμελίωσης, τα αντίστοιχα επασφάλιστρα δεν προστίθενται και απαιτείται αναλυτικός έλεγχος.',
+        'Στη δωρεάν έκδοση δεν ζητείται από τον χρήστη να γνωρίζει αν συνταξιοδοτείται με ειδικές διατάξεις ΒΑΕ, ΥΒΑΕ ή ειδικών κατηγοριών ΟΤΑ. Μέχρι να υπάρχει αυτόματος έλεγχος θεμελίωσης, τα αντίστοιχα επασφάλιστρα δεν προστίθενται και απαιτείται αναλυτικός έλεγχος.',
       ],
-      article30SpecialRegimeData: {
+      article30SpecialRegimeData: buildArticle30SpecialRegimeData({
         calculatorEdition: normalizedEdition,
-        hasVaePeriods: presence.vae,
-        hasYvaePeriods: presence.yvae,
-        hasOtaCleaningPeriods: presence.ota_cleaning,
-        usageByRegime: {
-          vae: presence.vae ? 'unknown' : 'not_applicable',
-          yvae: presence.yvae ? 'unknown' : 'not_applicable',
-          ota_cleaning: presence.ota_cleaning
-            ? 'unknown'
-            : 'not_applicable',
-        },
+        presence,
+        usageByRegime: createArticle30UsageByRegime(presence, 'unknown'),
         source: 'free_tool_automatic_check_pending',
-      },
+      }),
     };
   }
 
@@ -1018,13 +1018,12 @@ function analyzeArticle30SpecialRegimeUsage({
     article30SpecialRegimeUsageInput
   );
   const warnings = [];
-  const usageByRegime = {
-    vae: 'not_applicable',
-    yvae: 'not_applicable',
-    ota_cleaning: 'not_applicable',
-  };
+  const usageByRegime = createArticle30UsageByRegime(
+    presence,
+    'not_applicable'
+  );
 
-  for (const premiumType of ['vae', 'yvae', 'ota_cleaning']) {
+  for (const premiumType of getArticle30PremiumTypes()) {
     if (!presence[premiumType]) {
       continue;
     }
@@ -1063,38 +1062,77 @@ function analyzeArticle30SpecialRegimeUsage({
     hasValue: true,
     error: null,
     warnings,
-    article30SpecialRegimeData: {
+    article30SpecialRegimeData: buildArticle30SpecialRegimeData({
       calculatorEdition: normalizedEdition,
-      hasVaePeriods: presence.vae,
-      hasYvaePeriods: presence.yvae,
-      hasOtaCleaningPeriods: presence.ota_cleaning,
+      presence,
       usageByRegime,
       source: 'user',
-    },
+    }),
+  };
+}
+
+function getArticle30PremiumTypes() {
+  return [
+    'vae',
+    'yvae',
+    'ota_ika_vae',
+    'ota_public_vae',
+    'ota_ika_yvae',
+  ];
+}
+
+function createArticle30UsageByRegime(presence, activeStatus) {
+  return Object.fromEntries(
+    getArticle30PremiumTypes().map((premiumType) => [
+      premiumType,
+      presence[premiumType] ? activeStatus : 'not_applicable',
+    ])
+  );
+}
+
+function buildArticle30SpecialRegimeData({
+  calculatorEdition,
+  presence,
+  usageByRegime,
+  source,
+}) {
+  return {
+    calculatorEdition,
+    hasVaePeriods: presence.vae,
+    hasYvaePeriods: presence.yvae,
+    hasOtaIkaVaePeriods: presence.ota_ika_vae,
+    hasOtaPublicVaePeriods: presence.ota_public_vae,
+    hasOtaIkaYvaePeriods: presence.ota_ika_yvae,
+    hasOtaCleaningPeriods:
+      presence.ota_ika_vae ||
+      presence.ota_public_vae ||
+      presence.ota_ika_yvae,
+    usageByRegime,
+    source,
   };
 }
 
 function normalizeArticle30SpecialRegimeUsageInput(value) {
   if (typeof value === 'string') {
-    return {
-      vae: value,
-      yvae: value,
-      ota_cleaning: value,
-    };
+    return Object.fromEntries(
+      getArticle30PremiumTypes().map((premiumType) => [premiumType, value])
+    );
   }
 
   if (!value || typeof value !== 'object') {
-    return {
-      vae: '',
-      yvae: '',
-      ota_cleaning: '',
-    };
+    return Object.fromEntries(
+      getArticle30PremiumTypes().map((premiumType) => [premiumType, ''])
+    );
   }
 
   return {
     vae: String(value.vae || '').trim(),
     yvae: String(value.yvae || '').trim(),
-    ota_cleaning: String(value.ota_cleaning || '').trim(),
+    ota_ika_vae: String(value.ota_ika_vae || '').trim(),
+    ota_public_vae: String(value.ota_public_vae || '').trim(),
+    ota_ika_yvae: String(
+      value.ota_ika_yvae || value.ota_cleaning || ''
+    ).trim(),
   };
 }
 
@@ -1102,7 +1140,9 @@ function getArticle30PremiumTypeLabel(premiumType) {
   const labels = {
     vae: 'ΒΑΕ',
     yvae: 'ΥΒΑΕ',
-    ota_cleaning: 'καθαριότητας / υγιεινής ΟΤΑ',
+    ota_ika_vae: 'ΒΑΕ ΟΤΑ του πρώην ΙΚΑ',
+    ota_public_vae: 'ΒΑΕ ΟΤΑ του καθεστώτος Δημοσίου',
+    ota_ika_yvae: 'ΥΒΑΕ καθαριότητας / αποκομιδής ΟΤΑ',
   };
 
   return labels[premiumType] || 'ειδικής εισφοράς';
@@ -1642,7 +1682,22 @@ function buildValidatedInsurancePeriodDraft({
     return createInsurancePeriodDraftError('Επιλέξτε κατηγορία εργασίας / εισφορών.', mode);
   }
 
-  if (!isAllowedEmploymentCategoryForFund({ fund, employmentCategory })) {
+  if (
+    fund === 'ota' &&
+    employmentCategory === 'ota_ika_yvae' &&
+    insuredType !== 'old'
+  ) {
+    return createInsurancePeriodDraftError(
+      'Η επιλογή ΥΒΑΕ ΟΤΑ επιτρέπεται μόνο για παλαιό ασφαλισμένο.',
+      mode
+    );
+  }
+
+  if (!isAllowedEmploymentCategoryForFund({
+    fund,
+    insuredType,
+    employmentCategory,
+  })) {
     return createInsurancePeriodDraftError('Η κατηγορία εργασίας / εισφορών δεν ταιριάζει με τον φορέα.', mode);
   }
 
@@ -1876,20 +1931,29 @@ function isAllowedInsuredTypeForFund({ fund, insuredType }) {
   return insuredType === 'old' || insuredType === 'new';
 }
 
-function isAllowedEmploymentCategoryForFund({ fund, employmentCategory }) {
+function isAllowedEmploymentCategoryForFund({
+  fund,
+  insuredType,
+  employmentCategory,
+}) {
   if (SIMPLE_VAE_YVAE_FUNDS.includes(fund)) {
-    return (
-      employmentCategory === 'common' ||
-      employmentCategory === 'vae' ||
-      employmentCategory === 'yvae'
-    );
+    return ['common', 'vae', 'yvae'].includes(employmentCategory);
   }
 
   if (OTA_CLEANING_FUNDS.includes(fund)) {
-    return (
-      employmentCategory === 'common' ||
-      employmentCategory === 'ota_cleaning'
-    );
+    if (
+      employmentCategory === 'ota_ika_yvae' &&
+      insuredType !== 'old'
+    ) {
+      return false;
+    }
+
+    return [
+      'common',
+      'ota_ika_vae',
+      'ota_public_vae',
+      'ota_ika_yvae',
+    ].includes(employmentCategory);
   }
 
   if (
@@ -1931,7 +1995,14 @@ function buildInsurancePeriodCategory({
       isCommonWork: employmentCategory === 'common',
       isVaeWork: employmentCategory === 'vae',
       isYvaeWork: employmentCategory === 'yvae',
-      isOtaCleaningWork: employmentCategory === 'ota_cleaning',
+      isOtaIkaVaeWork: employmentCategory === 'ota_ika_vae',
+      isOtaPublicVaeWork: employmentCategory === 'ota_public_vae',
+      isOtaIkaYvaeWork: employmentCategory === 'ota_ika_yvae',
+      isOtaCleaningWork: [
+        'ota_ika_vae',
+        'ota_public_vae',
+        'ota_ika_yvae',
+      ].includes(employmentCategory),
       isContributionBasedWork: employmentCategory === 'contributions',
       isOtaOrPublicSectorWork:
         fund === 'public_sector' || fund === 'ota',
@@ -1972,8 +2043,13 @@ function buildCanonicalContributionCategory({
     return 'tap_dei_yvae';
   }
 
-  if (fund === 'ota' && employmentCategory === 'ota_cleaning') {
-    return 'ota_cleaning_staff';
+  if (
+    fund === 'ota' &&
+    ['ota_ika_vae', 'ota_public_vae', 'ota_ika_yvae'].includes(
+      employmentCategory
+    )
+  ) {
+    return employmentCategory;
   }
 
   if (fund === 'tanpy') {

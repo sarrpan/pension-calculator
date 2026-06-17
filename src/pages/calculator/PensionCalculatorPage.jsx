@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useMemo, useState } from 'react';
 
 import BackendResponsePanel from './components/BackendResponsePanel';
@@ -75,7 +76,11 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
     savedDraft.simpleInsuredTypeInput || ''
   );
   const [simpleEmploymentCategoryInput, setSimpleEmploymentCategoryInput] = useState(
-    savedDraft.simpleEmploymentCategoryInput || ''
+    normalizeSavedEmploymentCategory({
+      fund: savedDraft.simpleFundInput,
+      insuredType: savedDraft.simpleInsuredTypeInput,
+      employmentCategory: savedDraft.simpleEmploymentCategoryInput,
+    })
   );
   const [simpleNonSalariedEarningsInputMode, setSimpleNonSalariedEarningsInputMode] =
     useState(
@@ -398,6 +403,19 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
             insuranceYears: '',
             insuranceMonths: '',
             insuranceExtraDays: '',
+          };
+        }
+
+        if (field === 'insuredType') {
+          return {
+            ...group,
+            insuredType: value,
+            employmentCategory:
+              group.fund === 'ota' &&
+              value === 'new' &&
+              group.employmentCategory === 'ota_ika_yvae'
+                ? ''
+                : group.employmentCategory,
           };
         }
 
@@ -984,7 +1002,11 @@ function normalizeSavedInsurancePeriodGroups(savedDraft = {}) {
           insuranceExtraDays: group.insuranceExtraDays || '',
           fund: group.fund || '',
           insuredType: group.insuredType || '',
-          employmentCategory: group.employmentCategory || '',
+          employmentCategory: normalizeSavedEmploymentCategory({
+            fund: group.fund,
+            insuredType: group.insuredType,
+            employmentCategory: group.employmentCategory,
+          }),
           nonSalariedEarningsInputMode:
             normalizeSavedNonSalariedEarningsInputMode(
               group.nonSalariedEarningsInputMode
@@ -1110,12 +1132,43 @@ function normalizeSavedUniformedSpecialTimeDraft(value) {
   };
 }
 
+function normalizeSavedEmploymentCategory({
+  fund,
+  insuredType,
+  employmentCategory,
+}) {
+  const normalizedFund = String(fund || '').trim();
+  const normalizedInsuredType = String(insuredType || '').trim();
+  const normalizedCategory = String(employmentCategory || '').trim();
+
+  if (normalizedFund !== 'ota') {
+    return normalizedCategory;
+  }
+
+  // Η παλιά ενιαία επιλογή δεν αντιστοιχεί με βεβαιότητα σε μία από τις
+  // τρεις νέες κατηγορίες. Ζητείται νέα επιλογή ώστε να μη γίνει λάθος.
+  if (normalizedCategory === 'ota_cleaning') {
+    return '';
+  }
+
+  if (
+    normalizedCategory === 'ota_ika_yvae' &&
+    normalizedInsuredType === 'new'
+  ) {
+    return '';
+  }
+
+  return normalizedCategory;
+}
+
 function normalizeSavedArticle30SpecialRegimeUsageInput(value) {
   if (typeof value === 'string') {
     return {
       vae: value,
       yvae: value,
-      ota_cleaning: value,
+      ota_ika_vae: value,
+      ota_public_vae: value,
+      ota_ika_yvae: value,
     };
   }
 
@@ -1123,14 +1176,18 @@ function normalizeSavedArticle30SpecialRegimeUsageInput(value) {
     return {
       vae: '',
       yvae: '',
-      ota_cleaning: '',
+      ota_ika_vae: '',
+      ota_public_vae: '',
+      ota_ika_yvae: '',
     };
   }
 
   return {
     vae: value.vae || '',
     yvae: value.yvae || '',
-    ota_cleaning: value.ota_cleaning || '',
+    ota_ika_vae: value.ota_ika_vae || '',
+    ota_public_vae: value.ota_public_vae || '',
+    ota_ika_yvae: value.ota_ika_yvae || value.ota_cleaning || '',
   };
 }
 
