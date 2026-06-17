@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 import { fieldsetStyle } from '../utils/calculatorStyles';
@@ -7,6 +8,7 @@ function InsurancePeriodsInputSection({
   simpleFundInput,
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
+  simpleNonSalariedEarningsInputMode,
   simpleFromDateInput,
   simpleToDateInput,
   simpleTimeInputMethod,
@@ -23,6 +25,7 @@ function InsurancePeriodsInputSection({
   onSimpleFundChange,
   onSimpleInsuredTypeChange,
   onSimpleEmploymentCategoryChange,
+  onSimpleNonSalariedEarningsInputModeChange,
   onSimpleFromDateChange,
   onSimpleToDateChange,
   onSimpleTimeInputMethodChange,
@@ -62,6 +65,7 @@ function InsurancePeriodsInputSection({
 
   function handleSimpleFundChange(value) {
     onSimpleFundChange(value);
+    onSimpleNonSalariedEarningsInputModeChange('');
 
     if (isContributionBasedFund(value)) {
       onSimpleInsuredTypeChange('not_applicable');
@@ -151,6 +155,16 @@ function InsurancePeriodsInputSection({
                 onChange={onSimpleEmploymentCategoryChange}
                 options={simpleEmploymentCategoryOptions}
                 disabled={!simpleFundInput}
+              />
+            )}
+
+            {isSimpleContributionBasedFund && (
+              <SelectWithLabel
+                id="simpleNonSalariedEarningsInputMode"
+                label="Πώς θα δηλωθούν οι εισφορές ή οι συντάξιμες αποδοχές αυτής της περιόδου;"
+                value={simpleNonSalariedEarningsInputMode}
+                onChange={onSimpleNonSalariedEarningsInputModeChange}
+                options={NON_SALARIED_EARNINGS_INPUT_MODE_OPTIONS}
               />
             )}
 
@@ -357,6 +371,7 @@ function InsurancePeriodGroupFields({
 
   function handleFundChange(value) {
     onGroupChange('fund', value);
+    onGroupChange('nonSalariedEarningsInputMode', '');
 
     if (isContributionBasedFund(value)) {
       onGroupChange('insuredType', 'not_applicable');
@@ -430,6 +445,18 @@ function InsurancePeriodGroupFields({
             onChange={(value) => onGroupChange('employmentCategory', value)}
             options={employmentCategoryOptions}
             disabled={!group.fund}
+          />
+        )}
+
+        {isCurrentContributionBasedFund && (
+          <SelectWithLabel
+            id={`multiPeriod${groupNumber}NonSalariedEarningsInputMode`}
+            label="Πώς θα δηλωθούν οι εισφορές ή οι συντάξιμες αποδοχές αυτής της περιόδου;"
+            value={group.nonSalariedEarningsInputMode || ''}
+            onChange={(value) =>
+              onGroupChange('nonSalariedEarningsInputMode', value)
+            }
+            options={NON_SALARIED_EARNINGS_INPUT_MODE_OPTIONS}
           />
         )}
 
@@ -1246,6 +1273,18 @@ const INSURANCE_TIME_METHOD_OPTIONS = [
   {
     value: 'years_months_days',
     label: 'Με έτη, μήνες και ημέρες',
+  },
+];
+
+const NON_SALARIED_EARNINGS_INPUT_MODE_OPTIONS = [
+  { value: '', label: 'Επιλέξτε' },
+  {
+    value: 'annual_pensionable_earnings',
+    label: 'Γνωρίζω το ετήσιο ασφαλιστέο / συντάξιμο εισόδημα',
+  },
+  {
+    value: 'annual_pension_contribution',
+    label: 'Γνωρίζω την ετήσια εισφορά κύριας σύνταξης',
   },
 ];
 

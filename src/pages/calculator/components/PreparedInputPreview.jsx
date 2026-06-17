@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 import {
@@ -124,6 +125,15 @@ function PreparedInputPreview({ analysis }) {
                   {period.employmentCategoryLabel}
                 </p>
 
+                {period.nonSalariedEarningsInputModeLabel && (
+                  <p>
+                    <strong>
+                      Τρόπος εισαγωγής εισφορών / συντάξιμων αποδοχών:
+                    </strong>{' '}
+                    {period.nonSalariedEarningsInputModeLabel}
+                  </p>
+                )}
+
                 <p>
                   <strong>Ημέρες / ένσημα που αποδίδονται:</strong>{' '}
                   {period.insuranceDays}
@@ -174,7 +184,7 @@ function PreparedInputPreview({ analysis }) {
 
         {analysis.yearlyEarningsRowsCount > 0 && (
           <p>
-            <strong>Γραμμές ετήσιων αποδοχών που θα σταλούν:</strong>{' '}
+            <strong>Γραμμές ετήσιων στοιχείων που θα σταλούν:</strong>{' '}
             {analysis.yearlyEarningsRowsCount}
           </p>
         )}
@@ -187,7 +197,7 @@ function PreparedInputPreview({ analysis }) {
 
         {analysis.requiresContributoryYearlyStep && analysis.yearlyEarningsRowsCount === 0 && (
           <p style={{ color: '#8a5a00' }}>
-            Έχει επιλεγεί αναλυτική εισαγωγή αποδοχών. Η επόμενη φόρμα θα ζητήσει αποδοχές και ένσημα ανά έτος.
+            Έχει επιλεγεί ετήσια εισαγωγή στοιχείων. Η επόμενη φόρμα θα ζητήσει το ετήσιο ποσό και τις ημέρες ασφάλισης ανά έτος.
           </p>
         )}
 

@@ -1,3 +1,4 @@
+
 const INSURANCE_DAYS_PER_YEAR = 300;
 const INSURANCE_DAYS_PER_MONTH = 25;
 const MIN_RESIDENCE_YEARS_FOR_OLD_AGE_NATIONAL_PENSION = 15;
@@ -74,6 +75,17 @@ const CONTRIBUTORY_EARNINGS_INPUT_METHOD_OPTIONS = {
   yearly_earnings: {
     value: 'yearly_earnings',
     label: 'Αποδοχές και ένσημα ανά έτος',
+  },
+};
+
+const NON_SALARIED_EARNINGS_INPUT_MODE_OPTIONS = {
+  annual_pensionable_earnings: {
+    value: 'annual_pensionable_earnings',
+    label: 'Ετήσιο ασφαλιστέο / συντάξιμο εισόδημα',
+  },
+  annual_pension_contribution: {
+    value: 'annual_pension_contribution',
+    label: 'Ετήσια εισφορά κύριας σύνταξης',
   },
 };
 
@@ -315,6 +327,7 @@ function analyzePensionForm({
   simpleFundInput,
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
+  simpleNonSalariedEarningsInputMode,
   simpleFromDateInput,
   simpleToDateInput,
   simpleTimeInputMethod,
@@ -368,6 +381,7 @@ function analyzePensionForm({
     simpleFundInput,
     simpleInsuredTypeInput,
     simpleEmploymentCategoryInput,
+    simpleNonSalariedEarningsInputMode,
     simpleFromDateInput,
     simpleToDateInput,
     simpleTimeInputMethod,
@@ -400,6 +414,7 @@ function analyzePensionForm({
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
     yearlyEarningsRows,
+    insurancePeriodsDraft: insurancePeriodsAnalysis.insurancePeriodsDraft,
   });
 
   const isMultipleInsuranceMode =
@@ -1098,6 +1113,7 @@ function analyzeInsurancePeriodsDraft({
   simpleFundInput,
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
+  simpleNonSalariedEarningsInputMode,
   simpleFromDateInput,
   simpleToDateInput,
   simpleTimeInputMethod,
@@ -1208,6 +1224,8 @@ function analyzeInsurancePeriodsDraft({
         fundInput: groups[index].fund,
         insuredTypeInput: groups[index].insuredType,
         employmentCategoryInput: groups[index].employmentCategory,
+        nonSalariedEarningsInputMode:
+          groups[index].nonSalariedEarningsInputMode,
         uniformedSpecialTimeDraft: groups[index].uniformedSpecialTimeDraft,
         isRequired: true,
       });
@@ -1225,7 +1243,9 @@ function analyzeInsurancePeriodsDraft({
 
     const totalInsuranceTimeAnalysis = buildInsuranceTimeAnalysisFromDays({
       totalInsuranceDaysEquivalent,
-      displaySuffix: `(σύνολο από ${periods.length} περίοδο/ομάδα${periods.length > 1 ? 'ες' : ''})`,
+      displaySuffix: periods.length === 1
+        ? '(σύνολο από 1 περίοδο / ομάδα)'
+        : `(σύνολο από ${periods.length} περιόδους / ομάδες)`,
     });
 
     return {
@@ -1315,6 +1335,8 @@ function analyzeInsurancePeriodsDraft({
     fundInput: simpleFundInput,
     insuredTypeInput: simpleInsuredTypeInput,
     employmentCategoryInput: simpleEmploymentCategoryInput,
+    nonSalariedEarningsInputMode:
+      simpleNonSalariedEarningsInputMode,
     uniformedSpecialTimeDraft: simpleUniformedSpecialTimeDraft,
     fromDate: fromDateResult.isoDate,
     fromDateDisplay: fromDateResult.displayDate,
@@ -1385,6 +1407,8 @@ function normalizeInsurancePeriodGroupForAnalysis(group = {}) {
     fund: group.fund || '',
     insuredType: group.insuredType || '',
     employmentCategory: group.employmentCategory || '',
+    nonSalariedEarningsInputMode:
+      group.nonSalariedEarningsInputMode || '',
     uniformedSpecialTimeDraft:
       normalizeUniformedSpecialTimeDraft(group.uniformedSpecialTimeDraft),
   };
@@ -1402,6 +1426,7 @@ function hasAnyInsurancePeriodGroupValue(group = {}) {
     group.fund,
     group.insuredType,
     group.employmentCategory,
+    group.nonSalariedEarningsInputMode,
     hasActiveUniformedSpecialTimeDraft(group.uniformedSpecialTimeDraft)
       ? 'uniformed_special_time'
       : '',
@@ -1421,6 +1446,7 @@ function analyzeMultiInsurancePeriodDraft({
   fundInput,
   insuredTypeInput,
   employmentCategoryInput,
+  nonSalariedEarningsInputMode,
   uniformedSpecialTimeDraft,
   isRequired,
 }) {
@@ -1435,6 +1461,7 @@ function analyzeMultiInsurancePeriodDraft({
     fundInput,
     insuredTypeInput,
     employmentCategoryInput,
+    nonSalariedEarningsInputMode,
     hasActiveUniformedSpecialTimeDraft(uniformedSpecialTimeDraft)
       ? 'uniformed_special_time'
       : '',
@@ -1519,6 +1546,7 @@ function analyzeMultiInsurancePeriodDraft({
     fundInput,
     insuredTypeInput,
     employmentCategoryInput,
+    nonSalariedEarningsInputMode,
     uniformedSpecialTimeDraft,
     fromDate: fromDateResult.isoDate,
     fromDateDisplay: fromDateResult.displayDate,
@@ -1580,6 +1608,7 @@ function buildValidatedInsurancePeriodDraft({
   fundInput,
   insuredTypeInput,
   employmentCategoryInput,
+  nonSalariedEarningsInputMode,
   uniformedSpecialTimeDraft,
   fromDate = null,
   fromDateDisplay = null,
@@ -1617,6 +1646,18 @@ function buildValidatedInsurancePeriodDraft({
     return createInsurancePeriodDraftError('Η κατηγορία εργασίας / εισφορών δεν ταιριάζει με τον φορέα.', mode);
   }
 
+  const nonSalariedInputModeResult = analyzeNonSalariedEarningsInputMode({
+    fund,
+    value: nonSalariedEarningsInputMode,
+  });
+
+  if (nonSalariedInputModeResult.error) {
+    return createInsurancePeriodDraftError(
+      nonSalariedInputModeResult.error,
+      mode
+    );
+  }
+
   if (!Number.isFinite(insuranceDays) || insuranceDays <= 0) {
     return createInsurancePeriodDraftError('Ο χρόνος της ασφαλιστικής περιόδου πρέπει να είναι μεγαλύτερος από 0.', mode);
   }
@@ -1645,6 +1686,10 @@ function buildValidatedInsurancePeriodDraft({
       insuredTypeLabel: INSURED_TYPE_OPTIONS[insuredType].label,
       employmentCategory,
       employmentCategoryLabel: EMPLOYMENT_CATEGORY_OPTIONS[employmentCategory].label,
+      nonSalariedEarningsInputMode:
+        nonSalariedInputModeResult.inputMode,
+      nonSalariedEarningsInputModeLabel:
+        nonSalariedInputModeResult.inputModeLabel,
       fromDate,
       fromDateDisplay,
       toDate,
@@ -1660,6 +1705,44 @@ function buildValidatedInsurancePeriodDraft({
           ? normalizeUniformedSpecialTimeDraft(uniformedSpecialTimeDraft)
           : null,
     },
+  };
+}
+
+function analyzeNonSalariedEarningsInputMode({ fund, value }) {
+  if (!CONTRIBUTION_BASED_FUNDS.includes(fund)) {
+    return {
+      error: null,
+      inputMode: null,
+      inputModeLabel: null,
+    };
+  }
+
+  const inputMode = String(value || '').trim();
+
+  if (!inputMode) {
+    return {
+      error:
+        'Επιλέξτε πώς θα δηλωθούν οι εισφορές ή οι συντάξιμες αποδοχές της μη μισθωτής περιόδου.',
+      inputMode: null,
+      inputModeLabel: null,
+    };
+  }
+
+  const option = NON_SALARIED_EARNINGS_INPUT_MODE_OPTIONS[inputMode];
+
+  if (!option) {
+    return {
+      error:
+        'Ο τρόπος εισαγωγής εισφορών ή συντάξιμων αποδοχών της μη μισθωτής περιόδου δεν είναι έγκυρος.',
+      inputMode: null,
+      inputModeLabel: null,
+    };
+  }
+
+  return {
+    error: null,
+    inputMode: option.value,
+    inputModeLabel: option.label,
   };
 }
 
@@ -1682,6 +1765,8 @@ function createBackendSafeInsurancePeriodDraft(period) {
     fund: period.fund,
     insuredType: period.insuredType,
     employmentCategory: period.employmentCategory,
+    nonSalariedEarningsInputMode:
+      period.nonSalariedEarningsInputMode || null,
     fromDate: period.fromDate,
     toDate: period.toDate,
     insuranceDays: period.insuranceDays,
@@ -2518,14 +2603,20 @@ function analyzeContributoryPensionInputs({
   contributoryEarningsInputMethod,
   averageMonthlyPensionableEarningsInput,
   yearlyEarningsRows,
-  insurancePeriodsInputMode,
-  simpleFundInput,
-  simpleInsuredTypeInput,
-  simpleEmploymentCategoryInput,
-  simpleFromDateInput,
-  simpleToDateInput,
-  simpleInsuranceDaysInput,
+  insurancePeriodsDraft = [],
 }) {
+  const hasContributionBasedPeriod = insurancePeriodsDraft.some((period) => {
+    return CONTRIBUTION_BASED_FUNDS.includes(period?.fund);
+  });
+
+  if (hasContributionBasedPeriod) {
+    return analyzeInsurancePeriodYearlyAmounts({
+      currentFormStep,
+      yearlyEarningsRows,
+      insurancePeriodsDraft,
+    });
+  }
+
   const method = String(contributoryEarningsInputMethod || '').trim();
 
   if (!method) {
@@ -2563,6 +2654,194 @@ function analyzeContributoryPensionInputs({
     yearlyEarningsRows,
     method,
   });
+}
+
+function analyzeInsurancePeriodYearlyAmounts({
+  currentFormStep,
+  yearlyEarningsRows,
+  insurancePeriodsDraft,
+}) {
+  const method = 'yearly_earnings';
+  const methodLabel = 'Ετήσια ποσά και ημέρες ανά ασφαλιστική περίοδο';
+
+  if (currentFormStep !== 'contributory_yearly') {
+    return {
+      hasValue: true,
+      error: null,
+      warnings: [
+        'Τα ετήσια ποσά των ασφαλιστικών περιόδων θα συμπληρωθούν στο επόμενο βήμα.',
+      ],
+      requiresContributoryYearlyStep: true,
+      contributoryEarningsInputMethod: method,
+      contributoryEarningsInputMethodLabel: methodLabel,
+      averageMonthlyPensionableEarnings: null,
+      yearsData: [],
+      contributoryPensionData: {
+        earningsInputMethod: method,
+        yearlyAmountSource: 'insurance_period_modes',
+      },
+    };
+  }
+
+  const normalizedRows = normalizeInsurancePeriodYearlyAmountRows({
+    rows: yearlyEarningsRows,
+    insurancePeriodsDraft,
+  });
+
+  if (normalizedRows.error) {
+    return {
+      hasValue: true,
+      error: normalizedRows.error,
+      warnings: [],
+      requiresContributoryYearlyStep: true,
+    };
+  }
+
+  if (normalizedRows.yearsData.length === 0) {
+    return {
+      hasValue: false,
+      error: null,
+      warnings: [],
+      requiresContributoryYearlyStep: true,
+      contributoryEarningsInputMethod: method,
+      contributoryEarningsInputMethodLabel: methodLabel,
+      averageMonthlyPensionableEarnings: null,
+      yearsData: [],
+      contributoryPensionData: {
+        earningsInputMethod: method,
+        yearlyAmountSource: 'insurance_period_modes',
+      },
+    };
+  }
+
+  return {
+    hasValue: true,
+    error: null,
+    warnings: [],
+    requiresContributoryYearlyStep: true,
+    contributoryEarningsInputMethod: method,
+    contributoryEarningsInputMethodLabel: methodLabel,
+    averageMonthlyPensionableEarnings: null,
+    yearsData: normalizedRows.yearsData,
+    contributoryPensionData: {
+      earningsInputMethod: method,
+      yearlyAmountSource: 'insurance_period_modes',
+      yearsData: normalizedRows.yearsData,
+    },
+  };
+}
+
+function normalizeInsurancePeriodYearlyAmountRows({
+  rows,
+  insurancePeriodsDraft,
+}) {
+  if (!Array.isArray(rows)) {
+    return {
+      error: 'Τα ετήσια στοιχεία δεν έχουν σωστή μορφή.',
+      yearsData: [],
+    };
+  }
+
+  const periods = Array.isArray(insurancePeriodsDraft)
+    ? insurancePeriodsDraft
+    : [];
+  const yearsData = [];
+  const seenYears = new Set();
+
+  for (const row of rows) {
+    const yearText = String(row.year || '').trim();
+    const amountText = String(row.annualEarnings || '').trim();
+    const daysText = String(row.insuranceDays || '').trim();
+    const hasUsefulValue = Boolean(amountText || daysText);
+
+    if (!hasUsefulValue) {
+      continue;
+    }
+
+    const yearResult = parseNonNegativeInteger(yearText);
+
+    if (!yearResult.isValid || yearResult.value < 2002) {
+      return {
+        error: 'Κάθε γραμμή πρέπει να έχει έγκυρο έτος από το 2002 και μετά.',
+        yearsData: [],
+      };
+    }
+
+    if (seenYears.has(yearResult.value)) {
+      return {
+        error: `Το έτος ${yearResult.value} έχει δηλωθεί περισσότερες από μία φορές.`,
+        yearsData: [],
+      };
+    }
+
+    const matchingPeriods = periods.filter((period) => {
+      const fromYear = getIsoDateYear(period?.fromDate);
+      const toYear = getIsoDateYear(period?.toDate);
+
+      return (
+        fromYear !== null &&
+        toYear !== null &&
+        yearResult.value >= fromYear &&
+        yearResult.value <= toYear
+      );
+    });
+
+    if (matchingPeriods.length === 0) {
+      return {
+        error: `Το έτος ${yearResult.value} δεν ανήκει σε δηλωμένη ασφαλιστική περίοδο.`,
+        yearsData: [],
+      };
+    }
+
+    if (matchingPeriods.length > 1) {
+      return {
+        error:
+          `Το έτος ${yearResult.value} ανήκει σε περισσότερες από μία ασφαλιστικές περιόδους. ` +
+          'Χρειάζεται αναλυτική κατανομή μέσα στο ίδιο έτος.',
+        yearsData: [],
+      };
+    }
+
+    const amountResult = parseNonNegativeDecimal(amountText);
+
+    if (!amountResult.isValid || amountResult.value <= 0) {
+      return {
+        error: `Το ετήσιο ποσό για το έτος ${yearResult.value} πρέπει να είναι αριθμός μεγαλύτερος από 0.`,
+        yearsData: [],
+      };
+    }
+
+    const daysResult = parseNonNegativeInteger(daysText);
+
+    if (!daysResult.isValid || daysResult.value <= 0) {
+      return {
+        error: `Οι ημέρες ασφάλισης για το έτος ${yearResult.value} πρέπει να είναι ακέραιος αριθμός μεγαλύτερος από 0.`,
+        yearsData: [],
+      };
+    }
+
+    seenYears.add(yearResult.value);
+    yearsData.push({
+      year: yearResult.value,
+      annualAmount: roundToDecimals(amountResult.value, 2),
+      insuranceDays: daysResult.value,
+    });
+  }
+
+  return {
+    error: null,
+    yearsData,
+  };
+}
+
+function getIsoDateYear(value) {
+  const match = /^(\d{4})-\d{2}-\d{2}$/.exec(String(value || '').trim());
+
+  if (!match) {
+    return null;
+  }
+
+  return Number(match[1]);
 }
 
 function analyzeAverageMonthlyPensionableEarnings({
