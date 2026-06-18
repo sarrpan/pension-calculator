@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 
 import {
@@ -154,6 +155,48 @@ function PreparedInputPreview({ analysis }) {
             ))}
           </div>
         )}
+
+        {Array.isArray(analysis.plasticYearsDisplay) &&
+          analysis.plasticYearsDisplay.length > 0 && (
+            <div style={previewBoxStyle}>
+              <h3 style={{ marginTop: 0 }}>Γενικά πλασματικά χρόνια</h3>
+
+              {analysis.plasticYearsDisplay.map((item) => (
+                <div key={`plastic_year_${item.entryNumber}`}>
+                  <p>
+                    <strong>Πλασματικός χρόνος {item.entryNumber}:</strong>{' '}
+                    {item.durationDisplay}
+                  </p>
+                  <p>
+                    <strong>Κατάσταση:</strong>{' '}
+                    {item.recognitionStatusLabel}
+                  </p>
+                  <p>
+                    <strong>Εξαγορά:</strong>{' '}
+                    {item.recognitionModeLabel}
+                  </p>
+                  {item.applicationDateDisplay && (
+                    <p>
+                      <strong>Ημερομηνία αίτησης / αναγνώρισης:</strong>{' '}
+                      {item.applicationDateDisplay}
+                    </p>
+                  )}
+                  {item.financialDisplay && (
+                    <p>
+                      <strong>Οικονομικό στοιχείο:</strong>{' '}
+                      {item.financialDisplay}
+                    </p>
+                  )}
+                  {!item.includedInCalculation && (
+                    <p style={{ color: '#8a5a00' }}>
+                      Δεν θα προστεθεί στον υπολογισμό της ανταποδοτικής
+                      σύνταξης.
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
         {Array.isArray(analysis.etaaExtraBenefitDisplay) &&
           analysis.etaaExtraBenefitDisplay.length > 0 && (

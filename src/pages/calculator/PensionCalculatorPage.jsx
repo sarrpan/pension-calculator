@@ -1,5 +1,6 @@
 
 
+
 import React, { useEffect, useMemo, useState } from 'react';
 
 import BackendResponsePanel from './components/BackendResponsePanel';
@@ -9,6 +10,7 @@ import ContributoryPensionInputSection from './sections/ContributoryPensionInput
 import EtaaExtraBenefitInputSection from './sections/EtaaExtraBenefitInputSection';
 import InsurancePeriodsInputSection from './sections/InsurancePeriodsInputSection';
 import InsuranceTimeInputSection from './sections/InsuranceTimeInputSection';
+import PlasticYearsInputSection from './sections/PlasticYearsInputSection';
 import NationalPensionInputSection from './sections/NationalPensionInputSection';
 import { errorSectionStyle } from './utils/calculatorStyles';
 import { analyzePensionForm } from './utils/pensionFormAnalysis';
@@ -123,6 +125,10 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
     return normalizeSavedInsurancePeriodGroups(savedDraft);
   });
 
+  const [plasticYearsDraft, setPlasticYearsDraft] = useState(
+    normalizeSavedPlasticYearsDraft(savedDraft.plasticYearsDraft)
+  );
+
   const [etaaExtraBenefitDraft, setEtaaExtraBenefitDraft] = useState(
     normalizeSavedEtaaExtraBenefitDraft(savedDraft.etaaExtraBenefitDraft)
   );
@@ -191,6 +197,7 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
       simpleUniformedSpecialTimeDraft,
       article30SpecialRegimeUsageInput,
       insurancePeriodGroups,
+      plasticYearsDraft,
       etaaExtraBenefitDraft,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
@@ -226,6 +233,7 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
     simpleUniformedSpecialTimeDraft,
     article30SpecialRegimeUsageInput,
     insurancePeriodGroups,
+    plasticYearsDraft,
     etaaExtraBenefitDraft,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
@@ -262,6 +270,7 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
       simpleUniformedSpecialTimeDraft,
       article30SpecialRegimeUsageInput,
       insurancePeriodGroups,
+      plasticYearsDraft,
       etaaExtraBenefitDraft,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
@@ -296,6 +305,7 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
     simpleUniformedSpecialTimeDraft,
     article30SpecialRegimeUsageInput,
     insurancePeriodGroups,
+    plasticYearsDraft,
     etaaExtraBenefitDraft,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
@@ -771,6 +781,15 @@ function PensionCalculatorPage({ calculatorEdition = 'professional' }) {
               onRemoveInsurancePeriodGroup={handleRemoveInsurancePeriodGroup}
             />
 
+            <PlasticYearsInputSection
+              calculatorEdition={calculatorEdition}
+              value={plasticYearsDraft}
+              onChange={(value) => {
+                setPlasticYearsDraft(normalizeSavedPlasticYearsDraft(value));
+                clearBackendResult();
+              }}
+            />
+
             <EtaaExtraBenefitInputSection
               insurancePeriodsInputMode={insurancePeriodsInputMode}
               simpleFundInput={simpleFundInput}
@@ -1188,6 +1207,41 @@ function normalizeSavedArticle30SpecialRegimeUsageInput(value) {
     ota_ika_vae: value.ota_ika_vae || '',
     ota_public_vae: value.ota_public_vae || '',
     ota_ika_yvae: value.ota_ika_yvae || value.ota_cleaning || '',
+  };
+}
+
+function createEmptyPlasticYearEntry() {
+  return {
+    id: `plastic_year_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    recognitionStatus: '',
+    recognitionMode: '',
+    years: '',
+    months: '',
+    days: '',
+    applicationDate: '',
+    financialInputMode: '',
+    monthlyPensionableBase: '',
+    buyoutAmount: '',
+    contributionRatePercent: '',
+  };
+}
+
+function normalizeSavedPlasticYearsDraft(value) {
+  const status = value?.status === 'yes' ? 'yes' : 'no';
+  const entries = Array.isArray(value?.entries)
+    ? value.entries.slice(0, 10).map((entry) => ({
+        ...createEmptyPlasticYearEntry(),
+        ...(entry || {}),
+        id: entry?.id || createEmptyPlasticYearEntry().id,
+      }))
+    : [];
+
+  return {
+    status,
+    entries:
+      status === 'yes' && entries.length === 0
+        ? [createEmptyPlasticYearEntry()]
+        : entries,
   };
 }
 

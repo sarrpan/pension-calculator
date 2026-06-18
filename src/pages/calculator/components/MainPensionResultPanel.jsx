@@ -1,9 +1,11 @@
+
 import React from 'react';
 
 function MainPensionResultPanel({ calculationResponse }) {
   const nationalPension = calculationResponse?.nationalPension || {};
   const contributoryPension = calculationResponse?.contributoryPension || {};
   const article30Increase = calculationResponse?.article30Increase || {};
+  const plasticYears = calculationResponse?.plasticYears || {};
   const etaaExtraBenefits = calculationResponse?.etaaExtraBenefits || {};
   const totals = calculationResponse?.totals || {};
 
@@ -24,6 +26,12 @@ function MainPensionResultPanel({ calculationResponse }) {
 
   const pensionableMonthlyEarnings = toNumberOrNull(
     contributoryPension.pensionableMonthlyEarnings
+  );
+  const recognizedPlasticYears = toNumberOrNull(
+    plasticYears.recognizedInsuranceYears
+  );
+  const recognizedPlasticEarnings = toNumberOrNull(
+    plasticYears.recognizedPensionableEarnings
   );
 
   const baseReplacementRatePercentage = firstNumberOrNull(
@@ -105,6 +113,22 @@ function MainPensionResultPanel({ calculationResponse }) {
             <strong>{formatMoney(pensionableMonthlyEarnings)}</strong>
           </p>
         )}
+
+        {recognizedPlasticYears !== null &&
+          recognizedPlasticYears > 0 && (
+            <p>
+              Πλασματικός χρόνος που προστέθηκε:{' '}
+              <strong>{formatYears(recognizedPlasticYears)}</strong>
+            </p>
+          )}
+
+        {recognizedPlasticEarnings !== null &&
+          recognizedPlasticEarnings > 0 && (
+            <p>
+              Συντάξιμες αποδοχές εξαγοράς πλασματικού χρόνου:{' '}
+              <strong>{formatMoney(recognizedPlasticEarnings)}</strong>
+            </p>
+          )}
 
         {article30MainContributionAmount !== null &&
           article30MainContributionAmount > 0 && (
@@ -273,6 +297,17 @@ function sumNumbersOrNull(...values) {
   }
 
   return numberValues.reduce((sum, value) => sum + value, 0);
+}
+
+function formatYears(value) {
+  if (value === null) {
+    return '—';
+  }
+
+  return `${value.toLocaleString('el-GR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  })} έτη`;
 }
 
 function formatMoney(value) {

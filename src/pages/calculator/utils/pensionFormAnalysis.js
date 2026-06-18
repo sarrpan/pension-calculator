@@ -1,5 +1,6 @@
 
 
+
 const INSURANCE_DAYS_PER_YEAR = 300;
 const INSURANCE_DAYS_PER_MONTH = 25;
 const MIN_RESIDENCE_YEARS_FOR_OLD_AGE_NATIONAL_PENSION = 15;
@@ -314,6 +315,13 @@ const TSMEDE_DEFAULT_EXTRA_CONTRIBUTION_POINTS = 12;
 const TSAY_ADMINISTRATIVE_EXTRA_CONTRIBUTION_POINTS = 10;
 const TSMEDE_ADDITIONAL_TWO_PERCENT_MAX_YEARS = 4.5;
 
+const PLASTIC_YEARS_RECOGNITION_STATUS_OPTIONS = ['recognized', 'planned'];
+const PLASTIC_YEARS_RECOGNITION_MODE_OPTIONS = ['paid', 'free'];
+const PLASTIC_YEARS_FINANCIAL_INPUT_MODE_OPTIONS = [
+  'monthly_base',
+  'buyout_amount_and_rate',
+];
+
 function analyzePensionForm({
   currentFormStep = 'main',
   calculatorEdition = 'professional',
@@ -347,6 +355,7 @@ function analyzePensionForm({
   simpleUniformedSpecialTimeDraft,
   article30SpecialRegimeUsageInput,
   insurancePeriodGroups,
+  plasticYearsDraft,
   etaaExtraBenefitDraft,
   multiPeriodTimeInputMethod,
   multiPeriodInsuranceDaysInput,
@@ -426,6 +435,11 @@ function analyzePensionForm({
     insurancePeriodsDraft: insurancePeriodsAnalysis.insurancePeriodsDraft,
   });
 
+  const plasticYearsAnalysis = analyzePlasticYearsDraft({
+    plasticYearsDraft,
+    contributoryEarningsInputMethod,
+  });
+
   const isMultipleInsuranceMode =
     insurancePeriodsAnalysis.insurancePeriodsInputMode === 'multiple';
 
@@ -451,6 +465,7 @@ function analyzePensionForm({
     isMultipleInsuranceMode ? null : insuranceTimeAnalysis.error,
     insurancePeriodsAnalysis.error,
     article30SpecialRegimeAnalysis.error,
+    plasticYearsAnalysis.error,
     etaaExtraBenefitAnalysis.error,
     contributoryAnalysis.error,
   ].filter(Boolean);
@@ -472,6 +487,7 @@ function analyzePensionForm({
     effectiveInsuranceTimeAnalysis.hasValue &&
     insurancePeriodsAnalysis.hasValue &&
     article30SpecialRegimeAnalysis.hasValue &&
+    plasticYearsAnalysis.hasValue &&
     etaaExtraBenefitAnalysis.hasValue &&
     contributoryAnalysis.hasValue;
 
@@ -490,6 +506,7 @@ function analyzePensionForm({
     ...insuranceTimeAnalysis.warnings,
     ...insurancePeriodsAnalysis.warnings,
     ...article30SpecialRegimeAnalysis.warnings,
+    ...plasticYearsAnalysis.warnings,
     ...etaaExtraBenefitAnalysis.warnings,
     ...contributoryAnalysis.warnings,
   ];
@@ -526,6 +543,7 @@ function analyzePensionForm({
     ),
     article30SpecialRegimeData:
       article30SpecialRegimeAnalysis.article30SpecialRegimeData,
+    plasticYearsDraft: plasticYearsAnalysis.plasticYearsDraft,
     etaaExtraBenefitData:
       etaaExtraBenefitAnalysis.etaaExtraBenefitData,
   };
@@ -578,6 +596,10 @@ function analyzePensionForm({
     insurancePeriodDraftDisplay:
       insurancePeriodsAnalysis.insurancePeriodDraftDisplay,
 
+    plasticYearsDraft: plasticYearsAnalysis.plasticYearsDraft,
+    plasticYearsDisplay: plasticYearsAnalysis.plasticYearsDisplay,
+    paidPlasticYearsCount: plasticYearsAnalysis.paidPlasticYearsCount,
+
     etaaExtraBenefitEntries:
       etaaExtraBenefitAnalysis.etaaExtraBenefitEntries,
     etaaExtraBenefitDisplay:
@@ -594,6 +616,275 @@ function analyzePensionForm({
 
     calculationInput,
   };
+}
+
+function analyzePlasticYearsDraft({
+  plasticYearsDraft,
+  contributoryEarningsInputMethod,
+}) {
+  const normalizedStatus =
+    plasticYearsDraft?.status === 'yes' ? 'yes' : 'no';
+
+  if (normalizedStatus === 'no') {
+    return {
+      hasValue: true,
+      error: null,
+      warnings: [],
+      plasticYearsDraft: [],
+      plasticYearsDisplay: [],
+      paidPlasticYearsCount: 0,
+    };
+  }
+
+  const rawEntries = Array.isArray(plasticYearsDraft?.entries)
+    ? plasticYearsDraft.entries
+    : [];
+
+  if (rawEntries.length === 0) {
+    return {
+      hasValue: false,
+      error: null,
+      warnings: [],
+      plasticYearsDraft: [],
+      plasticYearsDisplay: [],
+      paidPlasticYearsCount: 0,
+    };
+  }
+
+  const normalizedEntries = [];
+  const displayEntries = [];
+  const warnings = [];
+  let paidPlasticYearsCount = 0;
+
+  for (let index = 0; index < rawEntries.length; index += 1) {
+    const entry = rawEntries[index] || {};
+    const entryNumber = index + 1;
+    const recognitionStatus = String(entry.recognitionStatus || '').trim();
+    const recognitionMode = String(entry.recognitionMode || '').trim();
+
+    if (!PLASTIC_YEARS_RECOGNITION_STATUS_OPTIONS.includes(recognitionStatus)) {
+      return createPlasticYearsError(
+        `Επιλέξτε αν υπάρχει πράξη αναγνώρισης για τον πλασματικό χρόνο ${entryNumber}.`
+      );
+    }
+
+    if (!PLASTIC_YEARS_RECOGNITION_MODE_OPTIONS.includes(recognitionMode)) {
+      return createPlasticYearsError(
+        `Επιλέξτε αν ο πλασματικός χρόνος ${entryNumber} είναι με εξαγορά.`
+      );
+    }
+
+    const durationResult = analyzePlasticYearsDuration({
+      years: entry.years,
+      months: entry.months,
+      days: entry.days,
+      entryNumber,
+    });
+
+    if (durationResult.error) {
+      return createPlasticYearsError(durationResult.error);
+    }
+
+    if (recognitionMode === 'free') {
+      warnings.push(
+        `Ο πλασματικός χρόνος ${entryNumber} δηλώθηκε χωρίς εξαγορά και δεν θα προστεθεί στον υπολογισμό της ανταποδοτικής σύνταξης.`
+      );
+
+      displayEntries.push({
+        entryNumber,
+        recognitionStatus,
+        recognitionStatusLabel:
+          recognitionStatus === 'recognized'
+            ? 'Υπάρχει πράξη αναγνώρισης'
+            : 'Μελλοντική εκτίμηση',
+        recognitionMode,
+        recognitionModeLabel: 'Χωρίς εξαγορά',
+        durationDisplay: formatPlasticYearsDuration(durationResult),
+        includedInCalculation: false,
+      });
+
+      continue;
+    }
+
+    const applicationDateResult = analyzeInsurancePeriodDate({
+      value: entry.applicationDate,
+      fieldLabel: `ημερομηνία αίτησης / αναγνώρισης για τον πλασματικό χρόνο ${entryNumber}`,
+    });
+
+    if (!applicationDateResult.hasValue) {
+      return createPlasticYearsError(
+        `Συμπληρώστε την ημερομηνία αίτησης / αναγνώρισης για τον πλασματικό χρόνο ${entryNumber}.`
+      );
+    }
+
+    if (applicationDateResult.error) {
+      return createPlasticYearsError(applicationDateResult.error);
+    }
+
+    const financialInputMode =
+      recognitionStatus === 'planned'
+        ? 'monthly_base'
+        : String(entry.financialInputMode || '').trim();
+
+    if (!PLASTIC_YEARS_FINANCIAL_INPUT_MODE_OPTIONS.includes(financialInputMode)) {
+      return createPlasticYearsError(
+        `Επιλέξτε ποιο οικονομικό στοιχείο αναγράφεται στην πράξη για τον πλασματικό χρόνο ${entryNumber}.`
+      );
+    }
+
+    const normalizedEntry = {
+      id: entry.id || `plastic_year_${entryNumber}`,
+      recognitionStatus,
+      recognitionMode: 'paid',
+      duration: {
+        years: durationResult.years,
+        months: durationResult.months,
+        days: durationResult.days,
+      },
+      applicationDate: applicationDateResult.isoDate,
+      calculationInputMode:
+        financialInputMode === 'monthly_base'
+          ? 'explicit_monthly_base'
+          : 'buyout_amount_and_rate',
+    };
+
+    let financialDisplay = '';
+
+    if (financialInputMode === 'monthly_base') {
+      const monthlyBaseResult = parseNonNegativeDecimal(
+        entry.monthlyPensionableBase
+      );
+
+      if (!monthlyBaseResult.isValid || monthlyBaseResult.value <= 0) {
+        return createPlasticYearsError(
+          `Η μηνιαία ασφαλιστέα / συντάξιμη βάση του πλασματικού χρόνου ${entryNumber} πρέπει να είναι μεγαλύτερη από 0.`
+        );
+      }
+
+      normalizedEntry.explicitMonthlyPensionableBase =
+        monthlyBaseResult.value;
+      financialDisplay = `${monthlyBaseResult.value.toLocaleString('el-GR')} € μηνιαία βάση`;
+    } else {
+      const buyoutAmountResult = parseNonNegativeDecimal(entry.buyoutAmount);
+      const contributionRateResult = parseNonNegativeDecimal(
+        entry.contributionRatePercent
+      );
+
+      if (!buyoutAmountResult.isValid || buyoutAmountResult.value <= 0) {
+        return createPlasticYearsError(
+          `Το συνολικό ποσό εξαγοράς του πλασματικού χρόνου ${entryNumber} πρέπει να είναι μεγαλύτερο από 0.`
+        );
+      }
+
+      if (
+        !contributionRateResult.isValid ||
+        contributionRateResult.value <= 0 ||
+        contributionRateResult.value > 100
+      ) {
+        return createPlasticYearsError(
+          `Το ποσοστό εισφοράς του πλασματικού χρόνου ${entryNumber} πρέπει να είναι μεγαλύτερο από 0 και έως 100%.`
+        );
+      }
+
+      normalizedEntry.buyoutAmount = buyoutAmountResult.value;
+      normalizedEntry.contributionRatePercent = contributionRateResult.value;
+      financialDisplay = `${buyoutAmountResult.value.toLocaleString('el-GR')} € με ποσοστό ${contributionRateResult.value.toLocaleString('el-GR')}%`;
+    }
+
+    normalizedEntries.push(normalizedEntry);
+    paidPlasticYearsCount += 1;
+
+    displayEntries.push({
+      entryNumber,
+      recognitionStatus,
+      recognitionStatusLabel:
+        recognitionStatus === 'recognized'
+          ? 'Υπάρχει πράξη αναγνώρισης'
+          : 'Μελλοντική εκτίμηση',
+      recognitionMode: 'paid',
+      recognitionModeLabel: 'Με εξαγορά',
+      durationDisplay: formatPlasticYearsDuration(durationResult),
+      applicationDateDisplay: applicationDateResult.displayDate,
+      financialDisplay,
+      includedInCalculation: true,
+    });
+  }
+
+  if (
+    paidPlasticYearsCount > 0 &&
+    contributoryEarningsInputMethod === 'average_monthly'
+  ) {
+    return createPlasticYearsError(
+      'Για να ενσωματωθούν σωστά οι αποδοχές εξαγοράς πλασματικού χρόνου χρειάζονται αποδοχές και ημέρες ανά έτος. Δεν αρκεί έτοιμος μέσος μηνιαίος συντάξιμος μισθός.'
+    );
+  }
+
+  return {
+    hasValue: true,
+    error: null,
+    warnings,
+    plasticYearsDraft: normalizedEntries,
+    plasticYearsDisplay: displayEntries,
+    paidPlasticYearsCount,
+  };
+}
+
+function createPlasticYearsError(error) {
+  return {
+    hasValue: true,
+    error,
+    warnings: [],
+    plasticYearsDraft: [],
+    plasticYearsDisplay: [],
+    paidPlasticYearsCount: 0,
+  };
+}
+
+function analyzePlasticYearsDuration({ years, months, days, entryNumber }) {
+  const yearsResult = parseNonNegativeInteger(String(years || '0'));
+  const monthsResult = parseNonNegativeInteger(String(months || '0'));
+  const daysResult = parseNonNegativeInteger(String(days || '0'));
+
+  if (!yearsResult.isValid || !monthsResult.isValid || !daysResult.isValid) {
+    return {
+      error: `Η διάρκεια του πλασματικού χρόνου ${entryNumber} πρέπει να περιέχει μόνο ακέραιους αριθμούς.`,
+    };
+  }
+
+  if (monthsResult.value > 11) {
+    return {
+      error: `Οι μήνες του πλασματικού χρόνου ${entryNumber} πρέπει να είναι από 0 έως 11.`,
+    };
+  }
+
+  if (daysResult.value > 24) {
+    return {
+      error: `Οι ημέρες του πλασματικού χρόνου ${entryNumber} πρέπει να είναι από 0 έως 24.`,
+    };
+  }
+
+  const totalDays =
+    yearsResult.value * INSURANCE_DAYS_PER_YEAR +
+    monthsResult.value * INSURANCE_DAYS_PER_MONTH +
+    daysResult.value;
+
+  if (totalDays <= 0) {
+    return {
+      error: `Η διάρκεια του πλασματικού χρόνου ${entryNumber} πρέπει να είναι μεγαλύτερη από 0.`,
+    };
+  }
+
+  return {
+    error: null,
+    years: yearsResult.value,
+    months: monthsResult.value,
+    days: daysResult.value,
+    totalDays,
+  };
+}
+
+function formatPlasticYearsDuration({ years, months, days }) {
+  return `${years} έτη, ${months} μήνες, ${days} ημέρες`;
 }
 
 function analyzePensionStartDate(value) {
