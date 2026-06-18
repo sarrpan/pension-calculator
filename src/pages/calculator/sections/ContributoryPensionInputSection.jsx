@@ -1,32 +1,22 @@
-import React from 'react';
+import React from "react";
 
-import {
-  InputWithLabel,
-  RadioOption,
-} from '../components/FormControls';
-import { fieldsetStyle } from '../utils/calculatorStyles';
+import { InputWithLabel, RadioOption } from "../components/FormControls";
+import { fieldsetStyle } from "../utils/calculatorStyles";
+import { normalizeParallelInsuranceDraft } from "../utils/parallelInsuranceFormUtils";
 
-const CONTRIBUTION_BASED_FUNDS = [
-  'oaee',
-  'etaa',
-  'tsmede',
-  'tsay',
-  'oga',
-];
+const CONTRIBUTION_BASED_FUNDS = ["oaee", "etaa", "tsmede", "tsay", "oga"];
 
 const FUND_LABELS = {
-  oaee: 'ΟΑΕΕ',
-  etaa: 'ΕΤΑΑ',
-  tsmede: 'ΤΣΜΕΔΕ',
-  tsay: 'ΤΣΑΥ',
-  oga: 'πρώην ΟΓΑ',
+  oaee: "ΟΑΕΕ",
+  etaa: "ΕΤΑΑ",
+  tsmede: "ΤΣΜΕΔΕ",
+  tsay: "ΤΣΑΥ",
+  oga: "πρώην ΟΓΑ",
 };
 
 const NON_SALARIED_MODE_LABELS = {
-  annual_pensionable_earnings:
-    'Ετήσιο ασφαλιστέο / συντάξιμο εισόδημα',
-  annual_pension_contribution:
-    'Ετήσια εισφορά κύριας σύνταξης',
+  annual_pensionable_earnings: "Ετήσιο ασφαλιστέο / συντάξιμο εισόδημα",
+  annual_pension_contribution: "Ετήσια εισφορά κύριας σύνταξης",
 };
 
 function ContributoryPensionInputSection({
@@ -40,6 +30,8 @@ function ContributoryPensionInputSection({
   simpleFromDateInput,
   simpleToDateInput,
   insurancePeriodGroups,
+  parallelInsuranceSegments,
+  parallelInsuranceDraft,
   onContributoryEarningsInputMethodChange,
   onAverageMonthlyPensionableEarningsChange,
   onYearlyEarningsRowChange,
@@ -52,35 +44,37 @@ function ContributoryPensionInputSection({
     simpleFromDateInput,
     simpleToDateInput,
     insurancePeriodGroups,
+    parallelInsuranceSegments,
+    parallelInsuranceDraft,
   });
 
-  if (currentFormStep === 'contributory_yearly') {
+  if (currentFormStep === "contributory_yearly") {
     return (
       <fieldset style={fieldsetStyle}>
         <legend>
           {yearlyInputContext.isActive
-            ? 'Ετήσια στοιχεία ασφαλιστικών περιόδων'
-            : 'Αποδοχές και ένσημα ανά έτος'}
+            ? "Ετήσια στοιχεία ασφαλιστικών περιόδων"
+            : "Αποδοχές και ένσημα ανά έτος"}
         </legend>
 
         <p style={{ marginTop: 0 }}>
           {yearlyInputContext.isActive
-            ? 'Συμπληρώστε για κάθε έτος το ποσό που αντιστοιχεί στον τρόπο εισαγωγής της ασφαλιστικής περιόδου και τις ημέρες ασφάλισης. Το backend θα καλέσει τη σωστή ρουτίνα ΟΑΕΕ / ΕΤΑΑ / ΟΓΑ και θα δημιουργήσει τις ετήσιες συντάξιμες αποδοχές.'
-            : 'Συμπληρώστε τις ετήσιες αποδοχές και τα ένσημα / ημέρες ασφάλισης ανά έτος. Ο μέσος μηνιαίος συντάξιμος μισθός δεν υπολογίζεται εδώ. Θα υπολογιστεί αργότερα από τον calculator με τους ΔΤΚ.'}
+            ? "Συμπληρώστε για κάθε έτος το ποσό που αντιστοιχεί στον τρόπο εισαγωγής της ασφαλιστικής περιόδου και τις ημέρες ασφάλισης. Το backend θα καλέσει τη σωστή ρουτίνα ΟΑΕΕ / ΕΤΑΑ / ΟΓΑ και θα δημιουργήσει τις ετήσιες συντάξιμες αποδοχές."
+            : "Συμπληρώστε τις ετήσιες αποδοχές και τα ένσημα / ημέρες ασφάλισης ανά έτος. Ο μέσος μηνιαίος συντάξιμος μισθός δεν υπολογίζεται εδώ. Θα υπολογιστεί αργότερα από τον calculator με τους ΔΤΚ."}
         </p>
 
         {onLoadDevelopmentYearlyEarnings && (
           <button
             type="button"
             onClick={onLoadDevelopmentYearlyEarnings}
-            style={{ marginBottom: '1rem', padding: '0.5rem 0.75rem' }}
+            style={{ marginBottom: "1rem", padding: "0.5rem 0.75rem" }}
           >
             Φόρτωση ετήσιων ποσών δοκιμής
           </button>
         )}
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
                 <th style={tableHeaderStyle}>Έτος</th>
@@ -107,8 +101,8 @@ function ContributoryPensionInputSection({
                         onChange={(event) => {
                           onYearlyEarningsRowChange(
                             index,
-                            'year',
-                            event.target.value
+                            "year",
+                            event.target.value,
                           );
                         }}
                         style={yearInputStyle}
@@ -122,8 +116,8 @@ function ContributoryPensionInputSection({
                         onChange={(event) => {
                           onYearlyEarningsRowChange(
                             index,
-                            'annualEarnings',
-                            event.target.value
+                            "annualEarnings",
+                            event.target.value,
                           );
                         }}
                         placeholder="π.χ. 18000,50"
@@ -142,8 +136,8 @@ function ContributoryPensionInputSection({
                         onChange={(event) => {
                           onYearlyEarningsRowChange(
                             index,
-                            'insuranceDays',
-                            event.target.value
+                            "insuranceDays",
+                            event.target.value,
                           );
                         }}
                         placeholder="π.χ. 300"
@@ -170,7 +164,7 @@ function ContributoryPensionInputSection({
           μέσα σε κάθε ασφαλιστική περίοδο.
         </p>
 
-        <p style={{ color: '#8a5a00', marginBottom: 0 }}>
+        <p style={{ color: "#8a5a00", marginBottom: 0 }}>
           Με την προετοιμασία θα ανοίξει ο ετήσιος πίνακας. Για κάθε έτος θα
           δηλώσετε το αντίστοιχο ασφαλιστέο / συντάξιμο εισόδημα ή την εισφορά
           κύριας σύνταξης και τις ημέρες ασφάλισης.
@@ -191,7 +185,7 @@ function ContributoryPensionInputSection({
         id="contributoryAverageMonthly"
         name="contributoryEarningsInputMethod"
         value="average_monthly"
-        checked={contributoryEarningsInputMethod === 'average_monthly'}
+        checked={contributoryEarningsInputMethod === "average_monthly"}
         onChange={onContributoryEarningsInputMethodChange}
         label="Έχω έτοιμο μέσο μηνιαίο συντάξιμο μισθό"
       />
@@ -200,13 +194,13 @@ function ContributoryPensionInputSection({
         id="contributoryYearlyEarnings"
         name="contributoryEarningsInputMethod"
         value="yearly_earnings"
-        checked={contributoryEarningsInputMethod === 'yearly_earnings'}
+        checked={contributoryEarningsInputMethod === "yearly_earnings"}
         onChange={onContributoryEarningsInputMethodChange}
         label="Θέλω να εισάγω αποδοχές και ένσημα ανά έτος"
       />
 
-      {contributoryEarningsInputMethod === 'average_monthly' && (
-        <div style={{ marginTop: '1rem' }}>
+      {contributoryEarningsInputMethod === "average_monthly" && (
+        <div style={{ marginTop: "1rem" }}>
           <InputWithLabel
             id="averageMonthlyPensionableEarnings"
             label="Μέσος μηνιαίος συντάξιμος μισθός"
@@ -218,8 +212,8 @@ function ContributoryPensionInputSection({
         </div>
       )}
 
-      {contributoryEarningsInputMethod === 'yearly_earnings' && (
-        <p style={{ color: '#8a5a00' }}>
+      {contributoryEarningsInputMethod === "yearly_earnings" && (
+        <p style={{ color: "#8a5a00" }}>
           Με την επιλογή αυτή, μετά τα βασικά στοιχεία θα ανοίξει επόμενη φόρμα
           για αποδοχές και ένσημα ανά έτος.
         </p>
@@ -235,11 +229,14 @@ function buildYearlyInputContext({
   simpleFromDateInput,
   simpleToDateInput,
   insurancePeriodGroups,
+  parallelInsuranceSegments,
+  parallelInsuranceDraft,
 }) {
   const periods = [];
 
-  if (insurancePeriodsInputMode === 'simple') {
+  if (insurancePeriodsInputMode === "simple") {
     periods.push({
+      id: "period_1",
       fund: simpleFundInput,
       inputMode: simpleNonSalariedEarningsInputMode,
       fromYear: parseDisplayOrIsoYear(simpleFromDateInput),
@@ -248,40 +245,52 @@ function buildYearlyInputContext({
   }
 
   if (
-    insurancePeriodsInputMode === 'multiple' &&
+    insurancePeriodsInputMode === "multiple" &&
     Array.isArray(insurancePeriodGroups)
   ) {
     for (const group of insurancePeriodGroups) {
       periods.push({
-        fund: group?.fund || '',
-        inputMode: group?.nonSalariedEarningsInputMode || '',
+        id: group?.id || "",
+        fund: group?.fund || "",
+        inputMode: group?.nonSalariedEarningsInputMode || "",
         fromYear: parseDisplayOrIsoYear(group?.fromDate),
         toYear: parseDisplayOrIsoYear(group?.toDate),
       });
     }
   }
 
+  const safeParallelInsuranceSegments = Array.isArray(parallelInsuranceSegments)
+    ? parallelInsuranceSegments
+    : [];
+  const hasPost2017ParallelSegment = safeParallelInsuranceSegments.some(
+    (segment) => segment?.periodType === "from_2017",
+  );
   const nonSalariedPeriods = periods.filter((period) => {
     return CONTRIBUTION_BASED_FUNDS.includes(period.fund);
   });
   const modeSet = new Set(
-    nonSalariedPeriods.map((period) => period.inputMode).filter(Boolean)
+    nonSalariedPeriods.map((period) => period.inputMode).filter(Boolean),
   );
 
-  let amountColumnLabel = 'Ετήσιες αποδοχές';
+  let amountColumnLabel = "Ετήσιες αποδοχές";
 
-  if (nonSalariedPeriods.length > 0 && modeSet.size === 1) {
+  if (hasPost2017ParallelSegment) {
+    amountColumnLabel = "Ετήσιο ποσό σύμφωνα με την ένδειξη κάθε έτους";
+  } else if (nonSalariedPeriods.length > 0 && modeSet.size === 1) {
     const [singleMode] = Array.from(modeSet);
-    amountColumnLabel =
-      NON_SALARIED_MODE_LABELS[singleMode] || 'Ετήσιο ποσό';
+    amountColumnLabel = NON_SALARIED_MODE_LABELS[singleMode] || "Ετήσιο ποσό";
   } else if (nonSalariedPeriods.length > 0) {
-    amountColumnLabel = 'Ετήσιο ποσό σύμφωνα με την περίοδο';
+    amountColumnLabel = "Ετήσιο ποσό σύμφωνα με την περίοδο";
   }
 
   return {
-    isActive: nonSalariedPeriods.length > 0,
+    isActive: nonSalariedPeriods.length > 0 || hasPost2017ParallelSegment,
     periods,
     amountColumnLabel,
+    parallelInsuranceSegments: safeParallelInsuranceSegments,
+    parallelInsuranceDraft: normalizeParallelInsuranceDraft(
+      parallelInsuranceDraft,
+    ),
   };
 }
 
@@ -305,6 +314,16 @@ function resolveRowMeaning({ year, context }) {
     );
   });
 
+  if (matchingPeriods.length > 1) {
+    const parallelMeaning = resolveParallelRowMeaning({
+      year: numericYear,
+      matchingPeriods,
+      context,
+    });
+
+    return parallelMeaning;
+  }
+
   if (matchingPeriods.length !== 1) {
     return null;
   }
@@ -312,7 +331,7 @@ function resolveRowMeaning({ year, context }) {
   const period = matchingPeriods[0];
 
   if (!CONTRIBUTION_BASED_FUNDS.includes(period.fund)) {
-    return 'Ετήσιες αποδοχές μισθωτής περιόδου';
+    return "Ετήσιες αποδοχές μισθωτής περιόδου";
   }
 
   const modeLabel = NON_SALARIED_MODE_LABELS[period.inputMode];
@@ -325,8 +344,62 @@ function resolveRowMeaning({ year, context }) {
   return `${modeLabel} — ${fundLabel}`;
 }
 
+function resolveParallelRowMeaning({ year, matchingPeriods, context }) {
+  const matchingIds = matchingPeriods
+    .map((period) => String(period?.id || ""))
+    .sort((left, right) => left.localeCompare(right));
+
+  const segment = context.parallelInsuranceSegments.find((candidate) => {
+    const fromYear = parseDisplayOrIsoYear(candidate?.fromDate);
+    const toYear = parseDisplayOrIsoYear(candidate?.toDate);
+    const candidateIds = [...(candidate?.periodIds || [])].sort((left, right) =>
+      left.localeCompare(right),
+    );
+
+    return (
+      fromYear !== null &&
+      toYear !== null &&
+      year >= fromYear &&
+      year <= toYear &&
+      matchingIds.length === candidateIds.length &&
+      matchingIds.every((periodId, index) => periodId === candidateIds[index])
+    );
+  });
+
+  if (!segment) {
+    return "Απαιτείται ανάλυση παράλληλης ασφάλισης για το έτος.";
+  }
+
+  if (segment.periodType === "from_2017") {
+    return "Συνολικές ετήσιες συντάξιμες αποδοχές όλων των παράλληλων δραστηριοτήτων";
+  }
+
+  const segmentDraft =
+    context.parallelInsuranceDraft.segments[segment.id] || {};
+  const mainPeriod = matchingPeriods.find(
+    (period) => period.id === segmentDraft.timeCountingPeriodId,
+  );
+
+  if (!mainPeriod) {
+    return "Επιλέξτε πρώτα ποια περίοδος θα χρησιμοποιηθεί ως βασική.";
+  }
+
+  if (!CONTRIBUTION_BASED_FUNDS.includes(mainPeriod.fund)) {
+    return `Βασικές ετήσιες αποδοχές — ${
+      FUND_LABELS[mainPeriod.fund] || mainPeriod.fund
+    }`;
+  }
+
+  const modeLabel = NON_SALARIED_MODE_LABELS[mainPeriod.inputMode];
+  const fundLabel = FUND_LABELS[mainPeriod.fund] || mainPeriod.fund;
+
+  return modeLabel
+    ? `${modeLabel} της βασικής περιόδου — ${fundLabel}`
+    : `Ετήσιο ποσό της βασικής περιόδου — ${fundLabel}`;
+}
+
 function parseDisplayOrIsoYear(value) {
-  const text = String(value || '').trim();
+  const text = String(value || "").trim();
   const isoMatch = /^(\d{4})-\d{2}-\d{2}$/.exec(text);
 
   if (isoMatch) {
@@ -343,36 +416,36 @@ function parseDisplayOrIsoYear(value) {
 }
 
 const tableHeaderStyle = {
-  textAlign: 'left',
-  borderBottom: '1px solid #ddd',
-  padding: '0.5rem',
+  textAlign: "left",
+  borderBottom: "1px solid #ddd",
+  padding: "0.5rem",
 };
 
 const tableCellStyle = {
-  borderBottom: '1px solid #eee',
-  padding: '0.5rem',
-  verticalAlign: 'top',
+  borderBottom: "1px solid #eee",
+  padding: "0.5rem",
+  verticalAlign: "top",
 };
 
 const yearInputStyle = {
-  width: '80px',
-  padding: '0.4rem',
+  width: "80px",
+  padding: "0.4rem",
 };
 
 const moneyInputStyle = {
-  width: '180px',
-  padding: '0.4rem',
+  width: "180px",
+  padding: "0.4rem",
 };
 
 const daysInputStyle = {
-  width: '120px',
-  padding: '0.4rem',
+  width: "120px",
+  padding: "0.4rem",
 };
 
 const rowMeaningStyle = {
-  marginTop: '0.35rem',
-  color: '#475569',
-  fontSize: '0.85rem',
+  marginTop: "0.35rem",
+  color: "#475569",
+  fontSize: "0.85rem",
 };
 
 export default ContributoryPensionInputSection;

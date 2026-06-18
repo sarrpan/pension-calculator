@@ -1,5 +1,7 @@
-
-
+import {
+  detectParallelInsuranceSegments,
+  normalizeParallelInsuranceDraft,
+} from "./parallelInsuranceFormUtils";
 
 const INSURANCE_DAYS_PER_YEAR = 300;
 const INSURANCE_DAYS_PER_MONTH = 25;
@@ -9,322 +11,308 @@ const MAX_INSURANCE_PERIOD_GROUPS = 10;
 
 const PENSION_TYPE_OPTIONS = {
   old_age: {
-    value: 'old_age',
-    label: 'Γήρατος',
+    value: "old_age",
+    label: "Γήρατος",
   },
   disability: {
-    value: 'disability',
-    label: 'Αναπηρίας',
+    value: "disability",
+    label: "Αναπηρίας",
   },
 };
 
 const OLD_AGE_CATEGORY_OPTIONS = {
   standard: {
-    value: 'standard',
-    label: 'Κανονική σύνταξη γήρατος',
+    value: "standard",
+    label: "Κανονική σύνταξη γήρατος",
   },
   special_disease: {
-    value: 'special_disease',
-    label: 'Γήρατος λόγω ειδικών παθήσεων',
+    value: "special_disease",
+    label: "Γήρατος λόγω ειδικών παθήσεων",
   },
 };
 
 const PENSION_MODE_OPTIONS = {
   full: {
-    value: 'full',
-    label: 'Πλήρης',
+    value: "full",
+    label: "Πλήρης",
   },
   reduced: {
-    value: 'reduced',
-    label: 'Μειωμένη',
+    value: "reduced",
+    label: "Μειωμένη",
   },
 };
 
 const DISABILITY_CATEGORY_OPTIONS = {
   eighty_plus: {
-    value: 'eighty_plus',
-    label: '80% και άνω',
+    value: "eighty_plus",
+    label: "80% και άνω",
     disabilityPercentage: 80,
   },
   sixty_seven_to_seventy_nine: {
-    value: 'sixty_seven_to_seventy_nine',
-    label: '67% έως 79,99%',
+    value: "sixty_seven_to_seventy_nine",
+    label: "67% έως 79,99%",
     disabilityPercentage: 67,
   },
   fifty_to_sixty_six: {
-    value: 'fifty_to_sixty_six',
-    label: '50% έως 66,99%',
+    value: "fifty_to_sixty_six",
+    label: "50% έως 66,99%",
     disabilityPercentage: 50,
   },
 };
 
 const INSURANCE_TIME_INPUT_METHOD_OPTIONS = {
   insurance_days: {
-    value: 'insurance_days',
-    label: 'Με αριθμό ενσήμων / ημερών ασφάλισης',
+    value: "insurance_days",
+    label: "Με αριθμό ενσήμων / ημερών ασφάλισης",
   },
   years_months_days: {
-    value: 'years_months_days',
-    label: 'Με έτη, μήνες και ημέρες',
+    value: "years_months_days",
+    label: "Με έτη, μήνες και ημέρες",
   },
 };
 
 const CONTRIBUTORY_EARNINGS_INPUT_METHOD_OPTIONS = {
   average_monthly: {
-    value: 'average_monthly',
-    label: 'Έτοιμος μέσος μηνιαίος συντάξιμος μισθός',
+    value: "average_monthly",
+    label: "Έτοιμος μέσος μηνιαίος συντάξιμος μισθός",
   },
   yearly_earnings: {
-    value: 'yearly_earnings',
-    label: 'Αποδοχές και ένσημα ανά έτος',
+    value: "yearly_earnings",
+    label: "Αποδοχές και ένσημα ανά έτος",
   },
 };
 
 const NON_SALARIED_EARNINGS_INPUT_MODE_OPTIONS = {
   annual_pensionable_earnings: {
-    value: 'annual_pensionable_earnings',
-    label: 'Ετήσιο ασφαλιστέο / συντάξιμο εισόδημα',
+    value: "annual_pensionable_earnings",
+    label: "Ετήσιο ασφαλιστέο / συντάξιμο εισόδημα",
   },
   annual_pension_contribution: {
-    value: 'annual_pension_contribution',
-    label: 'Ετήσια εισφορά κύριας σύνταξης',
+    value: "annual_pension_contribution",
+    label: "Ετήσια εισφορά κύριας σύνταξης",
   },
 };
 
-
 const CALCULATOR_EDITION_OPTIONS = {
-  professional: 'professional',
-  free: 'free',
+  professional: "professional",
+  free: "free",
 };
 
 const ARTICLE30_SPECIAL_REGIME_USAGE_OPTIONS = {
-  yes: 'yes',
-  no: 'no',
-  unknown: 'unknown',
+  yes: "yes",
+  no: "no",
+  unknown: "unknown",
 };
 
 const INSURANCE_PERIODS_INPUT_MODE_OPTIONS = {
   disabled: {
-    value: 'disabled',
-    label: 'Δεν δηλώθηκε κατηγορία συνολικού χρόνου ασφάλισης',
+    value: "disabled",
+    label: "Δεν δηλώθηκε κατηγορία συνολικού χρόνου ασφάλισης",
   },
   simple: {
-    value: 'simple',
-    label: 'Μία κατηγορία ασφάλισης',
+    value: "simple",
+    label: "Μία κατηγορία ασφάλισης",
   },
   multiple: {
-    value: 'multiple',
-    label: 'Περισσότερες κατηγορίες / περίοδοι',
+    value: "multiple",
+    label: "Περισσότερες κατηγορίες / περίοδοι",
   },
 };
 
 const INSURANCE_PERIOD_FUND_OPTIONS = {
   ika: {
-    value: 'ika',
-    label: 'ΙΚΑ / e-ΕΦΚΑ μισθωτών',
+    value: "ika",
+    label: "ΙΚΑ / e-ΕΦΚΑ μισθωτών",
   },
   public_sector: {
-    value: 'public_sector',
-    label: 'Δημόσιο (γενική κατηγορία)',
+    value: "public_sector",
+    label: "Δημόσιο (γενική κατηγορία)",
   },
   ota: {
-    value: 'ota',
-    label: 'ΟΤΑ / υπηρεσίες καθαριότητας και υγιεινής',
+    value: "ota",
+    label: "ΟΤΑ / υπηρεσίες καθαριότητας και υγιεινής",
   },
   uniformed: {
-    value: 'uniformed',
-    label: 'Ένστολοι / στρατιωτικοί',
+    value: "uniformed",
+    label: "Ένστολοι / στρατιωτικοί",
   },
   tap_dei: {
-    value: 'tap_dei',
-    label: 'ΤΑΠ-ΔΕΗ',
+    value: "tap_dei",
+    label: "ΤΑΠ-ΔΕΗ",
   },
   ika_tsp_hsap: {
-    value: 'ika_tsp_hsap',
-    label: 'τ. ΤΣΠ-ΗΣΑΠ',
+    value: "ika_tsp_hsap",
+    label: "τ. ΤΣΠ-ΗΣΑΠ",
   },
   ika_tsp_ete: {
-    value: 'ika_tsp_ete',
-    label: 'τ. ΤΣΠ-ΕΤΕ',
+    value: "ika_tsp_ete",
+    label: "τ. ΤΣΠ-ΕΤΕ",
   },
   ika_tap_etba: {
-    value: 'ika_tap_etba',
-    label: 'τ. ΤΑΠ-ΕΤΒΑ',
+    value: "ika_tap_etba",
+    label: "τ. ΤΑΠ-ΕΤΒΑ",
   },
   tapae_ethniki: {
-    value: 'tapae_ethniki',
-    label: 'ΤΑΠΑΕ «Η Εθνική»',
+    value: "tapae_ethniki",
+    label: "ΤΑΠΑΕ «Η Εθνική»",
   },
   tseapgso: {
-    value: 'tseapgso',
-    label: 'τ. ΤΣΕΑΠΓΣΟ',
+    value: "tseapgso",
+    label: "τ. ΤΣΕΑΠΓΣΟ",
   },
   ika_tap_ote_ote: {
-    value: 'ika_tap_ote_ote',
-    label: 'τ. ΤΑΠ-ΟΤΕ — ΟΤΕ',
+    value: "ika_tap_ote_ote",
+    label: "τ. ΤΑΠ-ΟΤΕ — ΟΤΕ",
   },
   ika_tap_ote_ose_elta: {
-    value: 'ika_tap_ote_ose_elta',
-    label: 'τ. ΤΑΠ-ΟΤΕ — ΟΣΕ / ΕΛΤΑ',
+    value: "ika_tap_ote_ose_elta",
+    label: "τ. ΤΑΠ-ΟΤΕ — ΟΣΕ / ΕΛΤΑ",
   },
   ika_tap_ote_staff: {
-    value: 'ika_tap_ote_staff',
-    label: 'τ. ΤΑΠ-ΟΤΕ — υπάλληλοι τ. ΤΑΠΟΤΕ',
+    value: "ika_tap_ote_staff",
+    label: "τ. ΤΑΠ-ΟΤΕ — υπάλληλοι τ. ΤΑΠΟΤΕ",
   },
   ika_npdd_special: {
-    value: 'ika_npdd_special',
-    label: 'Τακτικοί υπάλληλοι ΙΚΑ / ΝΠΔΔ ειδικού καθεστώτος',
+    value: "ika_npdd_special",
+    label: "Τακτικοί υπάλληλοι ΙΚΑ / ΝΠΔΔ ειδικού καθεστώτος",
   },
   etap_mme_tattath: {
-    value: 'etap_mme_tattath',
-    label: 'ΕΤΑΠ-ΜΜΕ / πρώην ΤΑΤΤΑΘ',
+    value: "etap_mme_tattath",
+    label: "ΕΤΑΠ-ΜΜΕ / πρώην ΤΑΤΤΑΘ",
   },
   tanpy: {
-    value: 'tanpy',
-    label: 'ΤΑΝΠΥ / έμμισθοι ναυτικοί πράκτορες',
+    value: "tanpy",
+    label: "ΤΑΝΠΥ / έμμισθοι ναυτικοί πράκτορες",
   },
   deko: {
-    value: 'deko',
-    label: 'Άλλη ΔΕΚΟ / οργανισμός κοινής ωφέλειας',
+    value: "deko",
+    label: "Άλλη ΔΕΚΟ / οργανισμός κοινής ωφέλειας",
   },
   nat: {
-    value: 'nat',
-    label: 'ΝΑΤ / ναυτικοί',
+    value: "nat",
+    label: "ΝΑΤ / ναυτικοί",
   },
   aviation: {
-    value: 'aviation',
-    label: 'Αεροπορικές / ΥΠΑ / χειριστές',
+    value: "aviation",
+    label: "Αεροπορικές / ΥΠΑ / χειριστές",
   },
   artistic: {
-    value: 'artistic',
-    label: 'Καλλιτεχνικές κατηγορίες',
+    value: "artistic",
+    label: "Καλλιτεχνικές κατηγορίες",
   },
   banking_funds: {
-    value: 'banking_funds',
-    label: 'Άλλο τραπεζικό ταμείο / συνεταιρισμός',
+    value: "banking_funds",
+    label: "Άλλο τραπεζικό ταμείο / συνεταιρισμός",
   },
   oaee: {
-    value: 'oaee',
-    label: 'ΟΑΕΕ / ελεύθερος επαγγελματίας',
+    value: "oaee",
+    label: "ΟΑΕΕ / ελεύθερος επαγγελματίας",
   },
   etaa: {
-    value: 'etaa',
-    label: 'Πρώην ΕΤΑΑ',
+    value: "etaa",
+    label: "Πρώην ΕΤΑΑ",
   },
   tsmede: {
-    value: 'tsmede',
-    label: 'ΤΣΜΕΔΕ',
+    value: "tsmede",
+    label: "ΤΣΜΕΔΕ",
   },
   tsay: {
-    value: 'tsay',
-    label: 'ΤΣΑΥ',
+    value: "tsay",
+    label: "ΤΣΑΥ",
   },
   oga: {
-    value: 'oga',
-    label: 'Πρώην ΟΓΑ / αγρότης',
+    value: "oga",
+    label: "Πρώην ΟΓΑ / αγρότης",
   },
 };
 
 const INSURED_TYPE_OPTIONS = {
   old: {
-    value: 'old',
-    label: 'Παλαιός',
+    value: "old",
+    label: "Παλαιός",
   },
   new: {
-    value: 'new',
-    label: 'Νέος',
+    value: "new",
+    label: "Νέος",
   },
   not_applicable: {
-    value: 'not_applicable',
-    label: 'Δεν απαιτείται για αυτή την κατηγορία',
+    value: "not_applicable",
+    label: "Δεν απαιτείται για αυτή την κατηγορία",
   },
 };
 
 const EMPLOYMENT_CATEGORY_OPTIONS = {
   common: {
-    value: 'common',
-    label: 'Απλή / κοινή ασφάλιση',
+    value: "common",
+    label: "Απλή / κοινή ασφάλιση",
   },
   vae: {
-    value: 'vae',
-    label: 'ΒΑΕ',
+    value: "vae",
+    label: "ΒΑΕ",
   },
   yvae: {
-    value: 'yvae',
-    label: 'ΥΒΑΕ / ειδικού κινδύνου',
+    value: "yvae",
+    label: "ΥΒΑΕ / ειδικού κινδύνου",
   },
   ota_ika_vae: {
-    value: 'ota_ika_vae',
-    label: 'ΒΑΕ με καθεστώς ΟΤΑ',
+    value: "ota_ika_vae",
+    label: "ΒΑΕ με καθεστώς ΟΤΑ",
   },
   ota_public_vae: {
-    value: 'ota_public_vae',
-    label: 'ΒΑΕ με καθεστώς Δημοσίου',
+    value: "ota_public_vae",
+    label: "ΒΑΕ με καθεστώς Δημοσίου",
   },
   ota_ika_yvae: {
-    value: 'ota_ika_yvae',
-    label: 'ΥΒΑΕ μόνο για παλαιούς',
+    value: "ota_ika_yvae",
+    label: "ΥΒΑΕ μόνο για παλαιούς",
   },
   contributions: {
-    value: 'contributions',
-    label: 'Με εισφορές / ασφαλιστική κατηγορία',
+    value: "contributions",
+    label: "Με εισφορές / ασφαλιστική κατηγορία",
   },
 };
 
-const SIMPLE_VAE_YVAE_FUNDS = [
-  'ika',
-  'tap_dei',
-];
+const SIMPLE_VAE_YVAE_FUNDS = ["ika", "tap_dei"];
 
-const OTA_CLEANING_FUNDS = [
-  'ota',
-];
-
+const OTA_CLEANING_FUNDS = ["ota"];
 
 const ARTICLE30_MAIN_CONTRIBUTION_FUNDS = [
-  'ika_tsp_hsap',
-  'ika_tsp_ete',
-  'ika_tap_etba',
-  'tapae_ethniki',
-  'tseapgso',
-  'ika_tap_ote_ote',
-  'ika_tap_ote_ose_elta',
-  'ika_tap_ote_staff',
-  'aviation',
-  'artistic',
-  'ika_npdd_special',
-  'etap_mme_tattath',
-  'tanpy',
+  "ika_tsp_hsap",
+  "ika_tsp_ete",
+  "ika_tap_etba",
+  "tapae_ethniki",
+  "tseapgso",
+  "ika_tap_ote_ote",
+  "ika_tap_ote_ose_elta",
+  "ika_tap_ote_staff",
+  "aviation",
+  "artistic",
+  "ika_npdd_special",
+  "etap_mme_tattath",
+  "tanpy",
 ];
 
-
-const CONTRIBUTION_BASED_FUNDS = [
-  'oaee',
-  'etaa',
-  'tsmede',
-  'tsay',
-  'oga',
-];
+const CONTRIBUTION_BASED_FUNDS = ["oaee", "etaa", "tsmede", "tsay", "oga"];
 
 const ETAA_EXTRA_BENEFIT_TYPES = {
-  TSMEDE_SPECIAL_INCREASE: 'tsmede_special_increase',
-  TSAY_SINGLE_PENSIONER_BRANCH: 'tsay_single_pensioner_branch',
+  TSMEDE_SPECIAL_INCREASE: "tsmede_special_increase",
+  TSAY_SINGLE_PENSIONER_BRANCH: "tsay_single_pensioner_branch",
 };
 
 const TSMEDE_DEFAULT_EXTRA_CONTRIBUTION_POINTS = 12;
 const TSAY_ADMINISTRATIVE_EXTRA_CONTRIBUTION_POINTS = 10;
 const TSMEDE_ADDITIONAL_TWO_PERCENT_MAX_YEARS = 4.5;
 
-const PLASTIC_YEARS_RECOGNITION_STATUS_OPTIONS = ['recognized', 'planned'];
-const PLASTIC_YEARS_RECOGNITION_MODE_OPTIONS = ['paid', 'free'];
+const PLASTIC_YEARS_RECOGNITION_STATUS_OPTIONS = ["recognized", "planned"];
+const PLASTIC_YEARS_RECOGNITION_MODE_OPTIONS = ["paid", "free"];
 const PLASTIC_YEARS_FINANCIAL_INPUT_MODE_OPTIONS = [
-  'monthly_base',
-  'buyout_amount_and_rate',
+  "monthly_base",
+  "buyout_amount_and_rate",
 ];
 
 function analyzePensionForm({
-  currentFormStep = 'main',
-  calculatorEdition = 'professional',
+  currentFormStep = "main",
+  calculatorEdition = "professional",
   pensionStartDateInput,
   pensionTypeInput,
   oldAgeCategoryInput,
@@ -355,6 +343,7 @@ function analyzePensionForm({
   simpleUniformedSpecialTimeDraft,
   article30SpecialRegimeUsageInput,
   insurancePeriodGroups,
+  parallelInsuranceDraft,
   plasticYearsDraft,
   etaaExtraBenefitDraft,
   multiPeriodTimeInputMethod,
@@ -427,12 +416,28 @@ function analyzePensionForm({
     multiPeriod2EmploymentCategoryInput,
     insuranceTimeAnalysis,
   });
+  const parallelInsuranceSegments = detectParallelInsuranceSegments(
+    insurancePeriodsAnalysis.insurancePeriodsDraft,
+  );
+
   const contributoryAnalysis = analyzeContributoryPensionInputs({
     currentFormStep,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
     yearlyEarningsRows,
     insurancePeriodsDraft: insurancePeriodsAnalysis.insurancePeriodsDraft,
+    parallelInsuranceSegments,
+    parallelInsuranceDraft,
+  });
+
+  const parallelInsuranceAnalysis = analyzeParallelInsuranceDraft({
+    currentFormStep,
+    calculatorEdition,
+    detectedSegments: parallelInsuranceSegments,
+    parallelInsuranceDraft,
+    hasDetailedYearsData:
+      Array.isArray(contributoryAnalysis.yearsData) &&
+      contributoryAnalysis.yearsData.length > 0,
   });
 
   const plasticYearsAnalysis = analyzePlasticYearsDraft({
@@ -441,10 +446,11 @@ function analyzePensionForm({
   });
 
   const isMultipleInsuranceMode =
-    insurancePeriodsAnalysis.insurancePeriodsInputMode === 'multiple';
+    insurancePeriodsAnalysis.insurancePeriodsInputMode === "multiple";
 
   const effectiveInsuranceTimeAnalysis =
-    insurancePeriodsAnalysis.totalInsuranceTimeAnalysis || insuranceTimeAnalysis;
+    insurancePeriodsAnalysis.totalInsuranceTimeAnalysis ||
+    insuranceTimeAnalysis;
 
   const article30SpecialRegimeAnalysis = analyzeArticle30SpecialRegimeUsage({
     calculatorEdition,
@@ -464,6 +470,7 @@ function analyzePensionForm({
     disabilityAnalysis.error,
     isMultipleInsuranceMode ? null : insuranceTimeAnalysis.error,
     insurancePeriodsAnalysis.error,
+    parallelInsuranceAnalysis.error,
     article30SpecialRegimeAnalysis.error,
     plasticYearsAnalysis.error,
     etaaExtraBenefitAnalysis.error,
@@ -476,6 +483,7 @@ function analyzePensionForm({
       error: errors[0],
       requiresContributoryYearlyStep:
         contributoryAnalysis.requiresContributoryYearlyStep === true,
+      parallelInsuranceSegments,
     };
   }
 
@@ -486,6 +494,7 @@ function analyzePensionForm({
     disabilityAnalysis.hasValue &&
     effectiveInsuranceTimeAnalysis.hasValue &&
     insurancePeriodsAnalysis.hasValue &&
+    parallelInsuranceAnalysis.hasValue &&
     article30SpecialRegimeAnalysis.hasValue &&
     plasticYearsAnalysis.hasValue &&
     etaaExtraBenefitAnalysis.hasValue &&
@@ -497,6 +506,7 @@ function analyzePensionForm({
       error: null,
       requiresContributoryYearlyStep:
         contributoryAnalysis.requiresContributoryYearlyStep === true,
+      parallelInsuranceSegments,
     };
   }
 
@@ -505,6 +515,7 @@ function analyzePensionForm({
     ...disabilityAnalysis.warnings,
     ...insuranceTimeAnalysis.warnings,
     ...insurancePeriodsAnalysis.warnings,
+    ...parallelInsuranceAnalysis.warnings,
     ...article30SpecialRegimeAnalysis.warnings,
     ...plasticYearsAnalysis.warnings,
     ...etaaExtraBenefitAnalysis.warnings,
@@ -528,7 +539,8 @@ function analyzePensionForm({
       disabilityCategory: disabilityAnalysis.disabilityCategory,
       disabilityPercentage: disabilityAnalysis.disabilityPercentage,
 
-      insuranceTimeInputMethod: effectiveInsuranceTimeAnalysis.insuranceTimeInputMethod,
+      insuranceTimeInputMethod:
+        effectiveInsuranceTimeAnalysis.insuranceTimeInputMethod,
       totalInsuranceYears: effectiveInsuranceTimeAnalysis.totalInsuranceYears,
       totalInsuranceMonths: effectiveInsuranceTimeAnalysis.totalInsuranceMonths,
       totalInsuranceDays: effectiveInsuranceTimeAnalysis.totalInsuranceDays,
@@ -539,13 +551,13 @@ function analyzePensionForm({
     },
     contributoryPensionData: contributoryAnalysis.contributoryPensionData,
     insurancePeriodsDraft: insurancePeriodsAnalysis.insurancePeriodsDraft.map(
-      createBackendSafeInsurancePeriodDraft
+      createBackendSafeInsurancePeriodDraft,
     ),
+    parallelInsuranceDraft: parallelInsuranceAnalysis.parallelInsuranceDraft,
     article30SpecialRegimeData:
       article30SpecialRegimeAnalysis.article30SpecialRegimeData,
     plasticYearsDraft: plasticYearsAnalysis.plasticYearsDraft,
-    etaaExtraBenefitData:
-      etaaExtraBenefitAnalysis.etaaExtraBenefitData,
+    etaaExtraBenefitData: etaaExtraBenefitAnalysis.etaaExtraBenefitData,
   };
 
   return {
@@ -573,7 +585,8 @@ function analyzePensionForm({
     disabilityCategoryLabel: disabilityAnalysis.disabilityCategoryLabel,
     disabilityPercentage: disabilityAnalysis.disabilityPercentage,
 
-    insuranceTimeInputMethod: effectiveInsuranceTimeAnalysis.insuranceTimeInputMethod,
+    insuranceTimeInputMethod:
+      effectiveInsuranceTimeAnalysis.insuranceTimeInputMethod,
     insuranceTimeInputMethodLabel:
       effectiveInsuranceTimeAnalysis.insuranceTimeInputMethodLabel,
     insuranceTimeDisplay: effectiveInsuranceTimeAnalysis.insuranceTimeDisplay,
@@ -589,21 +602,23 @@ function analyzePensionForm({
       insurancePeriodsAnalysis.insurancePeriodsInputMode,
     insurancePeriodsInputModeLabel:
       insurancePeriodsAnalysis.insurancePeriodsInputModeLabel,
-    insurancePeriodsDraft:
-      insurancePeriodsAnalysis.insurancePeriodsDraft,
+    insurancePeriodsDraft: insurancePeriodsAnalysis.insurancePeriodsDraft,
     insurancePeriodsDraftCount:
       insurancePeriodsAnalysis.insurancePeriodsDraft.length,
     insurancePeriodDraftDisplay:
       insurancePeriodsAnalysis.insurancePeriodDraftDisplay,
 
+    parallelInsuranceSegments,
+    parallelInsuranceDraft: parallelInsuranceAnalysis.parallelInsuranceDraft,
+    parallelInsuranceDisplay:
+      parallelInsuranceAnalysis.parallelInsuranceDisplay,
+
     plasticYearsDraft: plasticYearsAnalysis.plasticYearsDraft,
     plasticYearsDisplay: plasticYearsAnalysis.plasticYearsDisplay,
     paidPlasticYearsCount: plasticYearsAnalysis.paidPlasticYearsCount,
 
-    etaaExtraBenefitEntries:
-      etaaExtraBenefitAnalysis.etaaExtraBenefitEntries,
-    etaaExtraBenefitDisplay:
-      etaaExtraBenefitAnalysis.etaaExtraBenefitDisplay,
+    etaaExtraBenefitEntries: etaaExtraBenefitAnalysis.etaaExtraBenefitEntries,
+    etaaExtraBenefitDisplay: etaaExtraBenefitAnalysis.etaaExtraBenefitDisplay,
 
     contributoryEarningsInputMethod:
       contributoryAnalysis.contributoryEarningsInputMethod,
@@ -618,14 +633,259 @@ function analyzePensionForm({
   };
 }
 
+function analyzeParallelInsuranceDraft({
+  currentFormStep,
+  calculatorEdition,
+  detectedSegments,
+  parallelInsuranceDraft,
+  hasDetailedYearsData,
+}) {
+  const segments = Array.isArray(detectedSegments) ? detectedSegments : [];
+
+  if (segments.length === 0) {
+    return {
+      hasValue: true,
+      error: null,
+      warnings: [],
+      parallelInsuranceDraft: {
+        calculationMode: "single_unified_main_pension",
+        segments: [],
+      },
+      parallelInsuranceDisplay: [],
+    };
+  }
+
+  if (calculatorEdition === "free") {
+    return {
+      hasValue: false,
+      error:
+        "Οι ημερομηνίες των ασφαλιστικών περιόδων της δωρεάν έκδοσης δεν πρέπει να επικαλύπτονται.",
+      warnings: [],
+      parallelInsuranceDraft: {
+        calculationMode: "single_unified_main_pension",
+        segments: [],
+      },
+      parallelInsuranceDisplay: [],
+    };
+  }
+
+  const normalizedDraft = normalizeParallelInsuranceDraft(
+    parallelInsuranceDraft,
+  );
+  const normalizedSegments = [];
+  const display = [];
+
+  for (const segment of segments) {
+    const segmentDraft = normalizedDraft.segments[segment.id] || {};
+    const timeCountingPeriodId = String(
+      segmentDraft.timeCountingPeriodId || "",
+    ).trim();
+
+    if (!segment.periodIds.includes(timeCountingPeriodId)) {
+      return {
+        hasValue: false,
+        error:
+          "Επιλέξτε ποια περίοδος θα μετρήσει μία φορά στον συνολικό ασφαλιστικό χρόνο για κάθε επικάλυψη.",
+        warnings: [],
+        parallelInsuranceDraft: {
+          calculationMode: "single_unified_main_pension",
+          segments: [],
+        },
+        parallelInsuranceDisplay: display,
+      };
+    }
+
+    const additionalPeriods = [];
+    let duplicateInsuranceDays = 0;
+
+    for (const periodId of segment.periodIds) {
+      if (periodId === timeCountingPeriodId) {
+        continue;
+      }
+
+      const additionalDraft = segmentDraft.additionalPeriods?.[periodId] || {};
+      const daysText = String(
+        additionalDraft.insuranceDaysToRemove ?? segment.suggestedInsuranceDays,
+      ).trim();
+      const daysResult = parseNonNegativeDecimal(daysText);
+
+      if (!daysResult.isValid || daysResult.value <= 0) {
+        return {
+          hasValue: false,
+          error:
+            "Συμπληρώστε τις ημέρες που δεν πρέπει να μετρηθούν δεύτερη φορά για κάθε παράλληλη περίοδο.",
+          warnings: [],
+          parallelInsuranceDraft: {
+            calculationMode: "single_unified_main_pension",
+            segments: [],
+          },
+          parallelInsuranceDisplay: display,
+        };
+      }
+
+      const normalizedAdditionalPeriod = {
+        periodId,
+        insuranceDaysToRemove: roundToDecimals(daysResult.value, 4),
+      };
+
+      duplicateInsuranceDays += daysResult.value;
+
+      if (segment.periodType === "until_2016") {
+        const monthlyBaseResult = parseNonNegativeDecimal(
+          additionalDraft.monthlyBaseAmount,
+        );
+        const contributionUnitsResult = parseNonNegativeDecimal(
+          additionalDraft.contributionUnits,
+        );
+
+        if (!monthlyBaseResult.isValid || monthlyBaseResult.value <= 0) {
+          return {
+            hasValue: false,
+            error:
+              "Συμπληρώστε τη μηνιαία βάση της παράλληλης εισφοράς έως 31/12/2016.",
+            warnings: [],
+            parallelInsuranceDraft: {
+              calculationMode: "single_unified_main_pension",
+              segments: [],
+            },
+            parallelInsuranceDisplay: display,
+          };
+        }
+
+        if (
+          !contributionUnitsResult.isValid ||
+          contributionUnitsResult.value <= 0
+        ) {
+          return {
+            hasValue: false,
+            error:
+              "Συμπληρώστε τις μονάδες εισφοράς της παράλληλης ασφάλισης έως 31/12/2016.",
+            warnings: [],
+            parallelInsuranceDraft: {
+              calculationMode: "single_unified_main_pension",
+              segments: [],
+            },
+            parallelInsuranceDisplay: display,
+          };
+        }
+
+        normalizedAdditionalPeriod.monthlyBaseAmount = roundToDecimals(
+          monthlyBaseResult.value,
+          2,
+        );
+        normalizedAdditionalPeriod.contributionUnits = roundToDecimals(
+          contributionUnitsResult.value,
+          6,
+        );
+      }
+
+      additionalPeriods.push(normalizedAdditionalPeriod);
+    }
+
+    if (
+      segment.periodType === "until_2016" &&
+      segmentDraft.baseEarningsConfirmed !== true
+    ) {
+      return {
+        hasValue: false,
+        error:
+          "Επιβεβαιώστε ότι οι βασικές αποδοχές έως 31/12/2016 δεν περιλαμβάνουν δεύτερη φορά την παράλληλη δραστηριότητα.",
+        warnings: [],
+        parallelInsuranceDraft: {
+          calculationMode: "single_unified_main_pension",
+          segments: [],
+        },
+        parallelInsuranceDisplay: display,
+      };
+    }
+
+    if (segment.periodType === "from_2017") {
+      if (currentFormStep === "contributory_yearly" && !hasDetailedYearsData) {
+        return {
+          hasValue: false,
+          error:
+            "Για παράλληλη ασφάλιση από 01/01/2017 χρειάζονται αναλυτικά ετήσια στοιχεία αποδοχών και ημερών.",
+          warnings: [],
+          parallelInsuranceDraft: {
+            calculationMode: "single_unified_main_pension",
+            segments: [],
+          },
+          parallelInsuranceDisplay: display,
+        };
+      }
+
+      if (segmentDraft.combinedEarningsConfirmed !== true) {
+        return {
+          hasValue: false,
+          error:
+            "Επιβεβαιώστε ότι οι ετήσιες αποδοχές από 01/01/2017 περιλαμβάνουν όλες τις παράλληλες δραστηριότητες.",
+          warnings: [],
+          parallelInsuranceDraft: {
+            calculationMode: "single_unified_main_pension",
+            segments: [],
+          },
+          parallelInsuranceDisplay: display,
+        };
+      }
+    }
+
+    normalizedSegments.push({
+      id: segment.id,
+      fromDate: segment.fromDate,
+      toDate: segment.toDate,
+      periodType: segment.periodType,
+      periodIds: segment.periodIds,
+      timeCountingPeriodId,
+      baseEarningsConfirmed: segment.periodType === "until_2016",
+      combinedEarningsConfirmed: segment.periodType === "from_2017",
+      additionalPeriods,
+    });
+
+    const countingPeriod = segment.periods.find(
+      (period) => period.id === timeCountingPeriodId,
+    );
+
+    display.push({
+      id: segment.id,
+      fromDateDisplay: segment.fromDateDisplay,
+      toDateDisplay: segment.toDateDisplay,
+      periodTypeLabel: segment.periodTypeLabel,
+      timeCountingPeriodLabel: countingPeriod?.label || timeCountingPeriodId,
+      duplicateInsuranceDays: roundToDecimals(duplicateInsuranceDays, 4),
+      additionalPeriods: additionalPeriods.map((item) => {
+        const period = segment.periods.find(
+          (candidate) => candidate.id === item.periodId,
+        );
+
+        return {
+          ...item,
+          periodLabel: period?.label || item.periodId,
+        };
+      }),
+    });
+  }
+
+  return {
+    hasValue: true,
+    error: null,
+    warnings: [
+      "Η παράλληλη ασφάλιση θα υπολογιστεί μόνο ως μία ενιαία κύρια σύνταξη. Δεν εξετάζεται δεύτερη σύνταξη πριν υλοποιηθεί η θεμελίωση δικαιώματος.",
+    ],
+    parallelInsuranceDraft: {
+      calculationMode: "single_unified_main_pension",
+      segments: normalizedSegments,
+    },
+    parallelInsuranceDisplay: display,
+  };
+}
+
 function analyzePlasticYearsDraft({
   plasticYearsDraft,
   contributoryEarningsInputMethod,
 }) {
-  const normalizedStatus =
-    plasticYearsDraft?.status === 'yes' ? 'yes' : 'no';
+  const normalizedStatus = plasticYearsDraft?.status === "yes" ? "yes" : "no";
 
-  if (normalizedStatus === 'no') {
+  if (normalizedStatus === "no") {
     return {
       hasValue: true,
       error: null,
@@ -659,18 +919,18 @@ function analyzePlasticYearsDraft({
   for (let index = 0; index < rawEntries.length; index += 1) {
     const entry = rawEntries[index] || {};
     const entryNumber = index + 1;
-    const recognitionStatus = String(entry.recognitionStatus || '').trim();
-    const recognitionMode = String(entry.recognitionMode || '').trim();
+    const recognitionStatus = String(entry.recognitionStatus || "").trim();
+    const recognitionMode = String(entry.recognitionMode || "").trim();
 
     if (!PLASTIC_YEARS_RECOGNITION_STATUS_OPTIONS.includes(recognitionStatus)) {
       return createPlasticYearsError(
-        `Επιλέξτε αν υπάρχει πράξη αναγνώρισης για τον πλασματικό χρόνο ${entryNumber}.`
+        `Επιλέξτε αν υπάρχει πράξη αναγνώρισης για τον πλασματικό χρόνο ${entryNumber}.`,
       );
     }
 
     if (!PLASTIC_YEARS_RECOGNITION_MODE_OPTIONS.includes(recognitionMode)) {
       return createPlasticYearsError(
-        `Επιλέξτε αν ο πλασματικός χρόνος ${entryNumber} είναι με εξαγορά.`
+        `Επιλέξτε αν ο πλασματικός χρόνος ${entryNumber} είναι με εξαγορά.`,
       );
     }
 
@@ -685,20 +945,20 @@ function analyzePlasticYearsDraft({
       return createPlasticYearsError(durationResult.error);
     }
 
-    if (recognitionMode === 'free') {
+    if (recognitionMode === "free") {
       warnings.push(
-        `Ο πλασματικός χρόνος ${entryNumber} δηλώθηκε χωρίς εξαγορά και δεν θα προστεθεί στον υπολογισμό της ανταποδοτικής σύνταξης.`
+        `Ο πλασματικός χρόνος ${entryNumber} δηλώθηκε χωρίς εξαγορά και δεν θα προστεθεί στον υπολογισμό της ανταποδοτικής σύνταξης.`,
       );
 
       displayEntries.push({
         entryNumber,
         recognitionStatus,
         recognitionStatusLabel:
-          recognitionStatus === 'recognized'
-            ? 'Υπάρχει πράξη αναγνώρισης'
-            : 'Μελλοντική εκτίμηση',
+          recognitionStatus === "recognized"
+            ? "Υπάρχει πράξη αναγνώρισης"
+            : "Μελλοντική εκτίμηση",
         recognitionMode,
-        recognitionModeLabel: 'Χωρίς εξαγορά',
+        recognitionModeLabel: "Χωρίς εξαγορά",
         durationDisplay: formatPlasticYearsDuration(durationResult),
         includedInCalculation: false,
       });
@@ -713,7 +973,7 @@ function analyzePlasticYearsDraft({
 
     if (!applicationDateResult.hasValue) {
       return createPlasticYearsError(
-        `Συμπληρώστε την ημερομηνία αίτησης / αναγνώρισης για τον πλασματικό χρόνο ${entryNumber}.`
+        `Συμπληρώστε την ημερομηνία αίτησης / αναγνώρισης για τον πλασματικό χρόνο ${entryNumber}.`,
       );
     }
 
@@ -722,20 +982,22 @@ function analyzePlasticYearsDraft({
     }
 
     const financialInputMode =
-      recognitionStatus === 'planned'
-        ? 'monthly_base'
-        : String(entry.financialInputMode || '').trim();
+      recognitionStatus === "planned"
+        ? "monthly_base"
+        : String(entry.financialInputMode || "").trim();
 
-    if (!PLASTIC_YEARS_FINANCIAL_INPUT_MODE_OPTIONS.includes(financialInputMode)) {
+    if (
+      !PLASTIC_YEARS_FINANCIAL_INPUT_MODE_OPTIONS.includes(financialInputMode)
+    ) {
       return createPlasticYearsError(
-        `Επιλέξτε ποιο οικονομικό στοιχείο αναγράφεται στην πράξη για τον πλασματικό χρόνο ${entryNumber}.`
+        `Επιλέξτε ποιο οικονομικό στοιχείο αναγράφεται στην πράξη για τον πλασματικό χρόνο ${entryNumber}.`,
       );
     }
 
     const normalizedEntry = {
       id: entry.id || `plastic_year_${entryNumber}`,
       recognitionStatus,
-      recognitionMode: 'paid',
+      recognitionMode: "paid",
       duration: {
         years: durationResult.years,
         months: durationResult.months,
@@ -743,36 +1005,35 @@ function analyzePlasticYearsDraft({
       },
       applicationDate: applicationDateResult.isoDate,
       calculationInputMode:
-        financialInputMode === 'monthly_base'
-          ? 'explicit_monthly_base'
-          : 'buyout_amount_and_rate',
+        financialInputMode === "monthly_base"
+          ? "explicit_monthly_base"
+          : "buyout_amount_and_rate",
     };
 
-    let financialDisplay = '';
+    let financialDisplay = "";
 
-    if (financialInputMode === 'monthly_base') {
+    if (financialInputMode === "monthly_base") {
       const monthlyBaseResult = parseNonNegativeDecimal(
-        entry.monthlyPensionableBase
+        entry.monthlyPensionableBase,
       );
 
       if (!monthlyBaseResult.isValid || monthlyBaseResult.value <= 0) {
         return createPlasticYearsError(
-          `Η μηνιαία ασφαλιστέα / συντάξιμη βάση του πλασματικού χρόνου ${entryNumber} πρέπει να είναι μεγαλύτερη από 0.`
+          `Η μηνιαία ασφαλιστέα / συντάξιμη βάση του πλασματικού χρόνου ${entryNumber} πρέπει να είναι μεγαλύτερη από 0.`,
         );
       }
 
-      normalizedEntry.explicitMonthlyPensionableBase =
-        monthlyBaseResult.value;
-      financialDisplay = `${monthlyBaseResult.value.toLocaleString('el-GR')} € μηνιαία βάση`;
+      normalizedEntry.explicitMonthlyPensionableBase = monthlyBaseResult.value;
+      financialDisplay = `${monthlyBaseResult.value.toLocaleString("el-GR")} € μηνιαία βάση`;
     } else {
       const buyoutAmountResult = parseNonNegativeDecimal(entry.buyoutAmount);
       const contributionRateResult = parseNonNegativeDecimal(
-        entry.contributionRatePercent
+        entry.contributionRatePercent,
       );
 
       if (!buyoutAmountResult.isValid || buyoutAmountResult.value <= 0) {
         return createPlasticYearsError(
-          `Το συνολικό ποσό εξαγοράς του πλασματικού χρόνου ${entryNumber} πρέπει να είναι μεγαλύτερο από 0.`
+          `Το συνολικό ποσό εξαγοράς του πλασματικού χρόνου ${entryNumber} πρέπει να είναι μεγαλύτερο από 0.`,
         );
       }
 
@@ -782,13 +1043,13 @@ function analyzePlasticYearsDraft({
         contributionRateResult.value > 100
       ) {
         return createPlasticYearsError(
-          `Το ποσοστό εισφοράς του πλασματικού χρόνου ${entryNumber} πρέπει να είναι μεγαλύτερο από 0 και έως 100%.`
+          `Το ποσοστό εισφοράς του πλασματικού χρόνου ${entryNumber} πρέπει να είναι μεγαλύτερο από 0 και έως 100%.`,
         );
       }
 
       normalizedEntry.buyoutAmount = buyoutAmountResult.value;
       normalizedEntry.contributionRatePercent = contributionRateResult.value;
-      financialDisplay = `${buyoutAmountResult.value.toLocaleString('el-GR')} € με ποσοστό ${contributionRateResult.value.toLocaleString('el-GR')}%`;
+      financialDisplay = `${buyoutAmountResult.value.toLocaleString("el-GR")} € με ποσοστό ${contributionRateResult.value.toLocaleString("el-GR")}%`;
     }
 
     normalizedEntries.push(normalizedEntry);
@@ -798,11 +1059,11 @@ function analyzePlasticYearsDraft({
       entryNumber,
       recognitionStatus,
       recognitionStatusLabel:
-        recognitionStatus === 'recognized'
-          ? 'Υπάρχει πράξη αναγνώρισης'
-          : 'Μελλοντική εκτίμηση',
-      recognitionMode: 'paid',
-      recognitionModeLabel: 'Με εξαγορά',
+        recognitionStatus === "recognized"
+          ? "Υπάρχει πράξη αναγνώρισης"
+          : "Μελλοντική εκτίμηση",
+      recognitionMode: "paid",
+      recognitionModeLabel: "Με εξαγορά",
       durationDisplay: formatPlasticYearsDuration(durationResult),
       applicationDateDisplay: applicationDateResult.displayDate,
       financialDisplay,
@@ -812,10 +1073,10 @@ function analyzePlasticYearsDraft({
 
   if (
     paidPlasticYearsCount > 0 &&
-    contributoryEarningsInputMethod === 'average_monthly'
+    contributoryEarningsInputMethod === "average_monthly"
   ) {
     return createPlasticYearsError(
-      'Για να ενσωματωθούν σωστά οι αποδοχές εξαγοράς πλασματικού χρόνου χρειάζονται αποδοχές και ημέρες ανά έτος. Δεν αρκεί έτοιμος μέσος μηνιαίος συντάξιμος μισθός.'
+      "Για να ενσωματωθούν σωστά οι αποδοχές εξαγοράς πλασματικού χρόνου χρειάζονται αποδοχές και ημέρες ανά έτος. Δεν αρκεί έτοιμος μέσος μηνιαίος συντάξιμος μισθός.",
     );
   }
 
@@ -841,9 +1102,9 @@ function createPlasticYearsError(error) {
 }
 
 function analyzePlasticYearsDuration({ years, months, days, entryNumber }) {
-  const yearsResult = parseNonNegativeInteger(String(years || '0'));
-  const monthsResult = parseNonNegativeInteger(String(months || '0'));
-  const daysResult = parseNonNegativeInteger(String(days || '0'));
+  const yearsResult = parseNonNegativeInteger(String(years || "0"));
+  const monthsResult = parseNonNegativeInteger(String(months || "0"));
+  const daysResult = parseNonNegativeInteger(String(days || "0"));
 
   if (!yearsResult.isValid || !monthsResult.isValid || !daysResult.isValid) {
     return {
@@ -888,7 +1149,7 @@ function formatPlasticYearsDuration({ years, months, days }) {
 }
 
 function analyzePensionStartDate(value) {
-  const trimmedValue = String(value || '').trim();
+  const trimmedValue = String(value || "").trim();
 
   if (!trimmedValue) {
     return {
@@ -902,8 +1163,7 @@ function analyzePensionStartDate(value) {
   if (!parsedInput.isValidFormat) {
     return {
       hasValue: true,
-      error:
-        'Συμπληρώστε έγκυρη ημερομηνία, π.χ. 1/1/26, 1/1/2026 ή 01012026.',
+      error: "Συμπληρώστε έγκυρη ημερομηνία, π.χ. 1/1/26, 1/1/2026 ή 01012026.",
     };
   }
 
@@ -918,7 +1178,7 @@ function analyzePensionStartDate(value) {
   if (!isRealDate) {
     return {
       hasValue: true,
-      error: 'Η ημερομηνία που δόθηκε δεν είναι πραγματική.',
+      error: "Η ημερομηνία που δόθηκε δεν είναι πραγματική.",
     };
   }
 
@@ -942,7 +1202,7 @@ function analyzePensionStartDate(value) {
 }
 
 function analyzePensionType(value) {
-  const normalizedValue = String(value || '').trim();
+  const normalizedValue = String(value || "").trim();
 
   if (!normalizedValue) {
     return {
@@ -955,7 +1215,7 @@ function analyzePensionType(value) {
   if (!PENSION_TYPE_OPTIONS[normalizedValue]) {
     return {
       hasValue: true,
-      error: 'Επιλέξτε έγκυρο είδος σύνταξης.',
+      error: "Επιλέξτε έγκυρο είδος σύνταξης.",
       pensionType: null,
     };
   }
@@ -979,16 +1239,16 @@ function analyzeOldAgeInputs({
     return createInactiveOldAgeAnalysis(false);
   }
 
-  if (pensionType !== 'old_age') {
+  if (pensionType !== "old_age") {
     return createInactiveOldAgeAnalysis(true);
   }
 
-  const oldAgeCategory = String(oldAgeCategoryInput || '').trim();
+  const oldAgeCategory = String(oldAgeCategoryInput || "").trim();
 
   if (!OLD_AGE_CATEGORY_OPTIONS[oldAgeCategory]) {
     return {
       hasValue: true,
-      error: 'Επιλέξτε έγκυρη κατηγορία σύνταξης γήρατος.',
+      error: "Επιλέξτε έγκυρη κατηγορία σύνταξης γήρατος.",
       warnings: [],
     };
   }
@@ -1013,14 +1273,14 @@ function analyzeOldAgeInputs({
 
   const warnings = [...residenceResult.warnings];
 
-  if (oldAgeCategory === 'special_disease') {
+  if (oldAgeCategory === "special_disease") {
     return {
       hasValue: true,
       error: null,
       warnings,
       oldAgeCategory,
       oldAgeCategoryLabel: OLD_AGE_CATEGORY_OPTIONS[oldAgeCategory].label,
-      pensionMode: 'full',
+      pensionMode: "full",
       pensionModeLabel: null,
       earlyReductionMonths: 0,
       residenceYears: residenceResult.residenceYears,
@@ -1029,7 +1289,7 @@ function analyzeOldAgeInputs({
     };
   }
 
-  const pensionMode = String(pensionModeInput || '').trim();
+  const pensionMode = String(pensionModeInput || "").trim();
 
   if (!pensionMode) {
     return {
@@ -1042,7 +1302,7 @@ function analyzeOldAgeInputs({
   if (!PENSION_MODE_OPTIONS[pensionMode]) {
     return {
       hasValue: true,
-      error: 'Επιλέξτε αν η σύνταξη γήρατος είναι πλήρης ή μειωμένη.',
+      error: "Επιλέξτε αν η σύνταξη γήρατος είναι πλήρης ή μειωμένη.",
       warnings,
     };
   }
@@ -1099,8 +1359,11 @@ function createInactiveOldAgeAnalysis(hasValue) {
   };
 }
 
-function analyzeEarlyReductionMonths({ pensionMode, earlyReductionMonthsInput }) {
-  if (pensionMode !== 'reduced') {
+function analyzeEarlyReductionMonths({
+  pensionMode,
+  earlyReductionMonthsInput,
+}) {
+  if (pensionMode !== "reduced") {
     return {
       hasValue: true,
       error: null,
@@ -1108,7 +1371,7 @@ function analyzeEarlyReductionMonths({ pensionMode, earlyReductionMonthsInput })
     };
   }
 
-  const trimmedMonths = String(earlyReductionMonthsInput || '').trim();
+  const trimmedMonths = String(earlyReductionMonthsInput || "").trim();
 
   if (!trimmedMonths) {
     return {
@@ -1123,7 +1386,7 @@ function analyzeEarlyReductionMonths({ pensionMode, earlyReductionMonthsInput })
   if (!monthsResult.isValid) {
     return {
       hasValue: true,
-      error: 'Οι μήνες πρόωρης μείωσης πρέπει να είναι ακέραιος αριθμός.',
+      error: "Οι μήνες πρόωρης μείωσης πρέπει να είναι ακέραιος αριθμός.",
       earlyReductionMonths: null,
     };
   }
@@ -1131,7 +1394,7 @@ function analyzeEarlyReductionMonths({ pensionMode, earlyReductionMonthsInput })
   if (monthsResult.value > MAX_EARLY_REDUCTION_MONTHS) {
     return {
       hasValue: true,
-      error: 'Οι μήνες πρόωρης μείωσης πρέπει να είναι από 0 έως 60.',
+      error: "Οι μήνες πρόωρης μείωσης πρέπει να είναι από 0 έως 60.",
       earlyReductionMonths: null,
     };
   }
@@ -1155,7 +1418,7 @@ function analyzeDisabilityInputs({ pensionType, disabilityCategoryInput }) {
     };
   }
 
-  if (pensionType !== 'disability') {
+  if (pensionType !== "disability") {
     return {
       hasValue: true,
       error: null,
@@ -1166,7 +1429,7 @@ function analyzeDisabilityInputs({ pensionType, disabilityCategoryInput }) {
     };
   }
 
-  const disabilityCategory = String(disabilityCategoryInput || '').trim();
+  const disabilityCategory = String(disabilityCategoryInput || "").trim();
 
   if (!disabilityCategory) {
     return {
@@ -1182,7 +1445,7 @@ function analyzeDisabilityInputs({ pensionType, disabilityCategoryInput }) {
   if (!DISABILITY_CATEGORY_OPTIONS[disabilityCategory]) {
     return {
       hasValue: true,
-      error: 'Επιλέξτε έγκυρη κατηγορία αναπηρίας.',
+      error: "Επιλέξτε έγκυρη κατηγορία αναπηρίας.",
       warnings: [],
       disabilityCategory: null,
       disabilityCategoryLabel: null,
@@ -1195,7 +1458,8 @@ function analyzeDisabilityInputs({ pensionType, disabilityCategoryInput }) {
     error: null,
     warnings: [],
     disabilityCategory,
-    disabilityCategoryLabel: DISABILITY_CATEGORY_OPTIONS[disabilityCategory].label,
+    disabilityCategoryLabel:
+      DISABILITY_CATEGORY_OPTIONS[disabilityCategory].label,
     disabilityPercentage:
       DISABILITY_CATEGORY_OPTIONS[disabilityCategory].disabilityPercentage,
   };
@@ -1208,7 +1472,7 @@ function analyzeInsuranceTime({
   insuranceMonthsInput,
   insuranceExtraDaysInput,
 }) {
-  const normalizedMethod = String(insuranceTimeInputMethod || '').trim();
+  const normalizedMethod = String(insuranceTimeInputMethod || "").trim();
 
   if (!normalizedMethod) {
     return {
@@ -1221,12 +1485,12 @@ function analyzeInsuranceTime({
   if (!INSURANCE_TIME_INPUT_METHOD_OPTIONS[normalizedMethod]) {
     return {
       hasValue: true,
-      error: 'Επιλέξτε έγκυρο τρόπο εισαγωγής χρόνου ασφάλισης.',
+      error: "Επιλέξτε έγκυρο τρόπο εισαγωγής χρόνου ασφάλισης.",
       warnings: [],
     };
   }
 
-  if (normalizedMethod === 'insurance_days') {
+  if (normalizedMethod === "insurance_days") {
     return analyzeInsuranceDaysInput({
       insuranceDaysInput,
       insuranceTimeInputMethod: normalizedMethod,
@@ -1240,7 +1504,6 @@ function analyzeInsuranceTime({
     insuranceTimeInputMethod: normalizedMethod,
   });
 }
-
 
 function analyzeArticle30SpecialRegimeUsage({
   calculatorEdition,
@@ -1257,16 +1520,16 @@ function analyzeArticle30SpecialRegimeUsage({
     : [];
 
   const presence = {
-    vae: periods.some((period) => period?.employmentCategory === 'vae'),
-    yvae: periods.some((period) => period?.employmentCategory === 'yvae'),
+    vae: periods.some((period) => period?.employmentCategory === "vae"),
+    yvae: periods.some((period) => period?.employmentCategory === "yvae"),
     ota_ika_vae: periods.some(
-      (period) => period?.employmentCategory === 'ota_ika_vae'
+      (period) => period?.employmentCategory === "ota_ika_vae",
     ),
     ota_public_vae: periods.some(
-      (period) => period?.employmentCategory === 'ota_public_vae'
+      (period) => period?.employmentCategory === "ota_public_vae",
     ),
     ota_ika_yvae: periods.some(
-      (period) => period?.employmentCategory === 'ota_ika_yvae'
+      (period) => period?.employmentCategory === "ota_ika_yvae",
     ),
   };
 
@@ -1280,11 +1543,8 @@ function analyzeArticle30SpecialRegimeUsage({
       article30SpecialRegimeData: buildArticle30SpecialRegimeData({
         calculatorEdition: normalizedEdition,
         presence,
-        usageByRegime: createArticle30UsageByRegime(
-          presence,
-          'not_applicable'
-        ),
-        source: 'not_applicable',
+        usageByRegime: createArticle30UsageByRegime(presence, "not_applicable"),
+        source: "not_applicable",
       }),
     };
   }
@@ -1294,24 +1554,24 @@ function analyzeArticle30SpecialRegimeUsage({
       hasValue: true,
       error: null,
       warnings: [
-        'Στη δωρεάν έκδοση δεν ζητείται από τον χρήστη να γνωρίζει αν συνταξιοδοτείται με ειδικές διατάξεις ΒΑΕ, ΥΒΑΕ ή ειδικών κατηγοριών ΟΤΑ. Μέχρι να υπάρχει αυτόματος έλεγχος θεμελίωσης, τα αντίστοιχα επασφάλιστρα δεν προστίθενται και απαιτείται αναλυτικός έλεγχος.',
+        "Στη δωρεάν έκδοση δεν ζητείται από τον χρήστη να γνωρίζει αν συνταξιοδοτείται με ειδικές διατάξεις ΒΑΕ, ΥΒΑΕ ή ειδικών κατηγοριών ΟΤΑ. Μέχρι να υπάρχει αυτόματος έλεγχος θεμελίωσης, τα αντίστοιχα επασφάλιστρα δεν προστίθενται και απαιτείται αναλυτικός έλεγχος.",
       ],
       article30SpecialRegimeData: buildArticle30SpecialRegimeData({
         calculatorEdition: normalizedEdition,
         presence,
-        usageByRegime: createArticle30UsageByRegime(presence, 'unknown'),
-        source: 'free_tool_automatic_check_pending',
+        usageByRegime: createArticle30UsageByRegime(presence, "unknown"),
+        source: "free_tool_automatic_check_pending",
       }),
     };
   }
 
   const normalizedUsageInput = normalizeArticle30SpecialRegimeUsageInput(
-    article30SpecialRegimeUsageInput
+    article30SpecialRegimeUsageInput,
   );
   const warnings = [];
   const usageByRegime = createArticle30UsageByRegime(
     presence,
-    'not_applicable'
+    "not_applicable",
   );
 
   for (const premiumType of getArticle30PremiumTypes()) {
@@ -1344,7 +1604,7 @@ function analyzeArticle30SpecialRegimeUsage({
 
     if (usage === ARTICLE30_SPECIAL_REGIME_USAGE_OPTIONS.unknown) {
       warnings.push(
-        `Δεν υπολογίζεται το επασφάλιστρο ${label}, επειδή δεν είναι γνωστό αν χρησιμοποιούνται οι αντίστοιχες ειδικές διατάξεις συνταξιοδότησης.`
+        `Δεν υπολογίζεται το επασφάλιστρο ${label}, επειδή δεν είναι γνωστό αν χρησιμοποιούνται οι αντίστοιχες ειδικές διατάξεις συνταξιοδότησης.`,
       );
     }
   }
@@ -1357,27 +1617,21 @@ function analyzeArticle30SpecialRegimeUsage({
       calculatorEdition: normalizedEdition,
       presence,
       usageByRegime,
-      source: 'user',
+      source: "user",
     }),
   };
 }
 
 function getArticle30PremiumTypes() {
-  return [
-    'vae',
-    'yvae',
-    'ota_ika_vae',
-    'ota_public_vae',
-    'ota_ika_yvae',
-  ];
+  return ["vae", "yvae", "ota_ika_vae", "ota_public_vae", "ota_ika_yvae"];
 }
 
 function createArticle30UsageByRegime(presence, activeStatus) {
   return Object.fromEntries(
     getArticle30PremiumTypes().map((premiumType) => [
       premiumType,
-      presence[premiumType] ? activeStatus : 'not_applicable',
-    ])
+      presence[premiumType] ? activeStatus : "not_applicable",
+    ]),
   );
 }
 
@@ -1395,48 +1649,44 @@ function buildArticle30SpecialRegimeData({
     hasOtaPublicVaePeriods: presence.ota_public_vae,
     hasOtaIkaYvaePeriods: presence.ota_ika_yvae,
     hasOtaCleaningPeriods:
-      presence.ota_ika_vae ||
-      presence.ota_public_vae ||
-      presence.ota_ika_yvae,
+      presence.ota_ika_vae || presence.ota_public_vae || presence.ota_ika_yvae,
     usageByRegime,
     source,
   };
 }
 
 function normalizeArticle30SpecialRegimeUsageInput(value) {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return Object.fromEntries(
-      getArticle30PremiumTypes().map((premiumType) => [premiumType, value])
+      getArticle30PremiumTypes().map((premiumType) => [premiumType, value]),
     );
   }
 
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return Object.fromEntries(
-      getArticle30PremiumTypes().map((premiumType) => [premiumType, ''])
+      getArticle30PremiumTypes().map((premiumType) => [premiumType, ""]),
     );
   }
 
   return {
-    vae: String(value.vae || '').trim(),
-    yvae: String(value.yvae || '').trim(),
-    ota_ika_vae: String(value.ota_ika_vae || '').trim(),
-    ota_public_vae: String(value.ota_public_vae || '').trim(),
-    ota_ika_yvae: String(
-      value.ota_ika_yvae || value.ota_cleaning || ''
-    ).trim(),
+    vae: String(value.vae || "").trim(),
+    yvae: String(value.yvae || "").trim(),
+    ota_ika_vae: String(value.ota_ika_vae || "").trim(),
+    ota_public_vae: String(value.ota_public_vae || "").trim(),
+    ota_ika_yvae: String(value.ota_ika_yvae || value.ota_cleaning || "").trim(),
   };
 }
 
 function getArticle30PremiumTypeLabel(premiumType) {
   const labels = {
-    vae: 'ΒΑΕ',
-    yvae: 'ΥΒΑΕ',
-    ota_ika_vae: 'ΒΑΕ ΟΤΑ του πρώην ΙΚΑ',
-    ota_public_vae: 'ΒΑΕ ΟΤΑ του καθεστώτος Δημοσίου',
-    ota_ika_yvae: 'ΥΒΑΕ καθαριότητας / αποκομιδής ΟΤΑ',
+    vae: "ΒΑΕ",
+    yvae: "ΥΒΑΕ",
+    ota_ika_vae: "ΒΑΕ ΟΤΑ του πρώην ΙΚΑ",
+    ota_public_vae: "ΒΑΕ ΟΤΑ του καθεστώτος Δημοσίου",
+    ota_ika_yvae: "ΥΒΑΕ καθαριότητας / αποκομιδής ΟΤΑ",
   };
 
-  return labels[premiumType] || 'ειδικής εισφοράς';
+  return labels[premiumType] || "ειδικής εισφοράς";
 }
 
 function analyzeInsurancePeriodsDraft({
@@ -1472,12 +1722,12 @@ function analyzeInsurancePeriodsDraft({
   multiPeriod2EmploymentCategoryInput,
   insuranceTimeAnalysis,
 }) {
-  const mode = String(insurancePeriodsInputMode || 'disabled').trim();
+  const mode = String(insurancePeriodsInputMode || "disabled").trim();
 
   if (!INSURANCE_PERIODS_INPUT_MODE_OPTIONS[mode]) {
     return {
       hasValue: true,
-      error: 'Επιλέξτε έγκυρο τρόπο δήλωσης κατηγορίας ασφάλισης.',
+      error: "Επιλέξτε έγκυρο τρόπο δήλωσης κατηγορίας ασφάλισης.",
       warnings: [],
       insurancePeriodsInputMode: mode,
       insurancePeriodsInputModeLabel: null,
@@ -1486,7 +1736,7 @@ function analyzeInsurancePeriodsDraft({
     };
   }
 
-  if (mode === 'disabled') {
+  if (mode === "disabled") {
     return {
       hasValue: true,
       error: null,
@@ -1496,11 +1746,11 @@ function analyzeInsurancePeriodsDraft({
         INSURANCE_PERIODS_INPUT_MODE_OPTIONS[mode].label,
       insurancePeriodsDraft: [],
       insurancePeriodDraftDisplay:
-        'Δεν δηλώθηκε κατηγορία συνολικού χρόνου ασφάλισης.',
+        "Δεν δηλώθηκε κατηγορία συνολικού χρόνου ασφάλισης.",
     };
   }
 
-  if (mode === 'multiple') {
+  if (mode === "multiple") {
     const groups = normalizeInsurancePeriodGroupsForAnalysis({
       insurancePeriodGroups,
       legacyFirstGroup: {
@@ -1527,15 +1777,15 @@ function analyzeInsurancePeriodsDraft({
 
     if (groups.length === 0) {
       return createInsurancePeriodDraftError(
-        'Συμπληρώστε τουλάχιστον μία περίοδο / ομάδα ασφάλισης.',
-        mode
+        "Συμπληρώστε τουλάχιστον μία περίοδο / ομάδα ασφάλισης.",
+        mode,
       );
     }
 
     if (groups.length > MAX_INSURANCE_PERIOD_GROUPS) {
       return createInsurancePeriodDraftError(
         `Μπορούν να δηλωθούν μέχρι ${MAX_INSURANCE_PERIOD_GROUPS} περίοδοι / ομάδες ασφάλισης.`,
-        mode
+        mode,
       );
     }
 
@@ -1545,6 +1795,7 @@ function analyzeInsurancePeriodsDraft({
       const periodResult = analyzeMultiInsurancePeriodDraft({
         mode,
         groupNumber: index + 1,
+        periodId: groups[index].id || `period_${index + 1}`,
         timeInputMethod: groups[index].timeInputMethod,
         insuranceDaysInput: groups[index].insuranceDays,
         insuranceYearsInput: groups[index].insuranceYears,
@@ -1574,35 +1825,40 @@ function analyzeInsurancePeriodsDraft({
 
     const totalInsuranceTimeAnalysis = buildInsuranceTimeAnalysisFromDays({
       totalInsuranceDaysEquivalent,
-      displaySuffix: periods.length === 1
-        ? '(σύνολο από 1 περίοδο / ομάδα)'
-        : `(σύνολο από ${periods.length} περιόδους / ομάδες)`,
+      displaySuffix:
+        periods.length === 1
+          ? "(σύνολο από 1 περίοδο / ομάδα)"
+          : `(σύνολο από ${periods.length} περιόδους / ομάδες)`,
     });
 
     return {
       hasValue: true,
       error: null,
       warnings: [
-        'Οι περίοδοι / ομάδες προετοιμάζονται ως insurancePeriodsDraft και το backend τις μετατρέπει σε κανονικό insurancePeriods για τον calculator.',
+        "Οι περίοδοι / ομάδες προετοιμάζονται ως insurancePeriodsDraft και το backend τις μετατρέπει σε κανονικό insurancePeriods για τον calculator.",
       ],
       insurancePeriodsInputMode: mode,
       insurancePeriodsInputModeLabel:
         INSURANCE_PERIODS_INPUT_MODE_OPTIONS[mode].label,
       insurancePeriodsDraft: periods,
-      insurancePeriodDraftDisplay: periods.map((period, index) => {
-        return `Περίοδος / ομάδα ${index + 1}: ` +
-          `${period.fromDateDisplay} έως ${period.toDateDisplay}, ` +
-          `${period.fundLabel} - ${period.insuredTypeLabel} - ` +
-          `${period.employmentCategoryLabel}, ` +
-          `${period.insuranceDays} ημέρες (${period.insuranceDaysSourceLabel})`;
-      }).join(' | '),
+      insurancePeriodDraftDisplay: periods
+        .map((period, index) => {
+          return (
+            `Περίοδος / ομάδα ${index + 1}: ` +
+            `${period.fromDateDisplay} έως ${period.toDateDisplay}, ` +
+            `${period.fundLabel} - ${period.insuredTypeLabel} - ` +
+            `${period.employmentCategoryLabel}, ` +
+            `${period.insuranceDays} ημέρες (${period.insuranceDaysSourceLabel})`
+          );
+        })
+        .join(" | "),
       totalInsuranceTimeAnalysis,
     };
   }
 
   const fromDateResult = analyzeInsurancePeriodDate({
     value: simpleFromDateInput,
-    fieldLabel: 'ημερομηνία έναρξης ασφαλιστικής περιόδου',
+    fieldLabel: "ημερομηνία έναρξης ασφαλιστικής περιόδου",
   });
 
   if (fromDateResult.error) {
@@ -1611,14 +1867,14 @@ function analyzeInsurancePeriodsDraft({
 
   if (!fromDateResult.hasValue) {
     return createInsurancePeriodDraftError(
-      'Συμπληρώστε την ημερομηνία έναρξης της ασφαλιστικής περιόδου.',
-      mode
+      "Συμπληρώστε την ημερομηνία έναρξης της ασφαλιστικής περιόδου.",
+      mode,
     );
   }
 
   const toDateResult = analyzeInsurancePeriodDate({
     value: simpleToDateInput,
-    fieldLabel: 'ημερομηνία λήξης ασφαλιστικής περιόδου',
+    fieldLabel: "ημερομηνία λήξης ασφαλιστικής περιόδου",
   });
 
   if (toDateResult.error) {
@@ -1627,15 +1883,15 @@ function analyzeInsurancePeriodsDraft({
 
   if (!toDateResult.hasValue) {
     return createInsurancePeriodDraftError(
-      'Συμπληρώστε την ημερομηνία λήξης της ασφαλιστικής περιόδου.',
-      mode
+      "Συμπληρώστε την ημερομηνία λήξης της ασφαλιστικής περιόδου.",
+      mode,
     );
   }
 
   if (fromDateResult.isoDate > toDateResult.isoDate) {
     return createInsurancePeriodDraftError(
-      'Η ημερομηνία έναρξης της ασφαλιστικής περιόδου δεν μπορεί να είναι μετά την ημερομηνία λήξης.',
-      mode
+      "Η ημερομηνία έναρξης της ασφαλιστικής περιόδου δεν μπορεί να είναι μετά την ημερομηνία λήξης.",
+      mode,
     );
   }
 
@@ -1650,34 +1906,34 @@ function analyzeInsurancePeriodsDraft({
   if (simplePeriodTimeAnalysis.error) {
     return createInsurancePeriodDraftError(
       simplePeriodTimeAnalysis.error,
-      mode
+      mode,
     );
   }
 
   if (!simplePeriodTimeAnalysis.hasValue) {
     return createInsurancePeriodDraftError(
-      'Συμπληρώστε τον χρόνο ασφάλισης της περιόδου.',
-      mode
+      "Συμπληρώστε τον χρόνο ασφάλισης της περιόδου.",
+      mode,
     );
   }
 
   const periodResult = buildValidatedInsurancePeriodDraft({
     mode,
+    id: "period_1",
     fundInput: simpleFundInput,
     insuredTypeInput: simpleInsuredTypeInput,
     employmentCategoryInput: simpleEmploymentCategoryInput,
-    nonSalariedEarningsInputMode:
-      simpleNonSalariedEarningsInputMode,
+    nonSalariedEarningsInputMode: simpleNonSalariedEarningsInputMode,
     uniformedSpecialTimeDraft: simpleUniformedSpecialTimeDraft,
     fromDate: fromDateResult.isoDate,
     fromDateDisplay: fromDateResult.displayDate,
     toDate: toDateResult.isoDate,
     toDateDisplay: toDateResult.displayDate,
     insuranceDays: Math.round(
-      simplePeriodTimeAnalysis.totalInsuranceDaysEquivalent
+      simplePeriodTimeAnalysis.totalInsuranceDaysEquivalent,
     ),
-    insuranceDaysSource: 'declared_in_period',
-    insuranceDaysSourceLabel: 'δηλώθηκε ξεχωριστά για τη μία περίοδο',
+    insuranceDaysSource: "declared_in_period",
+    insuranceDaysSourceLabel: "δηλώθηκε ξεχωριστά για τη μία περίοδο",
   });
 
   if (periodResult.error) {
@@ -1690,7 +1946,7 @@ function analyzeInsurancePeriodsDraft({
     hasValue: true,
     error: null,
     warnings: [
-      'Η ασφαλιστική περίοδος προετοιμάζεται ως insurancePeriodsDraft και το backend τη μετατρέπει σε κανονικό insurancePeriods για τον calculator.',
+      "Η ασφαλιστική περίοδος προετοιμάζεται ως insurancePeriodsDraft και το backend τη μετατρέπει σε κανονικό insurancePeriods για τον calculator.",
     ],
     insurancePeriodsInputMode: mode,
     insurancePeriodsInputModeLabel:
@@ -1728,20 +1984,21 @@ function normalizeInsurancePeriodGroupsForAnalysis({
 
 function normalizeInsurancePeriodGroupForAnalysis(group = {}) {
   return {
-    timeInputMethod: group.timeInputMethod || '',
-    insuranceDays: group.insuranceDays || '',
-    insuranceYears: group.insuranceYears || '',
-    insuranceMonths: group.insuranceMonths || '',
-    insuranceExtraDays: group.insuranceExtraDays || '',
-    fromDate: group.fromDate || '',
-    toDate: group.toDate || '',
-    fund: group.fund || '',
-    insuredType: group.insuredType || '',
-    employmentCategory: group.employmentCategory || '',
-    nonSalariedEarningsInputMode:
-      group.nonSalariedEarningsInputMode || '',
-    uniformedSpecialTimeDraft:
-      normalizeUniformedSpecialTimeDraft(group.uniformedSpecialTimeDraft),
+    id: group.id || "",
+    timeInputMethod: group.timeInputMethod || "",
+    insuranceDays: group.insuranceDays || "",
+    insuranceYears: group.insuranceYears || "",
+    insuranceMonths: group.insuranceMonths || "",
+    insuranceExtraDays: group.insuranceExtraDays || "",
+    fromDate: group.fromDate || "",
+    toDate: group.toDate || "",
+    fund: group.fund || "",
+    insuredType: group.insuredType || "",
+    employmentCategory: group.employmentCategory || "",
+    nonSalariedEarningsInputMode: group.nonSalariedEarningsInputMode || "",
+    uniformedSpecialTimeDraft: normalizeUniformedSpecialTimeDraft(
+      group.uniformedSpecialTimeDraft,
+    ),
   };
 }
 
@@ -1759,14 +2016,15 @@ function hasAnyInsurancePeriodGroupValue(group = {}) {
     group.employmentCategory,
     group.nonSalariedEarningsInputMode,
     hasActiveUniformedSpecialTimeDraft(group.uniformedSpecialTimeDraft)
-      ? 'uniformed_special_time'
-      : '',
-  ].some((value) => String(value || '').trim() !== '');
+      ? "uniformed_special_time"
+      : "",
+  ].some((value) => String(value || "").trim() !== "");
 }
 
 function analyzeMultiInsurancePeriodDraft({
   mode,
   groupNumber,
+  periodId,
   timeInputMethod,
   insuranceDaysInput,
   insuranceYearsInput,
@@ -1794,9 +2052,9 @@ function analyzeMultiInsurancePeriodDraft({
     employmentCategoryInput,
     nonSalariedEarningsInputMode,
     hasActiveUniformedSpecialTimeDraft(uniformedSpecialTimeDraft)
-      ? 'uniformed_special_time'
-      : '',
-  ].some((value) => String(value || '').trim() !== '');
+      ? "uniformed_special_time"
+      : "",
+  ].some((value) => String(value || "").trim() !== "");
 
   if (!isRequired && !hasAnyValue) {
     return {
@@ -1813,14 +2071,14 @@ function analyzeMultiInsurancePeriodDraft({
   if (fromDateResult.error) {
     return createInsurancePeriodDraftError(
       `Περίοδος / ομάδα ${groupNumber}: ${fromDateResult.error}`,
-      mode
+      mode,
     );
   }
 
   if (!fromDateResult.hasValue) {
     return createInsurancePeriodDraftError(
       `Η ημερομηνία έναρξης της ασφαλιστικής περιόδου ${groupNumber} είναι υποχρεωτική.`,
-      mode
+      mode,
     );
   }
 
@@ -1832,21 +2090,21 @@ function analyzeMultiInsurancePeriodDraft({
   if (toDateResult.error) {
     return createInsurancePeriodDraftError(
       `Περίοδος / ομάδα ${groupNumber}: ${toDateResult.error}`,
-      mode
+      mode,
     );
   }
 
   if (!toDateResult.hasValue) {
     return createInsurancePeriodDraftError(
       `Η ημερομηνία λήξης της ασφαλιστικής περιόδου ${groupNumber} είναι υποχρεωτική.`,
-      mode
+      mode,
     );
   }
 
   if (fromDateResult.isoDate > toDateResult.isoDate) {
     return createInsurancePeriodDraftError(
       `Περίοδος / ομάδα ${groupNumber}: Η ημερομηνία έναρξης δεν μπορεί να είναι μετά την ημερομηνία λήξης.`,
-      mode
+      mode,
     );
   }
 
@@ -1861,19 +2119,20 @@ function analyzeMultiInsurancePeriodDraft({
   if (periodTimeAnalysis.error) {
     return createInsurancePeriodDraftError(
       `Περίοδος / ομάδα ${groupNumber}: ${periodTimeAnalysis.error}`,
-      mode
+      mode,
     );
   }
 
   if (!periodTimeAnalysis.hasValue) {
     return createInsurancePeriodDraftError(
       `Συμπληρώστε τον χρόνο ασφάλισης της περιόδου / ομάδας ${groupNumber}.`,
-      mode
+      mode,
     );
   }
 
   const periodResult = buildValidatedInsurancePeriodDraft({
     mode,
+    id: periodId,
     fundInput,
     insuredTypeInput,
     employmentCategoryInput,
@@ -1884,14 +2143,14 @@ function analyzeMultiInsurancePeriodDraft({
     toDate: toDateResult.isoDate,
     toDateDisplay: toDateResult.displayDate,
     insuranceDays: Math.round(periodTimeAnalysis.totalInsuranceDaysEquivalent),
-    insuranceDaysSource: 'declared_in_period',
+    insuranceDaysSource: "declared_in_period",
     insuranceDaysSourceLabel: `δηλώθηκε ξεχωριστά για την περίοδο / ομάδα ${groupNumber}`,
   });
 
   if (periodResult.error) {
     return createInsurancePeriodDraftError(
       `Περίοδος / ομάδα ${groupNumber}: ${periodResult.error}`,
-      mode
+      mode,
     );
   }
 
@@ -1912,8 +2171,8 @@ function buildInsuranceTimeAnalysisFromDays({
     hasValue: true,
     error: null,
     warnings: [],
-    insuranceTimeInputMethod: 'insurance_days',
-    insuranceTimeInputMethodLabel: 'Με αριθμό ενσήμων / ημερών ασφάλισης',
+    insuranceTimeInputMethod: "insurance_days",
+    insuranceTimeInputMethodLabel: "Με αριθμό ενσήμων / ημερών ασφάλισης",
 
     // Important:
     // When insuranceTimeInputMethod is "insurance_days", the backend reads
@@ -1925,7 +2184,7 @@ function buildInsuranceTimeAnalysisFromDays({
     totalInsuranceDaysEquivalent: totalDays,
     totalInsuranceDecimalYears: roundToDecimals(
       totalDays / INSURANCE_DAYS_PER_YEAR,
-      6
+      6,
     ),
     insuranceTimeDisplay:
       `${totalDays} ημέρες ασφάλισης ` +
@@ -1936,6 +2195,7 @@ function buildInsuranceTimeAnalysisFromDays({
 
 function buildValidatedInsurancePeriodDraft({
   mode,
+  id,
   fundInput,
   insuredTypeInput,
   employmentCategoryInput,
@@ -1949,47 +2209,67 @@ function buildValidatedInsurancePeriodDraft({
   insuranceDaysSource,
   insuranceDaysSourceLabel,
 }) {
-  const fund = String(fundInput || '').trim();
-  const insuredType = String(insuredTypeInput || '').trim();
-  const employmentCategory = String(employmentCategoryInput || '').trim();
+  const fund = String(fundInput || "").trim();
+  const insuredType = String(insuredTypeInput || "").trim();
+  const employmentCategory = String(employmentCategoryInput || "").trim();
 
   if (!fund) {
-    return createInsurancePeriodDraftError('Επιλέξτε φορέα / κατηγορία ασφάλισης.', mode);
-  }
-
-  if (!INSURANCE_PERIOD_FUND_OPTIONS[fund]) {
-    return createInsurancePeriodDraftError('Επιλέξτε έγκυρο φορέα / κατηγορία ασφάλισης.', mode);
-  }
-
-  if (!insuredType) {
-    return createInsurancePeriodDraftError('Επιλέξτε αν ο ασφαλισμένος είναι παλαιός ή νέος.', mode);
-  }
-
-  if (!isAllowedInsuredTypeForFund({ fund, insuredType })) {
-    return createInsurancePeriodDraftError('Η επιλογή παλαιός / νέος δεν ταιριάζει με τον φορέα.', mode);
-  }
-
-  if (!employmentCategory) {
-    return createInsurancePeriodDraftError('Επιλέξτε κατηγορία εργασίας / εισφορών.', mode);
-  }
-
-  if (
-    fund === 'ota' &&
-    employmentCategory === 'ota_ika_yvae' &&
-    insuredType !== 'old'
-  ) {
     return createInsurancePeriodDraftError(
-      'Η επιλογή ΥΒΑΕ ΟΤΑ επιτρέπεται μόνο για παλαιό ασφαλισμένο.',
-      mode
+      "Επιλέξτε φορέα / κατηγορία ασφάλισης.",
+      mode,
     );
   }
 
-  if (!isAllowedEmploymentCategoryForFund({
-    fund,
-    insuredType,
-    employmentCategory,
-  })) {
-    return createInsurancePeriodDraftError('Η κατηγορία εργασίας / εισφορών δεν ταιριάζει με τον φορέα.', mode);
+  if (!INSURANCE_PERIOD_FUND_OPTIONS[fund]) {
+    return createInsurancePeriodDraftError(
+      "Επιλέξτε έγκυρο φορέα / κατηγορία ασφάλισης.",
+      mode,
+    );
+  }
+
+  if (!insuredType) {
+    return createInsurancePeriodDraftError(
+      "Επιλέξτε αν ο ασφαλισμένος είναι παλαιός ή νέος.",
+      mode,
+    );
+  }
+
+  if (!isAllowedInsuredTypeForFund({ fund, insuredType })) {
+    return createInsurancePeriodDraftError(
+      "Η επιλογή παλαιός / νέος δεν ταιριάζει με τον φορέα.",
+      mode,
+    );
+  }
+
+  if (!employmentCategory) {
+    return createInsurancePeriodDraftError(
+      "Επιλέξτε κατηγορία εργασίας / εισφορών.",
+      mode,
+    );
+  }
+
+  if (
+    fund === "ota" &&
+    employmentCategory === "ota_ika_yvae" &&
+    insuredType !== "old"
+  ) {
+    return createInsurancePeriodDraftError(
+      "Η επιλογή ΥΒΑΕ ΟΤΑ επιτρέπεται μόνο για παλαιό ασφαλισμένο.",
+      mode,
+    );
+  }
+
+  if (
+    !isAllowedEmploymentCategoryForFund({
+      fund,
+      insuredType,
+      employmentCategory,
+    })
+  ) {
+    return createInsurancePeriodDraftError(
+      "Η κατηγορία εργασίας / εισφορών δεν ταιριάζει με τον φορέα.",
+      mode,
+    );
   }
 
   const nonSalariedInputModeResult = analyzeNonSalariedEarningsInputMode({
@@ -2000,21 +2280,28 @@ function buildValidatedInsurancePeriodDraft({
   if (nonSalariedInputModeResult.error) {
     return createInsurancePeriodDraftError(
       nonSalariedInputModeResult.error,
-      mode
+      mode,
     );
   }
 
   if (!Number.isFinite(insuranceDays) || insuranceDays <= 0) {
-    return createInsurancePeriodDraftError('Ο χρόνος της ασφαλιστικής περιόδου πρέπει να είναι μεγαλύτερος από 0.', mode);
+    return createInsurancePeriodDraftError(
+      "Ο χρόνος της ασφαλιστικής περιόδου πρέπει να είναι μεγαλύτερος από 0.",
+      mode,
+    );
   }
 
-  const uniformedSpecialTimeValidation = validateUniformedSpecialTimeDraftForAnalysis({
-    fund,
-    uniformedSpecialTimeDraft,
-  });
+  const uniformedSpecialTimeValidation =
+    validateUniformedSpecialTimeDraftForAnalysis({
+      fund,
+      uniformedSpecialTimeDraft,
+    });
 
   if (uniformedSpecialTimeValidation.error) {
-    return createInsurancePeriodDraftError(uniformedSpecialTimeValidation.error, mode);
+    return createInsurancePeriodDraftError(
+      uniformedSpecialTimeValidation.error,
+      mode,
+    );
   }
 
   const category = buildInsurancePeriodCategory({
@@ -2026,14 +2313,15 @@ function buildValidatedInsurancePeriodDraft({
   return {
     error: null,
     period: {
+      id: String(id || "").trim() || null,
       fund,
       fundLabel: INSURANCE_PERIOD_FUND_OPTIONS[fund].label,
       insuredType,
       insuredTypeLabel: INSURED_TYPE_OPTIONS[insuredType].label,
       employmentCategory,
-      employmentCategoryLabel: EMPLOYMENT_CATEGORY_OPTIONS[employmentCategory].label,
-      nonSalariedEarningsInputMode:
-        nonSalariedInputModeResult.inputMode,
+      employmentCategoryLabel:
+        EMPLOYMENT_CATEGORY_OPTIONS[employmentCategory].label,
+      nonSalariedEarningsInputMode: nonSalariedInputModeResult.inputMode,
       nonSalariedEarningsInputModeLabel:
         nonSalariedInputModeResult.inputModeLabel,
       fromDate,
@@ -2047,7 +2335,7 @@ function buildValidatedInsurancePeriodDraft({
       contributionCategory: category.contributionCategory,
       specialWorkFacts: category.specialWorkFacts,
       uniformedSpecialTimeDraft:
-        fund === 'uniformed'
+        fund === "uniformed"
           ? normalizeUniformedSpecialTimeDraft(uniformedSpecialTimeDraft)
           : null,
     },
@@ -2063,12 +2351,12 @@ function analyzeNonSalariedEarningsInputMode({ fund, value }) {
     };
   }
 
-  const inputMode = String(value || '').trim();
+  const inputMode = String(value || "").trim();
 
   if (!inputMode) {
     return {
       error:
-        'Επιλέξτε πώς θα δηλωθούν οι εισφορές ή οι συντάξιμες αποδοχές της μη μισθωτής περιόδου.',
+        "Επιλέξτε πώς θα δηλωθούν οι εισφορές ή οι συντάξιμες αποδοχές της μη μισθωτής περιόδου.",
       inputMode: null,
       inputModeLabel: null,
     };
@@ -2079,7 +2367,7 @@ function analyzeNonSalariedEarningsInputMode({ fund, value }) {
   if (!option) {
     return {
       error:
-        'Ο τρόπος εισαγωγής εισφορών ή συντάξιμων αποδοχών της μη μισθωτής περιόδου δεν είναι έγκυρος.',
+        "Ο τρόπος εισαγωγής εισφορών ή συντάξιμων αποδοχών της μη μισθωτής περιόδου δεν είναι έγκυρος.",
       inputMode: null,
       inputModeLabel: null,
     };
@@ -2108,11 +2396,11 @@ function createInsurancePeriodDraftError(error, mode) {
 
 function createBackendSafeInsurancePeriodDraft(period) {
   return {
+    id: period.id,
     fund: period.fund,
     insuredType: period.insuredType,
     employmentCategory: period.employmentCategory,
-    nonSalariedEarningsInputMode:
-      period.nonSalariedEarningsInputMode || null,
+    nonSalariedEarningsInputMode: period.nonSalariedEarningsInputMode || null,
     fromDate: period.fromDate,
     toDate: period.toDate,
     insuranceDays: period.insuranceDays,
@@ -2120,57 +2408,57 @@ function createBackendSafeInsurancePeriodDraft(period) {
     categoryKey: period.categoryKey,
     contributionCategory: period.contributionCategory,
     specialWorkFacts: period.specialWorkFacts,
-    uniformedSpecialTimeDraft:
-      period.uniformedSpecialTimeDraft || null,
+    uniformedSpecialTimeDraft: period.uniformedSpecialTimeDraft || null,
   };
 }
 
-function resolveInsurancePeriodDays({
-  daysText,
-  insuranceTimeAnalysis,
-  mode,
-}) {
+function resolveInsurancePeriodDays({ daysText, insuranceTimeAnalysis, mode }) {
   if (daysText) {
     const manualDaysResult = parseNonNegativeInteger(daysText);
 
     if (!manualDaysResult.isValid) {
       return {
-        error: 'Οι ημέρες / ένσημα της ασφαλιστικής ομάδας πρέπει να είναι ακέραιος αριθμός.',
+        error:
+          "Οι ημέρες / ένσημα της ασφαλιστικής ομάδας πρέπει να είναι ακέραιος αριθμός.",
       };
     }
 
     if (manualDaysResult.value <= 0) {
       return {
-        error: 'Οι ημέρες / ένσημα της ασφαλιστικής ομάδας πρέπει να είναι περισσότερες από 0.',
+        error:
+          "Οι ημέρες / ένσημα της ασφαλιστικής ομάδας πρέπει να είναι περισσότερες από 0.",
       };
     }
 
     return {
       error: null,
       value: manualDaysResult.value,
-      source: 'manual_override',
-      sourceLabel: 'χειροκίνητη διόρθωση από τον χρήστη',
+      source: "manual_override",
+      sourceLabel: "χειροκίνητη διόρθωση από τον χρήστη",
     };
   }
 
-  const totalDays = Number(insuranceTimeAnalysis?.totalInsuranceDaysEquivalent || 0);
+  const totalDays = Number(
+    insuranceTimeAnalysis?.totalInsuranceDaysEquivalent || 0,
+  );
 
   if (!Number.isFinite(totalDays) || totalDays <= 0) {
     return {
-      error: 'Δεν μπορεί να δοθεί ασφαλιστική ομάδα χωρίς συνολικό χρόνο ασφάλισης ή ημέρες ομάδας.',
+      error:
+        "Δεν μπορεί να δοθεί ασφαλιστική ομάδα χωρίς συνολικό χρόνο ασφάλισης ή ημέρες ομάδας.",
     };
   }
 
   return {
     error: null,
     value: Math.round(totalDays),
-    source: 'total_insurance_time',
-    sourceLabel: 'από τον συνολικό χρόνο ασφάλισης',
+    source: "total_insurance_time",
+    sourceLabel: "από τον συνολικό χρόνο ασφάλισης",
   };
 }
 
 function analyzeInsurancePeriodDate({ value, fieldLabel }) {
-  const trimmedValue = String(value || '').trim();
+  const trimmedValue = String(value || "").trim();
 
   if (!trimmedValue) {
     return {
@@ -2216,10 +2504,10 @@ function analyzeInsurancePeriodDate({ value, fieldLabel }) {
 
 function isAllowedInsuredTypeForFund({ fund, insuredType }) {
   if (CONTRIBUTION_BASED_FUNDS.includes(fund)) {
-    return insuredType === 'not_applicable';
+    return insuredType === "not_applicable";
   }
 
-  return insuredType === 'old' || insuredType === 'new';
+  return insuredType === "old" || insuredType === "new";
 }
 
 function isAllowedEmploymentCategoryForFund({
@@ -2228,37 +2516,31 @@ function isAllowedEmploymentCategoryForFund({
   employmentCategory,
 }) {
   if (SIMPLE_VAE_YVAE_FUNDS.includes(fund)) {
-    return ['common', 'vae', 'yvae'].includes(employmentCategory);
+    return ["common", "vae", "yvae"].includes(employmentCategory);
   }
 
   if (OTA_CLEANING_FUNDS.includes(fund)) {
-    if (
-      employmentCategory === 'ota_ika_yvae' &&
-      insuredType !== 'old'
-    ) {
+    if (employmentCategory === "ota_ika_yvae" && insuredType !== "old") {
       return false;
     }
 
-    return [
-      'common',
-      'ota_ika_vae',
-      'ota_public_vae',
-      'ota_ika_yvae',
-    ].includes(employmentCategory);
+    return ["common", "ota_ika_vae", "ota_public_vae", "ota_ika_yvae"].includes(
+      employmentCategory,
+    );
   }
 
   if (
-    fund === 'public_sector' ||
-    fund === 'deko' ||
-    fund === 'nat' ||
-    fund === 'banking_funds' ||
+    fund === "public_sector" ||
+    fund === "deko" ||
+    fund === "nat" ||
+    fund === "banking_funds" ||
     ARTICLE30_MAIN_CONTRIBUTION_FUNDS.includes(fund)
   ) {
-    return employmentCategory === 'common';
+    return employmentCategory === "common";
   }
 
   if (CONTRIBUTION_BASED_FUNDS.includes(fund)) {
-    return employmentCategory === 'contributions';
+    return employmentCategory === "contributions";
   }
 
   return false;
@@ -2271,7 +2553,7 @@ function buildInsurancePeriodCategory({
 }) {
   const categoryKey = [fund, insuredType, employmentCategory]
     .filter(Boolean)
-    .join('_');
+    .join("_");
   const contributionCategory = buildCanonicalContributionCategory({
     fund,
     insuredType,
@@ -2283,28 +2565,27 @@ function buildInsurancePeriodCategory({
     categoryKey,
     contributionCategory,
     specialWorkFacts: {
-      isCommonWork: employmentCategory === 'common',
-      isVaeWork: employmentCategory === 'vae',
-      isYvaeWork: employmentCategory === 'yvae',
-      isOtaIkaVaeWork: employmentCategory === 'ota_ika_vae',
-      isOtaPublicVaeWork: employmentCategory === 'ota_public_vae',
-      isOtaIkaYvaeWork: employmentCategory === 'ota_ika_yvae',
+      isCommonWork: employmentCategory === "common",
+      isVaeWork: employmentCategory === "vae",
+      isYvaeWork: employmentCategory === "yvae",
+      isOtaIkaVaeWork: employmentCategory === "ota_ika_vae",
+      isOtaPublicVaeWork: employmentCategory === "ota_public_vae",
+      isOtaIkaYvaeWork: employmentCategory === "ota_ika_yvae",
       isOtaCleaningWork: [
-        'ota_ika_vae',
-        'ota_public_vae',
-        'ota_ika_yvae',
+        "ota_ika_vae",
+        "ota_public_vae",
+        "ota_ika_yvae",
       ].includes(employmentCategory),
-      isContributionBasedWork: employmentCategory === 'contributions',
-      isOtaOrPublicSectorWork:
-        fund === 'public_sector' || fund === 'ota',
-      isTapDeiWork: fund === 'tap_dei',
-      isDekoWork: fund === 'deko',
-      isNatWork: fund === 'nat',
-      isTanpyWork: fund === 'tanpy',
-      isUniformedWork: fund === 'uniformed',
-      isArtisticWork: fund === 'artistic',
-      isAviationWork: fund === 'aviation',
-      isBankingFundWork: fund === 'banking_funds',
+      isContributionBasedWork: employmentCategory === "contributions",
+      isOtaOrPublicSectorWork: fund === "public_sector" || fund === "ota",
+      isTapDeiWork: fund === "tap_dei",
+      isDekoWork: fund === "deko",
+      isNatWork: fund === "nat",
+      isTanpyWork: fund === "tanpy",
+      isUniformedWork: fund === "uniformed",
+      isArtisticWork: fund === "artistic",
+      isAviationWork: fund === "aviation",
+      isBankingFundWork: fund === "banking_funds",
       isArticle30MainContributionFund:
         ARTICLE30_MAIN_CONTRIBUTION_FUNDS.includes(fund),
       isContributionBasedFund: CONTRIBUTION_BASED_FUNDS.includes(fund),
@@ -2318,37 +2599,37 @@ function buildCanonicalContributionCategory({
   employmentCategory,
   fallbackCategoryKey,
 }) {
-  if (fund === 'ika' && employmentCategory === 'vae') {
-    return 'ika_vae';
+  if (fund === "ika" && employmentCategory === "vae") {
+    return "ika_vae";
   }
 
-  if (fund === 'ika' && employmentCategory === 'yvae') {
-    return 'underground_underwater';
+  if (fund === "ika" && employmentCategory === "yvae") {
+    return "underground_underwater";
   }
 
-  if (fund === 'tap_dei' && employmentCategory === 'vae') {
+  if (fund === "tap_dei" && employmentCategory === "vae") {
     return `${insuredType}_tap_dei_vae`;
   }
 
-  if (fund === 'tap_dei' && employmentCategory === 'yvae') {
-    return 'tap_dei_yvae';
+  if (fund === "tap_dei" && employmentCategory === "yvae") {
+    return "tap_dei_yvae";
   }
 
   if (
-    fund === 'ota' &&
-    ['ota_ika_vae', 'ota_public_vae', 'ota_ika_yvae'].includes(
-      employmentCategory
+    fund === "ota" &&
+    ["ota_ika_vae", "ota_public_vae", "ota_ika_yvae"].includes(
+      employmentCategory,
     )
   ) {
     return employmentCategory;
   }
 
-  if (fund === 'tanpy') {
-    return 'tanpy_salaried';
+  if (fund === "tanpy") {
+    return "tanpy_salaried";
   }
 
   if (ARTICLE30_MAIN_CONTRIBUTION_FUNDS.includes(fund)) {
-    return fund === 'aviation' || fund === 'artistic'
+    return fund === "aviation" || fund === "artistic"
       ? `${fund}_${insuredType}`
       : fund;
   }
@@ -2365,8 +2646,8 @@ function analyzeEtaaExtraBenefits({
     : [];
 
   const presence = {
-    tsmede: periods.some((period) => period?.fund === 'tsmede'),
-    tsay: periods.some((period) => period?.fund === 'tsay'),
+    tsmede: periods.some((period) => period?.fund === "tsmede"),
+    tsay: periods.some((period) => period?.fund === "tsay"),
   };
 
   if (!presence.tsmede && !presence.tsay) {
@@ -2411,7 +2692,7 @@ function analyzeEtaaExtraBenefits({
       entries.push(tsayResult.entry);
       displayEntries.push(tsayResult.displayEntry);
       warnings.push(
-        'Ο Κλάδος Μονοσυνταξιούχων ΤΣΑΥ θα υπολογιστεί με 10 επιπλέον μονάδες εισφοράς, σύμφωνα με την τρέχουσα διοικητική πρακτική του e-ΕΦΚΑ. Η χρήση των 10 μονάδων αμφισβητείται δικαστικά.'
+        "Ο Κλάδος Μονοσυνταξιούχων ΤΣΑΥ θα υπολογιστεί με 10 επιπλέον μονάδες εισφοράς, σύμφωνα με την τρέχουσα διοικητική πρακτική του e-ΕΦΚΑ. Η χρήση των 10 μονάδων αμφισβητείται δικαστικά.",
       );
     }
   }
@@ -2429,22 +2710,21 @@ function analyzeEtaaExtraBenefits({
 }
 
 function analyzeTsmedeExtraBenefit(value = {}) {
-  const status = String(value.status || '').trim();
+  const status = String(value.status || "").trim();
 
   if (!status) {
     return {
-      error:
-        'Δηλώστε αν υπήρχε υπαγωγή στην Ειδική Προσαύξηση ΤΣΜΕΔΕ.',
+      error: "Δηλώστε αν υπήρχε υπαγωγή στην Ειδική Προσαύξηση ΤΣΜΕΔΕ.",
     };
   }
 
-  if (!['yes', 'no'].includes(status)) {
+  if (!["yes", "no"].includes(status)) {
     return {
-      error: 'Η επιλογή για την Ειδική Προσαύξηση ΤΣΜΕΔΕ δεν είναι έγκυρη.',
+      error: "Η επιλογή για την Ειδική Προσαύξηση ΤΣΜΕΔΕ δεν είναι έγκυρη.",
     };
   }
 
-  if (status === 'no') {
+  if (status === "no") {
     return {
       error: null,
       entry: null,
@@ -2454,7 +2734,7 @@ function analyzeTsmedeExtraBenefit(value = {}) {
 
   const baseAmountResult = parsePositiveDecimalForEtaa(
     value.baseAmount,
-    'Η μέση μηνιαία βάση της Ειδικής Προσαύξησης ΤΣΜΕΔΕ'
+    "Η μέση μηνιαία βάση της Ειδικής Προσαύξησης ΤΣΜΕΔΕ",
   );
 
   if (baseAmountResult.error) {
@@ -2464,7 +2744,7 @@ function analyzeTsmedeExtraBenefit(value = {}) {
   const totalDurationResult = analyzeEtaaDuration({
     yearsValue: value.contributionYears,
     monthsValue: value.contributionMonths,
-    label: 'Ο συνολικός χρόνος Ειδικής Προσαύξησης ΤΣΜΕΔΕ',
+    label: "Ο συνολικός χρόνος Ειδικής Προσαύξησης ΤΣΜΕΔΕ",
   });
 
   if (totalDurationResult.error) {
@@ -2475,26 +2755,26 @@ function analyzeTsmedeExtraBenefit(value = {}) {
     {
       years: totalDurationResult.decimalYears,
       extraContributionPoints: TSMEDE_DEFAULT_EXTRA_CONTRIBUTION_POINTS,
-      reason: 'Βασική Ειδική Προσαύξηση ΤΣΜΕΔΕ — 12 μονάδες',
+      reason: "Βασική Ειδική Προσαύξηση ΤΣΜΕΔΕ — 12 μονάδες",
     },
   ];
 
   const higherRateStatus = String(
-    value.hasHigherSalariedRateBefore2007 || 'no'
+    value.hasHigherSalariedRateBefore2007 || "no",
   ).trim();
 
-  if (!['yes', 'no'].includes(higherRateStatus)) {
+  if (!["yes", "no"].includes(higherRateStatus)) {
     return {
       error:
-        'Δηλώστε αν καταβλήθηκε υψηλότερο ασφάλιστρο έμμισθου ΤΣΜΕΔΕ πριν από 1/1/2007.',
+        "Δηλώστε αν καταβλήθηκε υψηλότερο ασφάλιστρο έμμισθου ΤΣΜΕΔΕ πριν από 1/1/2007.",
     };
   }
 
-  if (higherRateStatus === 'yes') {
+  if (higherRateStatus === "yes") {
     const higherRateDurationResult = analyzeEtaaDuration({
       yearsValue: value.higherRateYears,
       monthsValue: value.higherRateMonths,
-      label: 'Ο χρόνος υψηλότερου ασφαλίστρου έμμισθου ΤΣΜΕΔΕ',
+      label: "Ο χρόνος υψηλότερου ασφαλίστρου έμμισθου ΤΣΜΕΔΕ",
     });
 
     if (higherRateDurationResult.error) {
@@ -2502,18 +2782,17 @@ function analyzeTsmedeExtraBenefit(value = {}) {
     }
 
     if (
-      higherRateDurationResult.decimalYears >
-      totalDurationResult.decimalYears
+      higherRateDurationResult.decimalYears > totalDurationResult.decimalYears
     ) {
       return {
         error:
-          'Ο χρόνος υψηλότερου ασφαλίστρου πριν από το 2007 δεν μπορεί να υπερβαίνει τον συνολικό χρόνο Ειδικής Προσαύξησης ΤΣΜΕΔΕ.',
+          "Ο χρόνος υψηλότερου ασφαλίστρου πριν από το 2007 δεν μπορεί να υπερβαίνει τον συνολικό χρόνο Ειδικής Προσαύξησης ΤΣΜΕΔΕ.",
       };
     }
 
     const extraPointsResult = parsePositiveDecimalForEtaa(
       value.additionalPointsAboveTwelve,
-      'Οι πρόσθετες μονάδες του υψηλότερου ασφαλίστρου ΤΣΜΕΔΕ πάνω από τις 12'
+      "Οι πρόσθετες μονάδες του υψηλότερου ασφαλίστρου ΤΣΜΕΔΕ πάνω από τις 12",
     );
 
     if (extraPointsResult.error) {
@@ -2524,26 +2803,26 @@ function analyzeTsmedeExtraBenefit(value = {}) {
       years: higherRateDurationResult.decimalYears,
       extraContributionPoints: extraPointsResult.value,
       reason:
-        'Πρόσθετη διαφορά υψηλότερου ασφαλίστρου έμμισθου πριν από 1/1/2007',
+        "Πρόσθετη διαφορά υψηλότερου ασφαλίστρου έμμισθου πριν από 1/1/2007",
     });
   }
 
   const additionalTwoPercentStatus = String(
-    value.hasAdditionalTwoPercent || 'no'
+    value.hasAdditionalTwoPercent || "no",
   ).trim();
 
-  if (!['yes', 'no'].includes(additionalTwoPercentStatus)) {
+  if (!["yes", "no"].includes(additionalTwoPercentStatus)) {
     return {
       error:
-        'Δηλώστε αν καταβλήθηκε η πρόσθετη εισφορά 2% ΤΣΜΕΔΕ για το διάστημα 1/7/2011–31/12/2015.',
+        "Δηλώστε αν καταβλήθηκε η πρόσθετη εισφορά 2% ΤΣΜΕΔΕ για το διάστημα 1/7/2011–31/12/2015.",
     };
   }
 
-  if (additionalTwoPercentStatus === 'yes') {
+  if (additionalTwoPercentStatus === "yes") {
     const twoPercentDurationResult = analyzeEtaaDuration({
       yearsValue: value.additionalTwoPercentYears,
       monthsValue: value.additionalTwoPercentMonths,
-      label: 'Ο χρόνος καταβολής της πρόσθετης εισφοράς 2% ΤΣΜΕΔΕ',
+      label: "Ο χρόνος καταβολής της πρόσθετης εισφοράς 2% ΤΣΜΕΔΕ",
     });
 
     if (twoPercentDurationResult.error) {
@@ -2556,14 +2835,14 @@ function analyzeTsmedeExtraBenefit(value = {}) {
     ) {
       return {
         error:
-          'Η πρόσθετη εισφορά 2% ΤΣΜΕΔΕ μπορεί να δηλωθεί μέχρι 4 έτη και 6 μήνες για το διάστημα 1/7/2011–31/12/2015.',
+          "Η πρόσθετη εισφορά 2% ΤΣΜΕΔΕ μπορεί να δηλωθεί μέχρι 4 έτη και 6 μήνες για το διάστημα 1/7/2011–31/12/2015.",
       };
     }
 
     contributionPeriods.push({
       years: twoPercentDurationResult.decimalYears,
       extraContributionPoints: 2,
-      reason: 'Πρόσθετη εισφορά 2% ΤΣΜΕΔΕ 1/7/2011–31/12/2015',
+      reason: "Πρόσθετη εισφορά 2% ΤΣΜΕΔΕ 1/7/2011–31/12/2015",
     });
   }
 
@@ -2575,40 +2854,38 @@ function analyzeTsmedeExtraBenefit(value = {}) {
       benefitType: ETAA_EXTRA_BENEFIT_TYPES.TSMEDE_SPECIAL_INCREASE,
       baseAmount,
       contributionPeriods,
-      calculationPolicy: 'documented_tsmede_rules',
+      calculationPolicy: "documented_tsmede_rules",
     },
     displayEntry: {
       benefitType: ETAA_EXTRA_BENEFIT_TYPES.TSMEDE_SPECIAL_INCREASE,
-      label: 'ΤΣΜΕΔΕ — Ειδική Προσαύξηση',
+      label: "ΤΣΜΕΔΕ — Ειδική Προσαύξηση",
       baseAmount,
       contributionYears: totalDurationResult.decimalYears,
       summary:
         `ΤΣΜΕΔΕ Ειδική Προσαύξηση: βάση ${baseAmount.toFixed(2)} €, ` +
         `${formatEtaaDuration(totalDurationResult)} με βασικές 12 μονάδες` +
-        `${higherRateStatus === 'yes' ? ', συν πρόσθετη διαφορά υψηλότερου ασφαλίστρου πριν από το 2007' : ''}` +
-        `${additionalTwoPercentStatus === 'yes' ? ', συν πρόσθετη εισφορά 2%' : ''}.`,
+        `${higherRateStatus === "yes" ? ", συν πρόσθετη διαφορά υψηλότερου ασφαλίστρου πριν από το 2007" : ""}` +
+        `${additionalTwoPercentStatus === "yes" ? ", συν πρόσθετη εισφορά 2%" : ""}.`,
     },
   };
 }
 
 function analyzeTsayExtraBenefit(value = {}) {
-  const status = String(value.status || '').trim();
+  const status = String(value.status || "").trim();
 
   if (!status) {
     return {
-      error:
-        'Δηλώστε αν υπήρχε υπαγωγή στον Κλάδο Μονοσυνταξιούχων ΤΣΑΥ.',
+      error: "Δηλώστε αν υπήρχε υπαγωγή στον Κλάδο Μονοσυνταξιούχων ΤΣΑΥ.",
     };
   }
 
-  if (!['yes', 'no'].includes(status)) {
+  if (!["yes", "no"].includes(status)) {
     return {
-      error:
-        'Η επιλογή για τον Κλάδο Μονοσυνταξιούχων ΤΣΑΥ δεν είναι έγκυρη.',
+      error: "Η επιλογή για τον Κλάδο Μονοσυνταξιούχων ΤΣΑΥ δεν είναι έγκυρη.",
     };
   }
 
-  if (status === 'no') {
+  if (status === "no") {
     return {
       error: null,
       entry: null,
@@ -2618,7 +2895,7 @@ function analyzeTsayExtraBenefit(value = {}) {
 
   const baseAmountResult = parsePositiveDecimalForEtaa(
     value.baseAmount,
-    'Η μέση μηνιαία βάση του Κλάδου Μονοσυνταξιούχων ΤΣΑΥ'
+    "Η μέση μηνιαία βάση του Κλάδου Μονοσυνταξιούχων ΤΣΑΥ",
   );
 
   if (baseAmountResult.error) {
@@ -2628,7 +2905,7 @@ function analyzeTsayExtraBenefit(value = {}) {
   const durationResult = analyzeEtaaDuration({
     yearsValue: value.contributionYears,
     monthsValue: value.contributionMonths,
-    label: 'Ο χρόνος καταβολής εισφοράς Μονοσυνταξιούχων ΤΣΑΥ',
+    label: "Ο χρόνος καταβολής εισφοράς Μονοσυνταξιούχων ΤΣΑΥ",
   });
 
   if (durationResult.error) {
@@ -2643,17 +2920,15 @@ function analyzeTsayExtraBenefit(value = {}) {
       benefitType: ETAA_EXTRA_BENEFIT_TYPES.TSAY_SINGLE_PENSIONER_BRANCH,
       baseAmount,
       contributionYears: durationResult.decimalYears,
-      extraContributionPoints:
-        TSAY_ADMINISTRATIVE_EXTRA_CONTRIBUTION_POINTS,
-      calculationPolicy: 'efka_administrative_10_points',
+      extraContributionPoints: TSAY_ADMINISTRATIVE_EXTRA_CONTRIBUTION_POINTS,
+      calculationPolicy: "efka_administrative_10_points",
     },
     displayEntry: {
       benefitType: ETAA_EXTRA_BENEFIT_TYPES.TSAY_SINGLE_PENSIONER_BRANCH,
-      label: 'ΤΣΑΥ — Κλάδος Μονοσυνταξιούχων',
+      label: "ΤΣΑΥ — Κλάδος Μονοσυνταξιούχων",
       baseAmount,
       contributionYears: durationResult.decimalYears,
-      extraContributionPoints:
-        TSAY_ADMINISTRATIVE_EXTRA_CONTRIBUTION_POINTS,
+      extraContributionPoints: TSAY_ADMINISTRATIVE_EXTRA_CONTRIBUTION_POINTS,
       summary:
         `ΤΣΑΥ Μονοσυνταξιούχων: βάση ${baseAmount.toFixed(2)} €, ` +
         `${formatEtaaDuration(durationResult)}, υπολογισμός με 10 μονάδες εισφοράς.`,
@@ -2689,13 +2964,13 @@ function analyzeEtaaDuration({ yearsValue, monthsValue, label }) {
     months: monthsResult.value,
     decimalYears: roundToDecimals(
       yearsResult.value + monthsResult.value / 12,
-      6
+      6,
     ),
   };
 }
 
 function parsePositiveDecimalForEtaa(value, label) {
-  const result = parseNonNegativeDecimal(String(value || '').trim());
+  const result = parseNonNegativeDecimal(String(value || "").trim());
 
   if (!result.isValid || result.value <= 0) {
     return {
@@ -2712,27 +2987,27 @@ function parsePositiveDecimalForEtaa(value, label) {
 function normalizeEtaaExtraBenefitDraft(value) {
   const defaultValue = {
     tsmede: {
-      status: '',
-      baseAmount: '',
-      contributionYears: '',
-      contributionMonths: '',
-      hasHigherSalariedRateBefore2007: 'no',
-      higherRateYears: '',
-      higherRateMonths: '',
-      additionalPointsAboveTwelve: '',
-      hasAdditionalTwoPercent: 'no',
-      additionalTwoPercentYears: '',
-      additionalTwoPercentMonths: '',
+      status: "",
+      baseAmount: "",
+      contributionYears: "",
+      contributionMonths: "",
+      hasHigherSalariedRateBefore2007: "no",
+      higherRateYears: "",
+      higherRateMonths: "",
+      additionalPointsAboveTwelve: "",
+      hasAdditionalTwoPercent: "no",
+      additionalTwoPercentYears: "",
+      additionalTwoPercentMonths: "",
     },
     tsay: {
-      status: '',
-      baseAmount: '',
-      contributionYears: '',
-      contributionMonths: '',
+      status: "",
+      baseAmount: "",
+      contributionYears: "",
+      contributionMonths: "",
     },
   };
 
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return defaultValue;
   }
 
@@ -2767,7 +3042,7 @@ function analyzeInsuranceDaysInput({
   insuranceDaysInput,
   insuranceTimeInputMethod,
 }) {
-  const trimmedDays = String(insuranceDaysInput || '').trim();
+  const trimmedDays = String(insuranceDaysInput || "").trim();
 
   if (!trimmedDays) {
     return {
@@ -2782,7 +3057,7 @@ function analyzeInsuranceDaysInput({
   if (!daysResult.isValid) {
     return {
       hasValue: true,
-      error: 'Τα ένσημα / ημέρες ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+      error: "Τα ένσημα / ημέρες ασφάλισης πρέπει να είναι ακέραιος αριθμός.",
       warnings: [],
     };
   }
@@ -2790,7 +3065,7 @@ function analyzeInsuranceDaysInput({
   if (daysResult.value <= 0) {
     return {
       hasValue: true,
-      error: 'Τα ένσημα / ημέρες ασφάλισης πρέπει να είναι περισσότερα από 0.',
+      error: "Τα ένσημα / ημέρες ασφάλισης πρέπει να είναι περισσότερα από 0.",
       warnings: [],
     };
   }
@@ -2798,7 +3073,7 @@ function analyzeInsuranceDaysInput({
   const displayTime = convertInsuranceDaysToDisplayTime(daysResult.value);
   const decimalYears = roundToDecimals(
     daysResult.value / INSURANCE_DAYS_PER_YEAR,
-    6
+    6,
   );
 
   return {
@@ -2828,9 +3103,9 @@ function analyzeYearsMonthsDaysInsuranceInput({
   insuranceExtraDaysInput,
   insuranceTimeInputMethod,
 }) {
-  const yearsText = String(insuranceYearsInput || '').trim();
-  const monthsText = String(insuranceMonthsInput || '').trim();
-  const daysText = String(insuranceExtraDaysInput || '').trim();
+  const yearsText = String(insuranceYearsInput || "").trim();
+  const monthsText = String(insuranceMonthsInput || "").trim();
+  const daysText = String(insuranceExtraDaysInput || "").trim();
 
   const hasAnyTimeValue = Boolean(yearsText || monthsText || daysText);
 
@@ -2849,7 +3124,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
   if (!yearsResult.isValid) {
     return {
       hasValue: true,
-      error: 'Τα έτη ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+      error: "Τα έτη ασφάλισης πρέπει να είναι ακέραιος αριθμός.",
       warnings: [],
     };
   }
@@ -2857,7 +3132,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
   if (!monthsResult.isValid) {
     return {
       hasValue: true,
-      error: 'Οι μήνες ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+      error: "Οι μήνες ασφάλισης πρέπει να είναι ακέραιος αριθμός.",
       warnings: [],
     };
   }
@@ -2865,7 +3140,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
   if (!daysResult.isValid) {
     return {
       hasValue: true,
-      error: 'Οι ημέρες ασφάλισης πρέπει να είναι ακέραιος αριθμός.',
+      error: "Οι ημέρες ασφάλισης πρέπει να είναι ακέραιος αριθμός.",
       warnings: [],
     };
   }
@@ -2877,7 +3152,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
   if (months > 11) {
     return {
       hasValue: true,
-      error: 'Οι μήνες ασφάλισης πρέπει να είναι από 0 έως 11.',
+      error: "Οι μήνες ασφάλισης πρέπει να είναι από 0 έως 11.",
       warnings: [],
     };
   }
@@ -2885,7 +3160,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
   if (days > 24) {
     return {
       hasValue: true,
-      error: 'Οι ημέρες ασφάλισης πρέπει να είναι από 0 έως 24.',
+      error: "Οι ημέρες ασφάλισης πρέπει να είναι από 0 έως 24.",
       warnings: [],
     };
   }
@@ -2893,15 +3168,13 @@ function analyzeYearsMonthsDaysInsuranceInput({
   if (years === 0 && months === 0 && days === 0) {
     return {
       hasValue: true,
-      error: 'Ο χρόνος ασφάλισης πρέπει να είναι μεγαλύτερος από 0.',
+      error: "Ο χρόνος ασφάλισης πρέπει να είναι μεγαλύτερος από 0.",
       warnings: [],
     };
   }
 
   const totalDays =
-    years * INSURANCE_DAYS_PER_YEAR +
-    months * INSURANCE_DAYS_PER_MONTH +
-    days;
+    years * INSURANCE_DAYS_PER_YEAR + months * INSURANCE_DAYS_PER_MONTH + days;
 
   const decimalYears = roundToDecimals(totalDays / INSURANCE_DAYS_PER_YEAR, 6);
 
@@ -2925,7 +3198,7 @@ function analyzeYearsMonthsDaysInsuranceInput({
 }
 
 function analyzeResidenceYears(value) {
-  const trimmedValue = String(value || '').trim();
+  const trimmedValue = String(value || "").trim();
 
   if (!trimmedValue) {
     return {
@@ -2940,7 +3213,7 @@ function analyzeResidenceYears(value) {
   if (!numberResult.isValid) {
     return {
       hasValue: true,
-      error: 'Τα έτη νόμιμης διαμονής πρέπει να είναι αριθμός.',
+      error: "Τα έτη νόμιμης διαμονής πρέπει να είναι αριθμός.",
       warnings: [],
     };
   }
@@ -2948,12 +3221,9 @@ function analyzeResidenceYears(value) {
   const residenceYears = roundToDecimals(numberResult.value, 4);
   const warnings = [];
 
-  if (
-    residenceYears <
-    MIN_RESIDENCE_YEARS_FOR_OLD_AGE_NATIONAL_PENSION
-  ) {
+  if (residenceYears < MIN_RESIDENCE_YEARS_FOR_OLD_AGE_NATIONAL_PENSION) {
     warnings.push(
-      'Με αυτά τα έτη νόμιμης διαμονής δεν δικαιούται εθνική σύνταξη.'
+      "Με αυτά τα έτη νόμιμης διαμονής δεν δικαιούται εθνική σύνταξη.",
     );
   }
 
@@ -2971,20 +3241,27 @@ function analyzeContributoryPensionInputs({
   averageMonthlyPensionableEarningsInput,
   yearlyEarningsRows,
   insurancePeriodsDraft = [],
+  parallelInsuranceSegments = [],
+  parallelInsuranceDraft,
 }) {
   const hasContributionBasedPeriod = insurancePeriodsDraft.some((period) => {
     return CONTRIBUTION_BASED_FUNDS.includes(period?.fund);
   });
+  const hasPost2017ParallelSegment = parallelInsuranceSegments.some(
+    (segment) => segment?.periodType === "from_2017",
+  );
 
-  if (hasContributionBasedPeriod) {
+  if (hasContributionBasedPeriod || hasPost2017ParallelSegment) {
     return analyzeInsurancePeriodYearlyAmounts({
       currentFormStep,
       yearlyEarningsRows,
       insurancePeriodsDraft,
+      parallelInsuranceSegments,
+      parallelInsuranceDraft,
     });
   }
 
-  const method = String(contributoryEarningsInputMethod || '').trim();
+  const method = String(contributoryEarningsInputMethod || "").trim();
 
   if (!method) {
     return {
@@ -3003,13 +3280,13 @@ function analyzeContributoryPensionInputs({
   if (!CONTRIBUTORY_EARNINGS_INPUT_METHOD_OPTIONS[method]) {
     return {
       hasValue: true,
-      error: 'Επιλέξτε έγκυρο τρόπο εισαγωγής συντάξιμων αποδοχών.',
+      error: "Επιλέξτε έγκυρο τρόπο εισαγωγής συντάξιμων αποδοχών.",
       warnings: [],
       requiresContributoryYearlyStep: false,
     };
   }
 
-  if (method === 'average_monthly') {
+  if (method === "average_monthly") {
     return analyzeAverageMonthlyPensionableEarnings({
       averageMonthlyPensionableEarningsInput,
       method,
@@ -3027,16 +3304,18 @@ function analyzeInsurancePeriodYearlyAmounts({
   currentFormStep,
   yearlyEarningsRows,
   insurancePeriodsDraft,
+  parallelInsuranceSegments,
+  parallelInsuranceDraft,
 }) {
-  const method = 'yearly_earnings';
-  const methodLabel = 'Ετήσια ποσά και ημέρες ανά ασφαλιστική περίοδο';
+  const method = "yearly_earnings";
+  const methodLabel = "Ετήσια ποσά και ημέρες ανά ασφαλιστική περίοδο";
 
-  if (currentFormStep !== 'contributory_yearly') {
+  if (currentFormStep !== "contributory_yearly") {
     return {
       hasValue: true,
       error: null,
       warnings: [
-        'Τα ετήσια ποσά των ασφαλιστικών περιόδων θα συμπληρωθούν στο επόμενο βήμα.',
+        "Τα ετήσια ποσά των ασφαλιστικών περιόδων θα συμπληρωθούν στο επόμενο βήμα.",
       ],
       requiresContributoryYearlyStep: true,
       contributoryEarningsInputMethod: method,
@@ -3045,7 +3324,7 @@ function analyzeInsurancePeriodYearlyAmounts({
       yearsData: [],
       contributoryPensionData: {
         earningsInputMethod: method,
-        yearlyAmountSource: 'insurance_period_modes',
+        yearlyAmountSource: "insurance_period_modes",
       },
     };
   }
@@ -3053,6 +3332,8 @@ function analyzeInsurancePeriodYearlyAmounts({
   const normalizedRows = normalizeInsurancePeriodYearlyAmountRows({
     rows: yearlyEarningsRows,
     insurancePeriodsDraft,
+    parallelInsuranceSegments,
+    parallelInsuranceDraft,
   });
 
   if (normalizedRows.error) {
@@ -3076,7 +3357,7 @@ function analyzeInsurancePeriodYearlyAmounts({
       yearsData: [],
       contributoryPensionData: {
         earningsInputMethod: method,
-        yearlyAmountSource: 'insurance_period_modes',
+        yearlyAmountSource: "insurance_period_modes",
       },
     };
   }
@@ -3092,7 +3373,7 @@ function analyzeInsurancePeriodYearlyAmounts({
     yearsData: normalizedRows.yearsData,
     contributoryPensionData: {
       earningsInputMethod: method,
-      yearlyAmountSource: 'insurance_period_modes',
+      yearlyAmountSource: "insurance_period_modes",
       yearsData: normalizedRows.yearsData,
     },
   };
@@ -3101,10 +3382,12 @@ function analyzeInsurancePeriodYearlyAmounts({
 function normalizeInsurancePeriodYearlyAmountRows({
   rows,
   insurancePeriodsDraft,
+  parallelInsuranceSegments,
+  parallelInsuranceDraft,
 }) {
   if (!Array.isArray(rows)) {
     return {
-      error: 'Τα ετήσια στοιχεία δεν έχουν σωστή μορφή.',
+      error: "Τα ετήσια στοιχεία δεν έχουν σωστή μορφή.",
       yearsData: [],
     };
   }
@@ -3116,9 +3399,9 @@ function normalizeInsurancePeriodYearlyAmountRows({
   const seenYears = new Set();
 
   for (const row of rows) {
-    const yearText = String(row.year || '').trim();
-    const amountText = String(row.annualEarnings || '').trim();
-    const daysText = String(row.insuranceDays || '').trim();
+    const yearText = String(row.year || "").trim();
+    const amountText = String(row.annualEarnings || "").trim();
+    const daysText = String(row.insuranceDays || "").trim();
     const hasUsefulValue = Boolean(amountText || daysText);
 
     if (!hasUsefulValue) {
@@ -3129,7 +3412,7 @@ function normalizeInsurancePeriodYearlyAmountRows({
 
     if (!yearResult.isValid || yearResult.value < 2002) {
       return {
-        error: 'Κάθε γραμμή πρέπει να έχει έγκυρο έτος από το 2002 και μετά.',
+        error: "Κάθε γραμμή πρέπει να έχει έγκυρο έτος από το 2002 και μετά.",
         yearsData: [],
       };
     }
@@ -3160,13 +3443,24 @@ function normalizeInsurancePeriodYearlyAmountRows({
       };
     }
 
+    let parallelYearContext = null;
+
     if (matchingPeriods.length > 1) {
-      return {
-        error:
-          `Το έτος ${yearResult.value} ανήκει σε περισσότερες από μία ασφαλιστικές περιόδους. ` +
-          'Χρειάζεται αναλυτική κατανομή μέσα στο ίδιο έτος.',
-        yearsData: [],
-      };
+      parallelYearContext = resolveParallelYearContext({
+        year: yearResult.value,
+        matchingPeriods,
+        parallelInsuranceSegments,
+        parallelInsuranceDraft,
+      });
+
+      if (!parallelYearContext) {
+        return {
+          error:
+            `Το έτος ${yearResult.value} ανήκει σε περισσότερες από μία ασφαλιστικές περιόδους. ` +
+            "Χρειάζεται συμπληρωμένη ανάλυση παράλληλης ασφάλισης.",
+          yearsData: [],
+        };
+      }
     }
 
     const amountResult = parseNonNegativeDecimal(amountText);
@@ -3192,6 +3486,14 @@ function normalizeInsurancePeriodYearlyAmountRows({
       year: yearResult.value,
       annualAmount: roundToDecimals(amountResult.value, 2),
       insuranceDays: daysResult.value,
+      parallelAnnualAmountMode:
+        parallelYearContext?.periodType === "from_2017"
+          ? "combined_pensionable_earnings"
+          : null,
+      parallelTimeCountingPeriodId:
+        parallelYearContext?.periodType === "until_2016"
+          ? parallelYearContext.timeCountingPeriodId
+          : null,
     });
   }
 
@@ -3201,8 +3503,60 @@ function normalizeInsurancePeriodYearlyAmountRows({
   };
 }
 
+function resolveParallelYearContext({
+  year,
+  matchingPeriods,
+  parallelInsuranceSegments,
+  parallelInsuranceDraft,
+}) {
+  const segment = (
+    Array.isArray(parallelInsuranceSegments) ? parallelInsuranceSegments : []
+  ).find((candidate) => {
+    const fromYear = getIsoDateYear(candidate?.fromDate);
+    const toYear = getIsoDateYear(candidate?.toDate);
+    const matchingPeriodIds = matchingPeriods
+      .map((period) => String(period?.id || ""))
+      .sort((left, right) => left.localeCompare(right));
+    const candidatePeriodIds = [...(candidate?.periodIds || [])].sort(
+      (left, right) => left.localeCompare(right),
+    );
+
+    return (
+      fromYear !== null &&
+      toYear !== null &&
+      year >= fromYear &&
+      year <= toYear &&
+      matchingPeriodIds.length === candidatePeriodIds.length &&
+      matchingPeriodIds.every(
+        (periodId, index) => periodId === candidatePeriodIds[index],
+      )
+    );
+  });
+
+  if (!segment) {
+    return null;
+  }
+
+  const normalizedDraft = normalizeParallelInsuranceDraft(
+    parallelInsuranceDraft,
+  );
+  const segmentDraft = normalizedDraft.segments[segment.id] || {};
+  const timeCountingPeriodId = String(
+    segmentDraft.timeCountingPeriodId || "",
+  ).trim();
+
+  if (!segment.periodIds.includes(timeCountingPeriodId)) {
+    return null;
+  }
+
+  return {
+    periodType: segment.periodType,
+    timeCountingPeriodId,
+  };
+}
+
 function getIsoDateYear(value) {
-  const match = /^(\d{4})-\d{2}-\d{2}$/.exec(String(value || '').trim());
+  const match = /^(\d{4})-\d{2}-\d{2}$/.exec(String(value || "").trim());
 
   if (!match) {
     return null;
@@ -3215,7 +3569,9 @@ function analyzeAverageMonthlyPensionableEarnings({
   averageMonthlyPensionableEarningsInput,
   method,
 }) {
-  const trimmedValue = String(averageMonthlyPensionableEarningsInput || '').trim();
+  const trimmedValue = String(
+    averageMonthlyPensionableEarningsInput || "",
+  ).trim();
 
   if (!trimmedValue) {
     return {
@@ -3239,7 +3595,7 @@ function analyzeAverageMonthlyPensionableEarnings({
   if (!amountResult.isValid) {
     return {
       hasValue: true,
-      error: 'Ο μέσος μηνιαίος συντάξιμος μισθός πρέπει να είναι αριθμός.',
+      error: "Ο μέσος μηνιαίος συντάξιμος μισθός πρέπει να είναι αριθμός.",
       warnings: [],
       requiresContributoryYearlyStep: false,
     };
@@ -3248,7 +3604,8 @@ function analyzeAverageMonthlyPensionableEarnings({
   if (amountResult.value <= 0) {
     return {
       hasValue: true,
-      error: 'Ο μέσος μηνιαίος συντάξιμος μισθός πρέπει να είναι μεγαλύτερος από 0.',
+      error:
+        "Ο μέσος μηνιαίος συντάξιμος μισθός πρέπει να είναι μεγαλύτερος από 0.",
       warnings: [],
       requiresContributoryYearlyStep: false,
     };
@@ -3278,12 +3635,12 @@ function analyzeYearlyEarnings({
   yearlyEarningsRows,
   method,
 }) {
-  if (currentFormStep !== 'contributory_yearly') {
+  if (currentFormStep !== "contributory_yearly") {
     return {
       hasValue: true,
       error: null,
       warnings: [
-        'Η αναλυτική εισαγωγή αποδοχών θα συμπληρωθεί στο επόμενο βήμα.',
+        "Η αναλυτική εισαγωγή αποδοχών θα συμπληρωθεί στο επόμενο βήμα.",
       ],
       requiresContributoryYearlyStep: true,
       contributoryEarningsInputMethod: method,
@@ -3345,7 +3702,7 @@ function analyzeYearlyEarnings({
 function normalizeYearlyEarningsRows(rows) {
   if (!Array.isArray(rows)) {
     return {
-      error: 'Τα ετήσια στοιχεία αποδοχών δεν έχουν σωστή μορφή.',
+      error: "Τα ετήσια στοιχεία αποδοχών δεν έχουν σωστή μορφή.",
       yearsData: [],
     };
   }
@@ -3353,9 +3710,9 @@ function normalizeYearlyEarningsRows(rows) {
   const yearsData = [];
 
   for (const row of rows) {
-    const yearText = String(row.year || '').trim();
-    const earningsText = String(row.annualEarnings || '').trim();
-    const daysText = String(row.insuranceDays || '').trim();
+    const yearText = String(row.year || "").trim();
+    const earningsText = String(row.annualEarnings || "").trim();
+    const daysText = String(row.insuranceDays || "").trim();
 
     const hasAnyValue = Boolean(yearText || earningsText || daysText);
     const hasUsefulValue = Boolean(earningsText || daysText);
@@ -3368,7 +3725,8 @@ function normalizeYearlyEarningsRows(rows) {
 
     if (!yearResult.isValid || yearResult.value < 2002) {
       return {
-        error: 'Κάθε γραμμή αποδοχών πρέπει να έχει έγκυρο έτος από το 2002 και μετά.',
+        error:
+          "Κάθε γραμμή αποδοχών πρέπει να έχει έγκυρο έτος από το 2002 και μετά.",
         yearsData: [],
       };
     }
@@ -3419,7 +3777,7 @@ function normalizeYearlyEarningsRows(rows) {
 }
 
 function parseNonNegativeInteger(value) {
-  const text = String(value || '').trim();
+  const text = String(value || "").trim();
 
   if (!/^\d+$/.test(text)) {
     return {
@@ -3435,7 +3793,7 @@ function parseNonNegativeInteger(value) {
 }
 
 function parseNonNegativeIntegerOrEmpty(value) {
-  const text = String(value || '').trim();
+  const text = String(value || "").trim();
 
   if (!text) {
     return {
@@ -3448,7 +3806,9 @@ function parseNonNegativeIntegerOrEmpty(value) {
 }
 
 function parseNonNegativeDecimal(value) {
-  const normalizedText = String(value || '').trim().replace(',', '.');
+  const normalizedText = String(value || "")
+    .trim()
+    .replace(",", ".");
 
   if (!/^\d+(\.\d+)?$/.test(normalizedText)) {
     return {
@@ -3469,9 +3829,7 @@ function convertInsuranceDaysToDisplayTime(totalDays) {
   const years = Math.floor(safeTotalDays / INSURANCE_DAYS_PER_YEAR);
   const remainingDaysAfterYears = safeTotalDays % INSURANCE_DAYS_PER_YEAR;
 
-  const months = Math.floor(
-    remainingDaysAfterYears / INSURANCE_DAYS_PER_MONTH
-  );
+  const months = Math.floor(remainingDaysAfterYears / INSURANCE_DAYS_PER_MONTH);
 
   const days = remainingDaysAfterYears % INSURANCE_DAYS_PER_MONTH;
 
@@ -3483,10 +3841,10 @@ function convertInsuranceDaysToDisplayTime(totalDays) {
 }
 
 function parseGreekDateInput(value) {
-  const normalizedValue = String(value || '').trim();
+  const normalizedValue = String(value || "").trim();
 
   const separatedDateMatch = normalizedValue.match(
-    /^(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{2}|\d{4})$/
+    /^(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{2}|\d{4})$/,
   );
 
   if (separatedDateMatch) {
@@ -3498,7 +3856,7 @@ function parseGreekDateInput(value) {
     };
   }
 
-  const digitsOnly = normalizedValue.replace(/\D/g, '');
+  const digitsOnly = normalizedValue.replace(/\D/g, "");
 
   if (digitsOnly.length === 8) {
     return {
@@ -3524,7 +3882,7 @@ function parseGreekDateInput(value) {
 }
 
 function normalizeYear(value) {
-  const yearText = String(value || '').trim();
+  const yearText = String(value || "").trim();
 
   if (yearText.length === 4) {
     return Number(yearText);
@@ -3548,7 +3906,7 @@ function formatIsoDate(day, month, year) {
 }
 
 function padTwoDigits(value) {
-  return String(value).padStart(2, '0');
+  return String(value).padStart(2, "0");
 }
 
 function roundToDecimals(value, decimals) {
@@ -3560,28 +3918,26 @@ function validateUniformedSpecialTimeDraftForAnalysis({
   fund,
   uniformedSpecialTimeDraft,
 }) {
-  if (fund !== 'uniformed') {
+  if (fund !== "uniformed") {
     return {
       error: null,
     };
   }
 
   const normalizedDraft = normalizeUniformedSpecialTimeDraft(
-    uniformedSpecialTimeDraft
+    uniformedSpecialTimeDraft,
   );
 
-  const insuranceRegime = String(
-    normalizedDraft.insuranceRegime || ''
-  ).trim();
+  const insuranceRegime = String(normalizedDraft.insuranceRegime || "").trim();
 
-  if (!['old_public', 'new_ika'].includes(insuranceRegime)) {
+  if (!["old_public", "new_ika"].includes(insuranceRegime)) {
     return {
-      error: 'Επιλέξτε καθεστώς κατάταξης ενστόλου.',
+      error: "Επιλέξτε καθεστώς κατάταξης ενστόλου.",
     };
   }
 
   const article36ACategory = String(
-    normalizedDraft.article36ACategory || ''
+    normalizedDraft.article36ACategory || "",
   ).trim();
 
   if (
@@ -3589,12 +3945,12 @@ function validateUniformedSpecialTimeDraftForAnalysis({
     !isValidArticle36ACategoryForAnalysis(article36ACategory)
   ) {
     return {
-      error: 'Η κατηγορία άρθρου 36Α δεν είναι έγκυρη.',
+      error: "Η κατηγορία άρθρου 36Α δεν είναι έγκυρη.",
     };
   }
 
   const combatDaysResult = getCombatFiveYearServiceDaysForAnalysis(
-    normalizedDraft.combatFiveYearService
+    normalizedDraft.combatFiveYearService,
   );
 
   if (combatDaysResult.error) {
@@ -3603,10 +3959,11 @@ function validateUniformedSpecialTimeDraftForAnalysis({
     };
   }
 
-  const combatEarningsValidation = validateUniformedRecognitionEarningsForAnalysis(
-    normalizedDraft.combatFiveYearService,
-    'τη μάχιμη πενταετία'
-  );
+  const combatEarningsValidation =
+    validateUniformedRecognitionEarningsForAnalysis(
+      normalizedDraft.combatFiveYearService,
+      "τη μάχιμη πενταετία",
+    );
 
   if (combatEarningsValidation.error) {
     return { error: combatEarningsValidation.error };
@@ -3614,7 +3971,7 @@ function validateUniformedSpecialTimeDraftForAnalysis({
 
   const semestersDaysResult = getSpecialSemestersDaysForAnalysis(
     normalizedDraft.specialSemesters,
-    insuranceRegime
+    insuranceRegime,
   );
 
   if (semestersDaysResult.error) {
@@ -3623,22 +3980,24 @@ function validateUniformedSpecialTimeDraftForAnalysis({
     };
   }
 
-  const semestersEarningsValidation = validateUniformedRecognitionEarningsForAnalysis(
-    normalizedDraft.specialSemesters,
-    'τα εξάμηνα'
-  );
+  const semestersEarningsValidation =
+    validateUniformedRecognitionEarningsForAnalysis(
+      normalizedDraft.specialSemesters,
+      "τα εξάμηνα",
+    );
 
   if (semestersEarningsValidation.error) {
     return { error: semestersEarningsValidation.error };
   }
 
-  if (insuranceRegime === 'new_ika') {
+  if (insuranceRegime === "new_ika") {
     const maxCombinedDays = 7 * INSURANCE_DAYS_PER_YEAR;
     const totalSpecialDays = combatDaysResult.days + semestersDaysResult.days;
 
     if (totalSpecialDays > maxCombinedDays) {
       return {
-        error: 'Για κατάταξη από 01/01/2011, η μάχιμη πενταετία μαζί με τα εξάμηνα δεν μπορεί να ξεπερνά συνολικά τα 7 έτη.',
+        error:
+          "Για κατάταξη από 01/01/2011, η μάχιμη πενταετία μαζί με τα εξάμηνα δεν μπορεί να ξεπερνά συνολικά τα 7 έτη.",
       };
     }
   }
@@ -3649,64 +4008,62 @@ function validateUniformedSpecialTimeDraftForAnalysis({
 }
 
 function getCombatFiveYearServiceDaysForAnalysis(combatFiveYearService = {}) {
-  const status = String(combatFiveYearService.status || 'none').trim();
+  const status = String(combatFiveYearService.status || "none").trim();
 
-  if (status === 'none') {
+  if (status === "none") {
     return {
       days: 0,
       error: null,
     };
   }
 
-  if (status === 'full') {
+  if (status === "full") {
     return {
       days: 5 * INSURANCE_DAYS_PER_YEAR,
       error: null,
     };
   }
 
-  if (status !== 'partial') {
+  if (status !== "partial") {
     return {
       days: 0,
-      error: 'Η επιλογή μάχιμης πενταετίας δεν είναι έγκυρη.',
+      error: "Η επιλογή μάχιμης πενταετίας δεν είναι έγκυρη.",
     };
   }
 
-  const years = parseNonNegativeIntegerOrEmpty(
-    combatFiveYearService.years
-  );
-  const months = parseNonNegativeIntegerOrEmpty(
-    combatFiveYearService.months
-  );
-  const days = parseNonNegativeIntegerOrEmpty(
-    combatFiveYearService.days
-  );
+  const years = parseNonNegativeIntegerOrEmpty(combatFiveYearService.years);
+  const months = parseNonNegativeIntegerOrEmpty(combatFiveYearService.months);
+  const days = parseNonNegativeIntegerOrEmpty(combatFiveYearService.days);
 
   if (!years.isValid || !months.isValid || !days.isValid) {
     return {
       days: 0,
-      error: 'Ο μερικός χρόνος μάχιμης πενταετίας πρέπει να δηλωθεί με ακέραια έτη, μήνες και ημέρες.',
+      error:
+        "Ο μερικός χρόνος μάχιμης πενταετίας πρέπει να δηλωθεί με ακέραια έτη, μήνες και ημέρες.",
     };
   }
 
   if (years.value === 0 && months.value === 0 && days.value === 0) {
     return {
       days: 0,
-      error: 'Αν η μάχιμη πενταετία είναι μερική, πρέπει να δηλωθεί τουλάχιστον ένας χρόνος.',
+      error:
+        "Αν η μάχιμη πενταετία είναι μερική, πρέπει να δηλωθεί τουλάχιστον ένας χρόνος.",
     };
   }
 
   if (months.value > 11) {
     return {
       days: 0,
-      error: 'Οι μήνες της μερικής μάχιμης πενταετίας πρέπει να είναι από 0 έως 11.',
+      error:
+        "Οι μήνες της μερικής μάχιμης πενταετίας πρέπει να είναι από 0 έως 11.",
     };
   }
 
   if (days.value > 24) {
     return {
       days: 0,
-      error: 'Οι ημέρες της μερικής μάχιμης πενταετίας πρέπει να είναι από 0 έως 24.',
+      error:
+        "Οι ημέρες της μερικής μάχιμης πενταετίας πρέπει να είναι από 0 έως 24.",
     };
   }
 
@@ -3718,7 +4075,7 @@ function getCombatFiveYearServiceDaysForAnalysis(combatFiveYearService = {}) {
   if (totalCombatFiveYearDays > 5 * INSURANCE_DAYS_PER_YEAR) {
     return {
       days: 0,
-      error: 'Η μερική μάχιμη πενταετία δεν μπορεί να ξεπερνά τα 5 έτη.',
+      error: "Η μερική μάχιμη πενταετία δεν μπορεί να ξεπερνά τα 5 έτη.",
     };
   }
 
@@ -3728,60 +4085,66 @@ function getCombatFiveYearServiceDaysForAnalysis(combatFiveYearService = {}) {
   };
 }
 
-function getSpecialSemestersDaysForAnalysis(specialSemesters = {}, insuranceRegime = '') {
-  const status = String(specialSemesters.status || 'none').trim();
+function getSpecialSemestersDaysForAnalysis(
+  specialSemesters = {},
+  insuranceRegime = "",
+) {
+  const status = String(specialSemesters.status || "none").trim();
 
-  if (status === 'none') {
+  if (status === "none") {
     return {
       days: 0,
       error: null,
     };
   }
 
-  if (status !== 'yes') {
+  if (status !== "yes") {
     return {
       days: 0,
-      error: 'Η επιλογή εξαμήνων δεν είναι έγκυρη.',
+      error: "Η επιλογή εξαμήνων δεν είναι έγκυρη.",
     };
   }
 
   const semestersType = String(
-    specialSemesters.specialSemestersType || ''
+    specialSemesters.specialSemestersType || "",
   ).trim();
 
   if (!isValidSpecialSemestersTypeForAnalysis(semestersType)) {
     return {
       days: 0,
-      error: 'Επιλέξτε τύπο εξαμήνων.',
+      error: "Επιλέξτε τύπο εξαμήνων.",
     };
   }
 
   const semestersCount = parseNonNegativeIntegerOrEmpty(
-    specialSemesters.semestersCount
+    specialSemesters.semestersCount,
   );
 
   if (!semestersCount.isValid || semestersCount.value <= 0) {
     return {
       days: 0,
-      error: 'Το πλήθος εξαμήνων πρέπει να είναι ακέραιος αριθμός μεγαλύτερος από 0.',
+      error:
+        "Το πλήθος εξαμήνων πρέπει να είναι ακέραιος αριθμός μεγαλύτερος από 0.",
     };
   }
 
-  if (insuranceRegime === 'new_ika' && semestersCount.value > 14) {
+  if (insuranceRegime === "new_ika" && semestersCount.value > 14) {
     return {
       days: 0,
-      error: 'Για κατάταξη από 01/01/2011, τα εξάμηνα δεν μπορούν να είναι περισσότερα από 14.',
+      error:
+        "Για κατάταξη από 01/01/2011, τα εξάμηνα δεν μπορούν να είναι περισσότερα από 14.",
     };
   }
 
   const milestoneCompletionYear = String(
-    specialSemesters.milestoneCompletionYear || ''
+    specialSemesters.milestoneCompletionYear || "",
   ).trim();
 
   if (milestoneCompletionYear && !/^\d{4}$/.test(milestoneCompletionYear)) {
     return {
       days: 0,
-      error: 'Το έτος συμπλήρωσης πραγματικής υπηρεσίας πρέπει να έχει 4 ψηφία.',
+      error:
+        "Το έτος συμπλήρωσης πραγματικής υπηρεσίας πρέπει να έχει 4 ψηφία.",
     };
   }
 
@@ -3792,44 +4155,66 @@ function getSpecialSemestersDaysForAnalysis(specialSemesters = {}, insuranceRegi
 }
 
 function validateUniformedRecognitionEarningsForAnalysis(value = {}, label) {
-  const status = String(value.status || 'none').trim();
-  const recognitionPeriod = String(value.recognitionPeriod || '').trim();
+  const status = String(value.status || "none").trim();
+  const recognitionPeriod = String(value.recognitionPeriod || "").trim();
 
-  if (status === 'none' || recognitionPeriod === 'before_2002' || !recognitionPeriod) {
+  if (
+    status === "none" ||
+    recognitionPeriod === "before_2002" ||
+    !recognitionPeriod
+  ) {
     return { error: null };
   }
 
   const paidAmount = parseNonNegativeDecimal(value.paidAmount);
   if (!paidAmount.isValid || paidAmount.value <= 0) {
-    return { error: `Για ${label} μετά το 2002, το ποσό που πληρώθηκε πρέπει να είναι μεγαλύτερο από 0.` };
+    return {
+      error: `Για ${label} μετά το 2002, το ποσό που πληρώθηκε πρέπει να είναι μεγαλύτερο από 0.`,
+    };
   }
 
-  const explicitBaseText = String(value.explicitPensionableEarningsBase || '').trim();
-  const rateText = String(value.contributionRatePercent || '').trim();
-  const hasExplicitBase = explicitBaseText !== '';
-  const hasRate = rateText !== '';
+  const explicitBaseText = String(
+    value.explicitPensionableEarningsBase || "",
+  ).trim();
+  const rateText = String(value.contributionRatePercent || "").trim();
+  const hasExplicitBase = explicitBaseText !== "";
+  const hasRate = rateText !== "";
 
   if (!hasExplicitBase && !hasRate) {
-    return { error: `Για ${label} μετά το 2002, δηλώστε είτε την ασφαλιστέα βάση της πράξης είτε το πραγματικό ποσοστό εισφοράς.` };
+    return {
+      error: `Για ${label} μετά το 2002, δηλώστε είτε την ασφαλιστέα βάση της πράξης είτε το πραγματικό ποσοστό εισφοράς.`,
+    };
   }
 
   if (hasExplicitBase) {
     const explicitBase = parseNonNegativeDecimal(explicitBaseText);
     if (!explicitBase.isValid || explicitBase.value <= 0) {
-      return { error: `Η ασφαλιστέα βάση για ${label} πρέπει να είναι αριθμός μεγαλύτερος από 0.` };
+      return {
+        error: `Η ασφαλιστέα βάση για ${label} πρέπει να είναι αριθμός μεγαλύτερος από 0.`,
+      };
     }
   }
 
   if (hasRate) {
     const rate = parseNonNegativeDecimal(rateText);
     if (!rate.isValid || rate.value <= 0 || rate.value > 100) {
-      return { error: `Το ποσοστό εισφοράς για ${label} πρέπει να είναι μεγαλύτερο από 0 και έως 100.` };
+      return {
+        error: `Το ποσοστό εισφοράς για ${label} πρέπει να είναι μεγαλύτερο από 0 και έως 100.`,
+      };
     }
   }
 
-  const referenceYear = parseNonNegativeInteger(String(value.earningsReferenceYear || '').trim());
-  if (!referenceYear.isValid || referenceYear.value < 2002 || referenceYear.value > 2100) {
-    return { error: `Το έτος αναφοράς για ${label} πρέπει να είναι έγκυρο έτος από το 2002 και μετά.` };
+  const referenceYear = parseNonNegativeInteger(
+    String(value.earningsReferenceYear || "").trim(),
+  );
+  if (
+    !referenceYear.isValid ||
+    referenceYear.value < 2002 ||
+    referenceYear.value > 2100
+  ) {
+    return {
+      error: `Το έτος αναφοράς για ${label} πρέπει να είναι έγκυρο έτος από το 2002 και μετά.`,
+    };
   }
 
   return { error: null };
@@ -3837,29 +4222,29 @@ function validateUniformedRecognitionEarningsForAnalysis(value = {}, label) {
 
 function createEmptyUniformedSpecialTimeDraft() {
   return {
-    insuranceRegime: '',
-    article36ACategory: '',
+    insuranceRegime: "",
+    article36ACategory: "",
     combatFiveYearService: {
-      status: 'none',
-      years: '',
-      months: '',
-      days: '',
-      recognitionPeriod: '',
-      paidAmount: '',
-      contributionRatePercent: '',
-      explicitPensionableEarningsBase: '',
-      earningsReferenceYear: '',
+      status: "none",
+      years: "",
+      months: "",
+      days: "",
+      recognitionPeriod: "",
+      paidAmount: "",
+      contributionRatePercent: "",
+      explicitPensionableEarningsBase: "",
+      earningsReferenceYear: "",
     },
     specialSemesters: {
-      status: 'none',
-      specialSemestersType: '',
-      semestersCount: '',
-      milestoneCompletionYear: '',
-      recognitionPeriod: '',
-      paidAmount: '',
-      contributionRatePercent: '',
-      explicitPensionableEarningsBase: '',
-      earningsReferenceYear: '',
+      status: "none",
+      specialSemestersType: "",
+      semestersCount: "",
+      milestoneCompletionYear: "",
+      recognitionPeriod: "",
+      paidAmount: "",
+      contributionRatePercent: "",
+      explicitPensionableEarningsBase: "",
+      earningsReferenceYear: "",
     },
   };
 }
@@ -3867,13 +4252,13 @@ function createEmptyUniformedSpecialTimeDraft() {
 function normalizeUniformedSpecialTimeDraft(value) {
   const defaultValue = createEmptyUniformedSpecialTimeDraft();
 
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return defaultValue;
   }
 
   const normalizedDraft = {
-    insuranceRegime: value.insuranceRegime || '',
-    article36ACategory: value.article36ACategory || '',
+    insuranceRegime: value.insuranceRegime || "",
+    article36ACategory: value.article36ACategory || "",
     combatFiveYearService: {
       ...defaultValue.combatFiveYearService,
       ...(value.combatFiveYearService || {}),
@@ -3884,22 +4269,24 @@ function normalizeUniformedSpecialTimeDraft(value) {
     },
   };
 
-  if (normalizedDraft.combatFiveYearService.recognitionPeriod === 'before_2002') {
-    normalizedDraft.combatFiveYearService.paidAmount = '0';
-    normalizedDraft.combatFiveYearService.contributionRatePercent = '';
-    normalizedDraft.combatFiveYearService.explicitPensionableEarningsBase = '';
-    normalizedDraft.combatFiveYearService.earningsReferenceYear = '';
+  if (
+    normalizedDraft.combatFiveYearService.recognitionPeriod === "before_2002"
+  ) {
+    normalizedDraft.combatFiveYearService.paidAmount = "0";
+    normalizedDraft.combatFiveYearService.contributionRatePercent = "";
+    normalizedDraft.combatFiveYearService.explicitPensionableEarningsBase = "";
+    normalizedDraft.combatFiveYearService.earningsReferenceYear = "";
   }
 
-  if (normalizedDraft.specialSemesters.status === 'none') {
-    normalizedDraft.specialSemesters.specialSemestersType = '';
+  if (normalizedDraft.specialSemesters.status === "none") {
+    normalizedDraft.specialSemesters.specialSemestersType = "";
   }
 
-  if (normalizedDraft.specialSemesters.recognitionPeriod === 'before_2002') {
-    normalizedDraft.specialSemesters.paidAmount = '0';
-    normalizedDraft.specialSemesters.contributionRatePercent = '';
-    normalizedDraft.specialSemesters.explicitPensionableEarningsBase = '';
-    normalizedDraft.specialSemesters.earningsReferenceYear = '';
+  if (normalizedDraft.specialSemesters.recognitionPeriod === "before_2002") {
+    normalizedDraft.specialSemesters.paidAmount = "0";
+    normalizedDraft.specialSemesters.contributionRatePercent = "";
+    normalizedDraft.specialSemesters.explicitPensionableEarningsBase = "";
+    normalizedDraft.specialSemesters.earningsReferenceYear = "";
   }
 
   return normalizedDraft;
@@ -3907,22 +4294,22 @@ function normalizeUniformedSpecialTimeDraft(value) {
 
 function isValidSpecialSemestersTypeForAnalysis(value) {
   return [
-    'flight',
-    'diving',
-    'paratrooper_or_special_forces',
-    'mine_clearance',
-    'other_special_category',
+    "flight",
+    "diving",
+    "paratrooper_or_special_forces",
+    "mine_clearance",
+    "other_special_category",
   ].includes(value);
 }
 
 function isValidArticle36ACategoryForAnalysis(value) {
   return [
-    'flight',
-    'submarine_or_diving',
-    'paratrooper',
-    'underwater_demolition_or_special_ops',
-    'mine_clearance_or_eod',
-    'other_confirmed',
+    "flight",
+    "submarine_or_diving",
+    "paratrooper",
+    "underwater_demolition_or_special_ops",
+    "mine_clearance_or_eod",
+    "other_confirmed",
   ].includes(value);
 }
 
@@ -3930,11 +4317,9 @@ function hasActiveUniformedSpecialTimeDraft(value) {
   const normalizedDraft = normalizeUniformedSpecialTimeDraft(value);
 
   return (
-    normalizedDraft.combatFiveYearService.status !== 'none' ||
-    normalizedDraft.specialSemesters.status !== 'none'
+    normalizedDraft.combatFiveYearService.status !== "none" ||
+    normalizedDraft.specialSemesters.status !== "none"
   );
 }
 
-export {
-  analyzePensionForm,
-};
+export { analyzePensionForm };

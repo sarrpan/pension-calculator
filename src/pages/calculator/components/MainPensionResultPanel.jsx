@@ -1,10 +1,10 @@
-
-import React from 'react';
+import React from "react";
 
 function MainPensionResultPanel({ calculationResponse }) {
   const nationalPension = calculationResponse?.nationalPension || {};
   const contributoryPension = calculationResponse?.contributoryPension || {};
   const article30Increase = calculationResponse?.article30Increase || {};
+  const parallelInsurance = calculationResponse?.parallelInsurance || {};
   const plasticYears = calculationResponse?.plasticYears || {};
   const etaaExtraBenefits = calculationResponse?.etaaExtraBenefits || {};
   const totals = calculationResponse?.totals || {};
@@ -12,74 +12,81 @@ function MainPensionResultPanel({ calculationResponse }) {
   const nationalAmount = toNumberOrNull(nationalPension.amount);
   const contributoryAmount = toNumberOrNull(contributoryPension.amount);
   const article30Amount = toNumberOrNull(article30Increase.amount);
+  const parallelInsuranceAmount = toNumberOrNull(parallelInsurance.amount);
   const etaaExtraBenefitAmount = toNumberOrNull(etaaExtraBenefits.amount);
   const etaaExtraBenefitEntries = Array.isArray(etaaExtraBenefits.entries)
     ? etaaExtraBenefits.entries
     : [];
   const article30MainContributionAmount = toNumberOrNull(
-    article30Increase.mainContributionAmount
+    article30Increase.mainContributionAmount,
   );
   const article30PremiumContributionAmount = toNumberOrNull(
-    article30Increase.premiumContributionAmount
+    article30Increase.premiumContributionAmount,
   );
   const grossMainPension = toNumberOrNull(totals.grossMainPension);
+  const cleanParallelInsuranceYears = toNumberOrNull(
+    parallelInsurance.cleanInsuranceYears,
+  );
+  const duplicateParallelInsuranceDays = toNumberOrNull(
+    parallelInsurance.duplicateInsuranceDaysRemoved,
+  );
 
   const pensionableMonthlyEarnings = toNumberOrNull(
-    contributoryPension.pensionableMonthlyEarnings
+    contributoryPension.pensionableMonthlyEarnings,
   );
   const recognizedPlasticYears = toNumberOrNull(
-    plasticYears.recognizedInsuranceYears
+    plasticYears.recognizedInsuranceYears,
   );
   const recognizedPlasticEarnings = toNumberOrNull(
-    plasticYears.recognizedPensionableEarnings
+    plasticYears.recognizedPensionableEarnings,
   );
 
   const baseReplacementRatePercentage = firstNumberOrNull(
     article30Increase.baseReplacementRatePercentage,
-    contributoryPension.replacementRatePercentage
+    contributoryPension.replacementRatePercentage,
   );
 
   const mainContributionReplacementRatePercentage = toNumberOrNull(
-    article30Increase.mainContributionReplacementRatePercentage
+    article30Increase.mainContributionReplacementRatePercentage,
   );
   const premiumContributionReplacementRatePercentage = toNumberOrNull(
-    article30Increase.premiumContributionReplacementRatePercentage
+    article30Increase.premiumContributionReplacementRatePercentage,
   );
 
   const additionalReplacementRatePercentage = firstNumberOrNull(
     article30Increase.additionalReplacementRatePercentage,
     sumNumbersOrNull(
       article30Increase.mainContributionReplacementRatePercentage,
-      article30Increase.premiumContributionReplacementRatePercentage
-    )
+      article30Increase.premiumContributionReplacementRatePercentage,
+    ),
   );
 
   const combinedReplacementRatePercentage = firstNumberOrNull(
     article30Increase.combinedReplacementRatePercentage,
     sumNumbersOrNull(
       baseReplacementRatePercentage,
-      additionalReplacementRatePercentage
-    )
+      additionalReplacementRatePercentage,
+    ),
   );
 
   return (
     <section
       style={{
-        marginTop: '1rem',
-        border: '1px solid #bbf7d0',
-        borderRadius: '8px',
-        padding: '1rem',
-        background: '#f0fdf4',
+        marginTop: "1rem",
+        border: "1px solid #bbf7d0",
+        borderRadius: "8px",
+        padding: "1rem",
+        background: "#f0fdf4",
       }}
     >
       <h2>Αποτέλεσμα κύριας σύνταξης</h2>
 
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '0.75rem',
-          marginBottom: '1rem',
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: "0.75rem",
+          marginBottom: "1rem",
         }}
       >
         <ResultCard
@@ -94,6 +101,12 @@ function MainPensionResultPanel({ calculationResponse }) {
           title="Προσαύξηση άρθρου 30"
           value={formatMoney(article30Amount)}
         />
+        {parallelInsurance.hasParallelInsurance === true && (
+          <ResultCard
+            title="Προσαύξηση παράλληλης ασφάλισης"
+            value={formatMoney(parallelInsuranceAmount)}
+          />
+        )}
         {etaaExtraBenefitEntries.length > 0 && (
           <ResultCard
             title="Πρόσθετη παροχή πρώην ΕΤΑΑ"
@@ -106,26 +119,56 @@ function MainPensionResultPanel({ calculationResponse }) {
         />
       </div>
 
-      <div style={{ color: '#166534', marginBottom: '1rem' }}>
+      <div style={{ color: "#166534", marginBottom: "1rem" }}>
         {pensionableMonthlyEarnings !== null && (
           <p>
-            Μέσος μηνιαίος συντάξιμος μισθός:{' '}
+            Μέσος μηνιαίος συντάξιμος μισθός:{" "}
             <strong>{formatMoney(pensionableMonthlyEarnings)}</strong>
           </p>
         )}
 
-        {recognizedPlasticYears !== null &&
-          recognizedPlasticYears > 0 && (
+        {parallelInsurance.hasParallelInsurance === true && (
+          <>
             <p>
-              Πλασματικός χρόνος που προστέθηκε:{' '}
-              <strong>{formatYears(recognizedPlasticYears)}</strong>
+              Τρόπος υπολογισμού παράλληλης ασφάλισης:{" "}
+              <strong>Μία ενιαία κύρια σύνταξη</strong>
             </p>
-          )}
+
+            {duplicateParallelInsuranceDays !== null && (
+              <p>
+                Ημέρες που αφαιρέθηκαν για να μην μετρηθούν δεύτερη φορά:{" "}
+                <strong>{formatNumber(duplicateParallelInsuranceDays)}</strong>
+              </p>
+            )}
+
+            {cleanParallelInsuranceYears !== null && (
+              <p>
+                Καθαρός ασφαλιστικός χρόνος μετά την αφαίρεση επικαλύψεων:{" "}
+                <strong>{formatYears(cleanParallelInsuranceYears)}</strong>
+              </p>
+            )}
+
+            {parallelInsuranceAmount !== null &&
+              parallelInsuranceAmount > 0 && (
+                <p>
+                  Πρόσθετη παροχή παράλληλης ασφάλισης έως 31/12/2016:{" "}
+                  <strong>{formatMoney(parallelInsuranceAmount)}</strong>
+                </p>
+              )}
+          </>
+        )}
+
+        {recognizedPlasticYears !== null && recognizedPlasticYears > 0 && (
+          <p>
+            Πλασματικός χρόνος που προστέθηκε:{" "}
+            <strong>{formatYears(recognizedPlasticYears)}</strong>
+          </p>
+        )}
 
         {recognizedPlasticEarnings !== null &&
           recognizedPlasticEarnings > 0 && (
             <p>
-              Συντάξιμες αποδοχές εξαγοράς πλασματικού χρόνου:{' '}
+              Συντάξιμες αποδοχές εξαγοράς πλασματικού χρόνου:{" "}
               <strong>{formatMoney(recognizedPlasticEarnings)}</strong>
             </p>
           )}
@@ -133,13 +176,13 @@ function MainPensionResultPanel({ calculationResponse }) {
         {article30MainContributionAmount !== null &&
           article30MainContributionAmount > 0 && (
             <p>
-              Προσαύξηση βασικών αυξημένων εισφορών:{' '}
+              Προσαύξηση βασικών αυξημένων εισφορών:{" "}
               <strong>{formatMoney(article30MainContributionAmount)}</strong>
               {mainContributionReplacementRatePercentage !== null && (
                 <>
-                  {' '}({formatPercentage(
-                    mainContributionReplacementRatePercentage
-                  )})
+                  {" "}
+                  ({formatPercentage(mainContributionReplacementRatePercentage)}
+                  )
                 </>
               )}
             </p>
@@ -147,27 +190,28 @@ function MainPensionResultPanel({ calculationResponse }) {
 
         {shouldShowPremiumDetails(article30Increase) && (
           <p>
-            Προσαύξηση επασφαλίστρου / ειδικής εισφοράς:{' '}
+            Προσαύξηση επασφαλίστρου / ειδικής εισφοράς:{" "}
             <strong>{formatMoney(article30PremiumContributionAmount)}</strong>
             {premiumContributionReplacementRatePercentage !== null && (
               <>
-                {' '}({formatPercentage(
-                  premiumContributionReplacementRatePercentage
-                )})
+                {" "}
+                (
+                {formatPercentage(premiumContributionReplacementRatePercentage)}
+                )
               </>
             )}
           </p>
         )}
 
         {etaaExtraBenefitEntries.map((entry, index) => (
-          <p key={`${entry.benefitType || 'etaa'}_${index}`}>
-            {getEtaaBenefitLabel(entry.benefitType)}:{' '}
+          <p key={`${entry.benefitType || "etaa"}_${index}`}>
+            {getEtaaBenefitLabel(entry.benefitType)}:{" "}
             <strong>{formatMoney(toNumberOrNull(entry.amount))}</strong>
             {toNumberOrNull(entry.benefitRatePercentage) !== null && (
               <>
-                {' '}({formatPercentage(
-                  toNumberOrNull(entry.benefitRatePercentage)
-                )})
+                {" "}
+                ({formatPercentage(toNumberOrNull(entry.benefitRatePercentage))}
+                )
               </>
             )}
           </p>
@@ -175,14 +219,14 @@ function MainPensionResultPanel({ calculationResponse }) {
 
         {baseReplacementRatePercentage !== null && (
           <p>
-            Βασικό ποσοστό αναπλήρωσης:{' '}
+            Βασικό ποσοστό αναπλήρωσης:{" "}
             <strong>{formatPercentage(baseReplacementRatePercentage)}</strong>
           </p>
         )}
 
         {additionalReplacementRatePercentage !== null && (
           <p>
-            Πρόσθετο ποσοστό αναπλήρωσης άρθρου 30:{' '}
+            Πρόσθετο ποσοστό αναπλήρωσης άρθρου 30:{" "}
             <strong>
               {formatPercentage(additionalReplacementRatePercentage)}
             </strong>
@@ -191,7 +235,7 @@ function MainPensionResultPanel({ calculationResponse }) {
 
         {combinedReplacementRatePercentage !== null && (
           <p>
-            Συνολικό ποσοστό αναπλήρωσης:{' '}
+            Συνολικό ποσοστό αναπλήρωσης:{" "}
             <strong>
               {formatPercentage(combinedReplacementRatePercentage)}
             </strong>
@@ -203,11 +247,11 @@ function MainPensionResultPanel({ calculationResponse }) {
         calculationResponse.warnings.length > 0 && (
           <div
             style={{
-              border: '1px solid #fde68a',
-              background: '#fffbeb',
-              padding: '0.75rem',
-              borderRadius: '6px',
-              marginBottom: '1rem',
+              border: "1px solid #fde68a",
+              background: "#fffbeb",
+              padding: "0.75rem",
+              borderRadius: "6px",
+              marginBottom: "1rem",
             }}
           >
             <h3>Προειδοποιήσεις</h3>
@@ -221,7 +265,7 @@ function MainPensionResultPanel({ calculationResponse }) {
 
       <details>
         <summary>Πλήρης απάντηση calculator</summary>
-        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+        <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
           {JSON.stringify(calculationResponse, null, 2)}
         </pre>
       </details>
@@ -231,21 +275,22 @@ function MainPensionResultPanel({ calculationResponse }) {
 
 function getEtaaBenefitLabel(benefitType) {
   const labels = {
-    tsmede_special_increase: 'ΤΣΜΕΔΕ — Ειδική Προσαύξηση',
-    tsay_single_pensioner_branch:
-      'ΤΣΑΥ — Κλάδος Μονοσυνταξιούχων',
+    tsmede_special_increase: "ΤΣΜΕΔΕ — Ειδική Προσαύξηση",
+    tsay_single_pensioner_branch: "ΤΣΑΥ — Κλάδος Μονοσυνταξιούχων",
   };
 
-  return labels[benefitType] || 'Πρόσθετη παροχή πρώην ΕΤΑΑ';
+  return labels[benefitType] || "Πρόσθετη παροχή πρώην ΕΤΑΑ";
 }
 
 function shouldShowPremiumDetails(article30Increase = {}) {
   const amount = toNumberOrNull(article30Increase.premiumContributionAmount);
-  const status = String(article30Increase.premiumEligibilityStatus || '').trim();
+  const status = String(
+    article30Increase.premiumEligibilityStatus || "",
+  ).trim();
 
   return (
     (amount !== null && amount > 0) ||
-    ['yes', 'no', 'unknown', 'mixed'].includes(status)
+    ["yes", "no", "unknown", "mixed"].includes(status)
   );
 }
 
@@ -253,14 +298,14 @@ function ResultCard({ title, value }) {
   return (
     <div
       style={{
-        border: '1px solid #86efac',
-        borderRadius: '8px',
-        padding: '0.75rem',
-        background: '#ffffff',
+        border: "1px solid #86efac",
+        borderRadius: "8px",
+        padding: "0.75rem",
+        background: "#ffffff",
       }}
     >
-      <div style={{ color: '#166534', fontSize: '0.9rem' }}>{title}</div>
-      <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{value}</div>
+      <div style={{ color: "#166534", fontSize: "0.9rem" }}>{title}</div>
+      <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>{value}</div>
     </div>
   );
 }
@@ -299,12 +344,23 @@ function sumNumbersOrNull(...values) {
   return numberValues.reduce((sum, value) => sum + value, 0);
 }
 
-function formatYears(value) {
+function formatNumber(value) {
   if (value === null) {
-    return '—';
+    return "—";
   }
 
-  return `${value.toLocaleString('el-GR', {
+  return value.toLocaleString("el-GR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatYears(value) {
+  if (value === null) {
+    return "—";
+  }
+
+  return `${value.toLocaleString("el-GR", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 3,
   })} έτη`;
@@ -312,12 +368,12 @@ function formatYears(value) {
 
 function formatMoney(value) {
   if (value === null) {
-    return '—';
+    return "—";
   }
 
-  return new Intl.NumberFormat('el-GR', {
-    style: 'currency',
-    currency: 'EUR',
+  return new Intl.NumberFormat("el-GR", {
+    style: "currency",
+    currency: "EUR",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
@@ -325,10 +381,10 @@ function formatMoney(value) {
 
 function formatPercentage(value) {
   if (value === null) {
-    return '—';
+    return "—";
   }
 
-  return `${value.toLocaleString('el-GR', {
+  return `${value.toLocaleString("el-GR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}%`;
