@@ -1,3 +1,4 @@
+
 import React from "react";
 
 import { InputWithLabel, RadioOption } from "../components/FormControls";
@@ -10,7 +11,8 @@ const FUND_LABELS = {
   oaee: "ΟΑΕΕ",
   etaa: "ΕΤΑΑ",
   tsmede: "ΤΣΜΕΔΕ",
-  tsay: "ΤΣΑΥ",
+  tsay: "ΤΣΑΥ — Ελεύθερος επαγγελματίας",
+  tsay_salaried: "ΤΣΑΥ — Μισθωτός",
   oga: "πρώην ΟΓΑ",
 };
 

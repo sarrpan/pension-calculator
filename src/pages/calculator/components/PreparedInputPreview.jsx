@@ -176,6 +176,13 @@ function PreparedInputPreview({ analysis }) {
                   </p>
                 )}
 
+                {period.tsaySinglePensionerStatusLabel && (
+                  <p>
+                    <strong>Κλάδος Μονοσυνταξιούχων ΤΣΑΥ:</strong>{" "}
+                    {period.tsaySinglePensionerStatusLabel}
+                  </p>
+                )}
+
                 <p>
                   <strong>Ημέρες / ένσημα που αποδίδονται:</strong>{" "}
                   {period.insuranceDays}
@@ -360,3 +367,5 @@ const previewBoxStyle = {
 };
 
 export default PreparedInputPreview;
+
+

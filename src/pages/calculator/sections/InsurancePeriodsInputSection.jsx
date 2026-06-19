@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 
 import { fieldsetStyle } from '../utils/calculatorStyles';
@@ -10,6 +11,7 @@ function InsurancePeriodsInputSection({
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
   simpleNonSalariedEarningsInputMode,
+  simpleTsaySinglePensionerStatus,
   simpleFromDateInput,
   simpleToDateInput,
   simpleTimeInputMethod,
@@ -27,6 +29,7 @@ function InsurancePeriodsInputSection({
   onSimpleInsuredTypeChange,
   onSimpleEmploymentCategoryChange,
   onSimpleNonSalariedEarningsInputModeChange,
+  onSimpleTsaySinglePensionerStatusChange,
   onSimpleFromDateChange,
   onSimpleToDateChange,
   onSimpleTimeInputMethodChange,
@@ -47,6 +50,7 @@ function InsurancePeriodsInputSection({
   );
   const isSimpleUniformedFund = isUniformedFund(simpleFundInput);
   const isSimpleContributionBasedFund = isContributionBasedFund(simpleFundInput);
+  const isSimpleTsayFund = isTsayFund(simpleFundInput);
   const isSimpleArticle30MainContributionFund =
     isArticle30MainContributionFund(simpleFundInput);
 
@@ -82,6 +86,7 @@ function InsurancePeriodsInputSection({
   function handleSimpleFundChange(value) {
     onSimpleFundChange(value);
     onSimpleNonSalariedEarningsInputModeChange('');
+    onSimpleTsaySinglePensionerStatusChange('');
 
     if (isContributionBasedFund(value)) {
       onSimpleInsuredTypeChange('not_applicable');
@@ -97,7 +102,10 @@ function InsurancePeriodsInputSection({
       return;
     }
 
-    if (isArticle30MainContributionFund(value)) {
+    if (
+      isArticle30MainContributionFund(value) ||
+      isSalariedTsayFund(value)
+    ) {
       onSimpleInsuredTypeChange('');
       onSimpleEmploymentCategoryChange('common');
       onSimpleUniformedSpecialTimeDraftChange(createEmptyUniformedSpecialTimeDraft());
@@ -181,6 +189,16 @@ function InsurancePeriodsInputSection({
                 value={simpleNonSalariedEarningsInputMode}
                 onChange={onSimpleNonSalariedEarningsInputModeChange}
                 options={NON_SALARIED_EARNINGS_INPUT_MODE_OPTIONS}
+              />
+            )}
+
+            {isSimpleTsayFund && (
+              <SelectWithLabel
+                id="simpleTsaySinglePensionerStatus"
+                label="Υπήρχε υπαγωγή στον Κλάδο Μονοσυνταξιούχων ΤΣΑΥ σε αυτή την περίοδο;"
+                value={simpleTsaySinglePensionerStatus}
+                onChange={onSimpleTsaySinglePensionerStatusChange}
+                options={YES_NO_OPTIONS}
               />
             )}
 
@@ -415,12 +433,14 @@ function InsurancePeriodGroupFields({
   );
   const isCurrentUniformedFund = isUniformedFund(group.fund);
   const isCurrentContributionBasedFund = isContributionBasedFund(group.fund);
+  const isCurrentTsayFund = isTsayFund(group.fund);
   const isCurrentArticle30MainContributionFund =
     isArticle30MainContributionFund(group.fund);
 
   function handleFundChange(value) {
     onGroupChange('fund', value);
     onGroupChange('nonSalariedEarningsInputMode', '');
+    onGroupChange('tsaySinglePensionerStatus', '');
 
     if (isContributionBasedFund(value)) {
       onGroupChange('insuredType', 'not_applicable');
@@ -436,7 +456,10 @@ function InsurancePeriodGroupFields({
       return;
     }
 
-    if (isArticle30MainContributionFund(value)) {
+    if (
+      isArticle30MainContributionFund(value) ||
+      isSalariedTsayFund(value)
+    ) {
       onGroupChange('insuredType', '');
       onGroupChange('employmentCategory', 'common');
       onGroupChange('uniformedSpecialTimeDraft', createEmptyUniformedSpecialTimeDraft());
@@ -516,6 +539,18 @@ function InsurancePeriodGroupFields({
               onGroupChange('nonSalariedEarningsInputMode', value)
             }
             options={NON_SALARIED_EARNINGS_INPUT_MODE_OPTIONS}
+          />
+        )}
+
+        {isCurrentTsayFund && (
+          <SelectWithLabel
+            id={`multiPeriod${groupNumber}TsaySinglePensionerStatus`}
+            label="Υπήρχε υπαγωγή στον Κλάδο Μονοσυνταξιούχων ΤΣΑΥ σε αυτή την περίοδο;"
+            value={group.tsaySinglePensionerStatus || ''}
+            onChange={(value) =>
+              onGroupChange('tsaySinglePensionerStatus', value)
+            }
+            options={YES_NO_OPTIONS}
           />
         )}
 
@@ -1315,7 +1350,11 @@ const FUND_OPTIONS = [
   },
   {
     value: 'tsay',
-    label: 'ΤΣΑΥ',
+    label: 'ΤΣΑΥ — Ελεύθερος επαγγελματίας',
+  },
+  {
+    value: 'tsay_salaried',
+    label: 'ΤΣΑΥ — Μισθωτός',
   },
   {
     value: 'oga',
@@ -1345,6 +1384,12 @@ const NON_SALARIED_EARNINGS_INPUT_MODE_OPTIONS = [
     value: 'annual_pension_contribution',
     label: 'Γνωρίζω την ετήσια εισφορά κύριας σύνταξης',
   },
+];
+
+const YES_NO_OPTIONS = [
+  { value: '', label: 'Επιλέξτε' },
+  { value: 'yes', label: 'Ναι' },
+  { value: 'no', label: 'Όχι' },
 ];
 
 const SPECIAL_REGIME_USAGE_OPTIONS = [
@@ -1497,6 +1542,14 @@ function isArticle30MainContributionFund(fund) {
   return ARTICLE30_MAIN_CONTRIBUTION_FUNDS.includes(fund);
 }
 
+function isSalariedTsayFund(fund) {
+  return fund === 'tsay_salaried';
+}
+
+function isTsayFund(fund) {
+  return fund === 'tsay' || fund === 'tsay_salaried';
+}
+
 function getInsuredTypeOptions(fund) {
   if (!fund) {
     return [DEFAULT_EMPTY_OPTION];
@@ -1529,7 +1582,8 @@ function getEmploymentCategoryOptions(fund, insuredType) {
     fund === 'deko' ||
     fund === 'nat' ||
     fund === 'banking_funds' ||
-    isArticle30MainContributionFund(fund)
+    isArticle30MainContributionFund(fund) ||
+    isSalariedTsayFund(fund)
   ) {
     return COMMON_ONLY_EMPLOYMENT_OPTIONS;
   }

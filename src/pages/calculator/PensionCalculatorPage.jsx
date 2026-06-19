@@ -94,6 +94,12 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
       savedDraft.simpleNonSalariedEarningsInputMode,
     ),
   );
+  const [
+    simpleTsaySinglePensionerStatus,
+    setSimpleTsaySinglePensionerStatus,
+  ] = useState(
+    normalizeSavedYesNoValue(savedDraft.simpleTsaySinglePensionerStatus),
+  );
   const [simpleFromDateInput, setSimpleFromDateInput] = useState(
     savedDraft.simpleFromDateInput || "",
   );
@@ -202,6 +208,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
       simpleInsuredTypeInput,
       simpleEmploymentCategoryInput,
       simpleNonSalariedEarningsInputMode,
+      simpleTsaySinglePensionerStatus,
       simpleFromDateInput,
       simpleToDateInput,
       simpleTimeInputMethod,
@@ -239,6 +246,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     simpleInsuredTypeInput,
     simpleEmploymentCategoryInput,
     simpleNonSalariedEarningsInputMode,
+    simpleTsaySinglePensionerStatus,
     simpleFromDateInput,
     simpleToDateInput,
     simpleTimeInputMethod,
@@ -277,6 +285,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
       simpleInsuredTypeInput,
       simpleEmploymentCategoryInput,
       simpleNonSalariedEarningsInputMode,
+      simpleTsaySinglePensionerStatus,
       simpleFromDateInput,
       simpleToDateInput,
       simpleTimeInputMethod,
@@ -313,6 +322,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     simpleInsuredTypeInput,
     simpleEmploymentCategoryInput,
     simpleNonSalariedEarningsInputMode,
+    simpleTsaySinglePensionerStatus,
     simpleFromDateInput,
     simpleToDateInput,
     simpleTimeInputMethod,
@@ -383,6 +393,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
       setSimpleInsuredTypeInput("");
       setSimpleEmploymentCategoryInput("");
       setSimpleNonSalariedEarningsInputMode("");
+      setSimpleTsaySinglePensionerStatus("");
       setSimpleFromDateInput("");
       setSimpleToDateInput("");
       setSimpleTimeInputMethod("");
@@ -727,6 +738,9 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
               simpleNonSalariedEarningsInputMode={
                 simpleNonSalariedEarningsInputMode
               }
+              simpleTsaySinglePensionerStatus={
+                simpleTsaySinglePensionerStatus
+              }
               simpleFromDateInput={simpleFromDateInput}
               simpleToDateInput={simpleToDateInput}
               simpleTimeInputMethod={simpleTimeInputMethod}
@@ -758,6 +772,12 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
               }}
               onSimpleNonSalariedEarningsInputModeChange={(value) => {
                 setSimpleNonSalariedEarningsInputMode(value);
+                clearBackendResult();
+              }}
+              onSimpleTsaySinglePensionerStatusChange={(value) => {
+                setSimpleTsaySinglePensionerStatus(
+                  normalizeSavedYesNoValue(value),
+                );
                 clearBackendResult();
               }}
               onSimpleFromDateChange={(value) => {
@@ -1044,6 +1064,7 @@ function createEmptyInsurancePeriodGroup() {
     insuredType: "",
     employmentCategory: "",
     nonSalariedEarningsInputMode: "",
+    tsaySinglePensionerStatus: "",
     uniformedSpecialTimeDraft: createEmptyUniformedSpecialTimeDraft(),
   };
 }
@@ -1075,6 +1096,9 @@ function normalizeSavedInsurancePeriodGroups(savedDraft = {}) {
             normalizeSavedNonSalariedEarningsInputMode(
               group.nonSalariedEarningsInputMode,
             ),
+          tsaySinglePensionerStatus: normalizeSavedYesNoValue(
+            group.tsaySinglePensionerStatus,
+          ),
           uniformedSpecialTimeDraft: normalizeSavedUniformedSpecialTimeDraft(
             group.uniformedSpecialTimeDraft,
           ),
@@ -1153,8 +1177,13 @@ function createLegacyInsurancePeriodGroup({
     insuredType: insuredType || "",
     employmentCategory: employmentCategory || "",
     nonSalariedEarningsInputMode: "",
+    tsaySinglePensionerStatus: "",
     uniformedSpecialTimeDraft: createEmptyUniformedSpecialTimeDraft(),
   };
+}
+
+function normalizeSavedYesNoValue(value) {
+  return value === "yes" || value === "no" ? value : "";
 }
 
 function createEmptyUniformedSpecialTimeDraft() {
@@ -1426,3 +1455,5 @@ function saveDraft(draft) {
 }
 
 export default PensionCalculatorPage;
+
+

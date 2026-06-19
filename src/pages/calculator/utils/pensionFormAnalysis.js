@@ -1,3 +1,4 @@
+
 import {
   PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS,
   PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT,
@@ -221,7 +222,11 @@ const INSURANCE_PERIOD_FUND_OPTIONS = {
   },
   tsay: {
     value: "tsay",
-    label: "ΤΣΑΥ",
+    label: "ΤΣΑΥ — Ελεύθερος επαγγελματίας",
+  },
+  tsay_salaried: {
+    value: "tsay_salaried",
+    label: "ΤΣΑΥ — Μισθωτός",
   },
   oga: {
     value: "oga",
@@ -336,6 +341,7 @@ function analyzePensionForm({
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
   simpleNonSalariedEarningsInputMode,
+  simpleTsaySinglePensionerStatus,
   simpleFromDateInput,
   simpleToDateInput,
   simpleTimeInputMethod,
@@ -392,6 +398,7 @@ function analyzePensionForm({
     simpleInsuredTypeInput,
     simpleEmploymentCategoryInput,
     simpleNonSalariedEarningsInputMode,
+    simpleTsaySinglePensionerStatus,
     simpleFromDateInput,
     simpleToDateInput,
     simpleTimeInputMethod,
@@ -1811,6 +1818,7 @@ function analyzeInsurancePeriodsDraft({
   simpleInsuredTypeInput,
   simpleEmploymentCategoryInput,
   simpleNonSalariedEarningsInputMode,
+  simpleTsaySinglePensionerStatus,
   simpleFromDateInput,
   simpleToDateInput,
   simpleTimeInputMethod,
@@ -1924,6 +1932,8 @@ function analyzeInsurancePeriodsDraft({
         employmentCategoryInput: groups[index].employmentCategory,
         nonSalariedEarningsInputMode:
           groups[index].nonSalariedEarningsInputMode,
+        tsaySinglePensionerStatus:
+          groups[index].tsaySinglePensionerStatus,
         uniformedSpecialTimeDraft: groups[index].uniformedSpecialTimeDraft,
         isRequired: true,
       });
@@ -2040,6 +2050,7 @@ function analyzeInsurancePeriodsDraft({
     insuredTypeInput: simpleInsuredTypeInput,
     employmentCategoryInput: simpleEmploymentCategoryInput,
     nonSalariedEarningsInputMode: simpleNonSalariedEarningsInputMode,
+    tsaySinglePensionerStatus: simpleTsaySinglePensionerStatus,
     uniformedSpecialTimeDraft: simpleUniformedSpecialTimeDraft,
     fromDate: fromDateResult.isoDate,
     fromDateDisplay: fromDateResult.displayDate,
@@ -2112,6 +2123,9 @@ function normalizeInsurancePeriodGroupForAnalysis(group = {}) {
     insuredType: group.insuredType || "",
     employmentCategory: group.employmentCategory || "",
     nonSalariedEarningsInputMode: group.nonSalariedEarningsInputMode || "",
+    tsaySinglePensionerStatus: normalizeYesNoValue(
+      group.tsaySinglePensionerStatus,
+    ),
     uniformedSpecialTimeDraft: normalizeUniformedSpecialTimeDraft(
       group.uniformedSpecialTimeDraft,
     ),
@@ -2131,6 +2145,7 @@ function hasAnyInsurancePeriodGroupValue(group = {}) {
     group.insuredType,
     group.employmentCategory,
     group.nonSalariedEarningsInputMode,
+    group.tsaySinglePensionerStatus,
     hasActiveUniformedSpecialTimeDraft(group.uniformedSpecialTimeDraft)
       ? "uniformed_special_time"
       : "",
@@ -2152,6 +2167,7 @@ function analyzeMultiInsurancePeriodDraft({
   insuredTypeInput,
   employmentCategoryInput,
   nonSalariedEarningsInputMode,
+  tsaySinglePensionerStatus,
   uniformedSpecialTimeDraft,
   isRequired,
 }) {
@@ -2167,6 +2183,7 @@ function analyzeMultiInsurancePeriodDraft({
     insuredTypeInput,
     employmentCategoryInput,
     nonSalariedEarningsInputMode,
+    tsaySinglePensionerStatus,
     hasActiveUniformedSpecialTimeDraft(uniformedSpecialTimeDraft)
       ? "uniformed_special_time"
       : "",
@@ -2253,6 +2270,7 @@ function analyzeMultiInsurancePeriodDraft({
     insuredTypeInput,
     employmentCategoryInput,
     nonSalariedEarningsInputMode,
+    tsaySinglePensionerStatus,
     uniformedSpecialTimeDraft,
     fromDate: fromDateResult.isoDate,
     fromDateDisplay: fromDateResult.displayDate,
@@ -2316,6 +2334,7 @@ function buildValidatedInsurancePeriodDraft({
   insuredTypeInput,
   employmentCategoryInput,
   nonSalariedEarningsInputMode,
+  tsaySinglePensionerStatus,
   uniformedSpecialTimeDraft,
   fromDate = null,
   fromDateDisplay = null,
@@ -2400,6 +2419,18 @@ function buildValidatedInsurancePeriodDraft({
     );
   }
 
+  const tsaySinglePensionerResult = analyzeTsaySinglePensionerStatus({
+    fund,
+    value: tsaySinglePensionerStatus,
+  });
+
+  if (tsaySinglePensionerResult.error) {
+    return createInsurancePeriodDraftError(
+      tsaySinglePensionerResult.error,
+      mode,
+    );
+  }
+
   if (!Number.isFinite(insuranceDays) || insuranceDays <= 0) {
     return createInsurancePeriodDraftError(
       "Ο χρόνος της ασφαλιστικής περιόδου πρέπει να είναι μεγαλύτερος από 0.",
@@ -2440,6 +2471,9 @@ function buildValidatedInsurancePeriodDraft({
       nonSalariedEarningsInputMode: nonSalariedInputModeResult.inputMode,
       nonSalariedEarningsInputModeLabel:
         nonSalariedInputModeResult.inputModeLabel,
+      tsaySinglePensionerStatus: tsaySinglePensionerResult.status,
+      tsaySinglePensionerStatusLabel:
+        tsaySinglePensionerResult.statusLabel,
       fromDate,
       fromDateDisplay,
       toDate,
@@ -2456,6 +2490,39 @@ function buildValidatedInsurancePeriodDraft({
           : null,
     },
   };
+}
+
+function analyzeTsaySinglePensionerStatus({ fund, value }) {
+  const isTsayPeriod = fund === "tsay" || fund === "tsay_salaried";
+
+  if (!isTsayPeriod) {
+    return {
+      error: null,
+      status: null,
+      statusLabel: null,
+    };
+  }
+
+  const status = normalizeYesNoValue(value);
+
+  if (!status) {
+    return {
+      error:
+        "Δηλώστε αν υπήρχε υπαγωγή στον Κλάδο Μονοσυνταξιούχων ΤΣΑΥ για τη συγκεκριμένη ασφαλιστική περίοδο.",
+      status: null,
+      statusLabel: null,
+    };
+  }
+
+  return {
+    error: null,
+    status,
+    statusLabel: status === "yes" ? "Ναι" : "Όχι",
+  };
+}
+
+function normalizeYesNoValue(value) {
+  return value === "yes" || value === "no" ? value : "";
 }
 
 function analyzeNonSalariedEarningsInputMode({ fund, value }) {
@@ -2517,6 +2584,8 @@ function createBackendSafeInsurancePeriodDraft(period) {
     insuredType: period.insuredType,
     employmentCategory: period.employmentCategory,
     nonSalariedEarningsInputMode: period.nonSalariedEarningsInputMode || null,
+    tsaySinglePensionerStatus:
+      period.tsaySinglePensionerStatus || null,
     fromDate: period.fromDate,
     toDate: period.toDate,
     insuranceDays: period.insuranceDays,
@@ -2650,6 +2719,7 @@ function isAllowedEmploymentCategoryForFund({
     fund === "deko" ||
     fund === "nat" ||
     fund === "banking_funds" ||
+    fund === "tsay_salaried" ||
     ARTICLE30_MAIN_CONTRIBUTION_FUNDS.includes(fund)
   ) {
     return employmentCategory === "common";
@@ -2702,6 +2772,7 @@ function buildInsurancePeriodCategory({
       isArtisticWork: fund === "artistic",
       isAviationWork: fund === "aviation",
       isBankingFundWork: fund === "banking_funds",
+      isTsaySalariedWork: fund === "tsay_salaried",
       isArticle30MainContributionFund:
         ARTICLE30_MAIN_CONTRIBUTION_FUNDS.includes(fund),
       isContributionBasedFund: CONTRIBUTION_BASED_FUNDS.includes(fund),
@@ -2760,13 +2831,15 @@ function analyzeEtaaExtraBenefits({
   const periods = Array.isArray(insurancePeriodsDraft)
     ? insurancePeriodsDraft
     : [];
+  const hasTsmedePeriod = periods.some((period) => period?.fund === "tsmede");
+  const tsaySinglePensionerPeriods = periods.filter((period) => {
+    return (
+      ["tsay", "tsay_salaried"].includes(period?.fund) &&
+      period?.tsaySinglePensionerStatus === "yes"
+    );
+  });
 
-  const presence = {
-    tsmede: periods.some((period) => period?.fund === "tsmede"),
-    tsay: periods.some((period) => period?.fund === "tsay"),
-  };
-
-  if (!presence.tsmede && !presence.tsay) {
+  if (!hasTsmedePeriod && tsaySinglePensionerPeriods.length === 0) {
     return {
       hasValue: true,
       error: null,
@@ -2784,7 +2857,7 @@ function analyzeEtaaExtraBenefits({
   const displayEntries = [];
   const warnings = [];
 
-  if (presence.tsmede) {
+  if (hasTsmedePeriod) {
     const tsmedeResult = analyzeTsmedeExtraBenefit(draft.tsmede);
 
     if (tsmedeResult.error) {
@@ -2797,20 +2870,45 @@ function analyzeEtaaExtraBenefits({
     }
   }
 
-  if (presence.tsay) {
-    const tsayResult = analyzeTsayExtraBenefit(draft.tsay);
+  if (tsaySinglePensionerPeriods.length > 0) {
+    const contributionDays = tsaySinglePensionerPeriods.reduce(
+      (sum, period) => sum + Number(period?.insuranceDays || 0),
+      0,
+    );
+    const contributionYears = roundToDecimals(
+      contributionDays / INSURANCE_DAYS_PER_YEAR,
+      6,
+    );
+    const sourceInsurancePeriodIds = tsaySinglePensionerPeriods
+      .map((period) => period?.id)
+      .filter(Boolean);
 
-    if (tsayResult.error) {
-      return createEtaaExtraBenefitError(tsayResult.error);
-    }
+    entries.push({
+      benefitType: ETAA_EXTRA_BENEFIT_TYPES.TSAY_SINGLE_PENSIONER_BRANCH,
+      baseAmountSource:
+        "contributory_pensionable_earnings_before_general_plastic_years",
+      contributionYears,
+      extraContributionPoints: TSAY_ADMINISTRATIVE_EXTRA_CONTRIBUTION_POINTS,
+      calculationPolicy: "efka_administrative_10_points",
+      sourceInsurancePeriodIds,
+    });
 
-    if (tsayResult.entry) {
-      entries.push(tsayResult.entry);
-      displayEntries.push(tsayResult.displayEntry);
-      warnings.push(
-        "Ο Κλάδος Μονοσυνταξιούχων ΤΣΑΥ θα υπολογιστεί με 10 επιπλέον μονάδες εισφοράς, σύμφωνα με την τρέχουσα διοικητική πρακτική του e-ΕΦΚΑ. Η χρήση των 10 μονάδων αμφισβητείται δικαστικά.",
-      );
-    }
+    displayEntries.push({
+      benefitType: ETAA_EXTRA_BENEFIT_TYPES.TSAY_SINGLE_PENSIONER_BRANCH,
+      label: "ΤΣΑΥ — Κλάδος Μονοσυνταξιούχων",
+      contributionYears,
+      contributionDays,
+      extraContributionPoints: TSAY_ADMINISTRATIVE_EXTRA_CONTRIBUTION_POINTS,
+      sourceInsurancePeriodIds,
+      summary:
+        `ΤΣΑΥ Μονοσυνταξιούχων: ${contributionDays} ημέρες ` +
+        `(${contributionYears} έτη), με βάση τις ίδιες συντάξιμες αποδοχές ` +
+        `της κύριας σύνταξης και 10 επιπλέον μονάδες εισφοράς.`,
+    });
+
+    warnings.push(
+      "Ο Κλάδος Μονοσυνταξιούχων ΤΣΑΥ θα υπολογιστεί με 10 επιπλέον μονάδες εισφοράς, σύμφωνα με την τρέχουσα διοικητική πρακτική του e-ΕΦΚΑ. Η χρήση των 10 μονάδων αμφισβητείται δικαστικά.",
+    );
   }
 
   return {

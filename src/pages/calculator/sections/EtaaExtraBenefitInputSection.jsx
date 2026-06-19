@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 import { fieldsetStyle } from '../utils/calculatorStyles';
@@ -26,8 +27,10 @@ function EtaaExtraBenefitInputSection({
       <legend>Πρόσθετη παροχή πρώην ΕΤΑΑ</legend>
 
       <p style={{ marginTop: 0, color: '#475569' }}>
-        Τα παρακάτω ποσά υπολογίζονται χωριστά από τη βασική ανταποδοτική
-        σύνταξη και προστίθενται στο τελικό ποσό της κύριας σύνταξης.
+        Η Ειδική Προσαύξηση ΤΣΜΕΔΕ υπολογίζεται χωριστά από τη βασική
+        ανταποδοτική σύνταξη και προστίθεται στο τελικό ποσό της κύριας
+        σύνταξης. Ο Κλάδος Μονοσυνταξιούχων ΤΣΑΥ δηλώνεται πλέον μέσα στην
+        αντίστοιχη ασφαλιστική περίοδο.
       </p>
 
       {fundPresence.tsmede && (
@@ -39,14 +42,6 @@ function EtaaExtraBenefitInputSection({
         />
       )}
 
-      {fundPresence.tsay && (
-        <TsayFields
-          value={safeValue.tsay}
-          onChange={(field, fieldValue) => {
-            onChange('tsay', field, fieldValue);
-          }}
-        />
-      )}
     </fieldset>
   );
 }
@@ -270,12 +265,11 @@ function getEtaaFundPresence({
 
   const presence = {
     tsmede: funds.includes('tsmede'),
-    tsay: funds.includes('tsay'),
   };
 
   return {
     ...presence,
-    hasAny: presence.tsmede || presence.tsay,
+    hasAny: presence.tsmede,
   };
 }
 
