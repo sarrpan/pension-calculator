@@ -1,5 +1,8 @@
 import {
+  PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS,
+  PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT,
   detectParallelInsuranceSegments,
+  normalizeParallelContributionInputMode,
   normalizeParallelInsuranceDraft,
 } from "./parallelInsuranceFormUtils";
 
@@ -451,6 +454,11 @@ function analyzePensionForm({
   const effectiveInsuranceTimeAnalysis =
     insurancePeriodsAnalysis.totalInsuranceTimeAnalysis ||
     insuranceTimeAnalysis;
+  const parallelInsuranceTimeSummary = buildParallelInsuranceTimeSummary({
+    insuranceTimeAnalysis: effectiveInsuranceTimeAnalysis,
+    parallelInsuranceDisplay:
+      parallelInsuranceAnalysis.parallelInsuranceDisplay,
+  });
 
   const article30SpecialRegimeAnalysis = analyzeArticle30SpecialRegimeUsage({
     calculatorEdition,
@@ -598,6 +606,22 @@ function analyzePensionForm({
     totalInsuranceDecimalYears:
       effectiveInsuranceTimeAnalysis.totalInsuranceDecimalYears,
 
+    hasParallelInsuranceTimeAdjustment:
+      parallelInsuranceTimeSummary.hasAdjustment,
+    initialSummedInsuranceTimeDisplay:
+      parallelInsuranceTimeSummary.initialSummedInsuranceTimeDisplay,
+    initialSummedInsuranceDays:
+      parallelInsuranceTimeSummary.initialSummedInsuranceDays,
+    initialSummedInsuranceDecimalYears:
+      parallelInsuranceTimeSummary.initialSummedInsuranceDecimalYears,
+    duplicateParallelInsuranceDays:
+      parallelInsuranceTimeSummary.duplicateParallelInsuranceDays,
+    cleanedInsuranceTimeDisplay:
+      parallelInsuranceTimeSummary.cleanedInsuranceTimeDisplay,
+    cleanedInsuranceDays: parallelInsuranceTimeSummary.cleanedInsuranceDays,
+    cleanedInsuranceDecimalYears:
+      parallelInsuranceTimeSummary.cleanedInsuranceDecimalYears,
+
     insurancePeriodsInputMode:
       insurancePeriodsAnalysis.insurancePeriodsInputMode,
     insurancePeriodsInputModeLabel:
@@ -630,6 +654,51 @@ function analyzePensionForm({
     yearlyEarningsRowsCount: contributoryAnalysis.yearsData.length,
 
     calculationInput,
+  };
+}
+
+function buildParallelInsuranceTimeSummary({
+  insuranceTimeAnalysis,
+  parallelInsuranceDisplay,
+}) {
+  const initialSummedInsuranceDays = roundToDecimals(
+    insuranceTimeAnalysis?.totalInsuranceDaysEquivalent || 0,
+    4,
+  );
+  const duplicateParallelInsuranceDays = roundToDecimals(
+    (Array.isArray(parallelInsuranceDisplay)
+      ? parallelInsuranceDisplay
+      : []
+    ).reduce((sum, segment) => {
+      return sum + Number(segment?.duplicateInsuranceDays || 0);
+    }, 0),
+    4,
+  );
+  const cleanedInsuranceDays = roundToDecimals(
+    Math.max(0, initialSummedInsuranceDays - duplicateParallelInsuranceDays),
+    4,
+  );
+  const cleanedDisplayTime =
+    convertInsuranceDaysToDisplayTime(cleanedInsuranceDays);
+
+  return {
+    hasAdjustment: duplicateParallelInsuranceDays > 0,
+    initialSummedInsuranceTimeDisplay:
+      insuranceTimeAnalysis?.insuranceTimeDisplay || "",
+    initialSummedInsuranceDays,
+    initialSummedInsuranceDecimalYears: roundToDecimals(
+      initialSummedInsuranceDays / INSURANCE_DAYS_PER_YEAR,
+      6,
+    ),
+    duplicateParallelInsuranceDays,
+    cleanedInsuranceTimeDisplay:
+      `${cleanedInsuranceDays} ημέρες ασφάλισης ` +
+      `(${cleanedDisplayTime.years} έτη, ${cleanedDisplayTime.months} μήνες, ${cleanedDisplayTime.days} ημέρες)`,
+    cleanedInsuranceDays,
+    cleanedInsuranceDecimalYears: roundToDecimals(
+      cleanedInsuranceDays / INSURANCE_DAYS_PER_YEAR,
+      6,
+    ),
   };
 }
 
@@ -731,52 +800,91 @@ function analyzeParallelInsuranceDraft({
       duplicateInsuranceDays += daysResult.value;
 
       if (segment.periodType === "until_2016") {
-        const monthlyBaseResult = parseNonNegativeDecimal(
-          additionalDraft.monthlyBaseAmount,
-        );
-        const contributionUnitsResult = parseNonNegativeDecimal(
-          additionalDraft.contributionUnits,
+        const contributionInputMode = normalizeParallelContributionInputMode(
+          additionalDraft.contributionInputMode,
+          additionalDraft,
         );
 
-        if (!monthlyBaseResult.isValid || monthlyBaseResult.value <= 0) {
-          return {
-            hasValue: false,
-            error:
-              "Συμπληρώστε τη μηνιαία βάση της παράλληλης εισφοράς έως 31/12/2016.",
-            warnings: [],
-            parallelInsuranceDraft: {
-              calculationMode: "single_unified_main_pension",
-              segments: [],
-            },
-            parallelInsuranceDisplay: display,
-          };
-        }
+        normalizedAdditionalPeriod.contributionInputMode =
+          contributionInputMode;
 
         if (
-          !contributionUnitsResult.isValid ||
-          contributionUnitsResult.value <= 0
+          contributionInputMode ===
+          PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT
         ) {
-          return {
-            hasValue: false,
-            error:
-              "Συμπληρώστε τις μονάδες εισφοράς της παράλληλης ασφάλισης έως 31/12/2016.",
-            warnings: [],
-            parallelInsuranceDraft: {
-              calculationMode: "single_unified_main_pension",
-              segments: [],
-            },
-            parallelInsuranceDisplay: display,
-          };
-        }
+          const totalContributionAmountResult = parseNonNegativeDecimal(
+            additionalDraft.totalContributionAmount,
+          );
 
-        normalizedAdditionalPeriod.monthlyBaseAmount = roundToDecimals(
-          monthlyBaseResult.value,
-          2,
-        );
-        normalizedAdditionalPeriod.contributionUnits = roundToDecimals(
-          contributionUnitsResult.value,
-          6,
-        );
+          if (
+            !totalContributionAmountResult.isValid ||
+            totalContributionAmountResult.value <= 0
+          ) {
+            return {
+              hasValue: false,
+              error:
+                "Συμπληρώστε το συνολικό ποσό εισφορών κύριας σύνταξης για την παράλληλη περίοδο έως 31/12/2016.",
+              warnings: [],
+              parallelInsuranceDraft: {
+                calculationMode: "single_unified_main_pension",
+                segments: [],
+              },
+              parallelInsuranceDisplay: display,
+            };
+          }
+
+          normalizedAdditionalPeriod.totalContributionAmount =
+            roundToDecimals(totalContributionAmountResult.value, 2);
+        } else {
+          const monthlyBaseResult = parseNonNegativeDecimal(
+            additionalDraft.monthlyBaseAmount,
+          );
+          const contributionUnitsResult = parseNonNegativeDecimal(
+            additionalDraft.contributionUnits,
+          );
+
+          if (!monthlyBaseResult.isValid || monthlyBaseResult.value <= 0) {
+            return {
+              hasValue: false,
+              error:
+                "Συμπληρώστε τη μηνιαία βάση της παράλληλης εισφοράς έως 31/12/2016.",
+              warnings: [],
+              parallelInsuranceDraft: {
+                calculationMode: "single_unified_main_pension",
+                segments: [],
+              },
+              parallelInsuranceDisplay: display,
+            };
+          }
+
+          if (
+            !contributionUnitsResult.isValid ||
+            contributionUnitsResult.value <= 0
+          ) {
+            return {
+              hasValue: false,
+              error:
+                "Συμπληρώστε τις μονάδες εισφοράς της παράλληλης ασφάλισης έως 31/12/2016.",
+              warnings: [],
+              parallelInsuranceDraft: {
+                calculationMode: "single_unified_main_pension",
+                segments: [],
+              },
+              parallelInsuranceDisplay: display,
+            };
+          }
+
+          normalizedAdditionalPeriod.contributionInputMode =
+            PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS;
+          normalizedAdditionalPeriod.monthlyBaseAmount = roundToDecimals(
+            monthlyBaseResult.value,
+            2,
+          );
+          normalizedAdditionalPeriod.contributionUnits = roundToDecimals(
+            contributionUnitsResult.value,
+            6,
+          );
+        }
       }
 
       additionalPeriods.push(normalizedAdditionalPeriod);
@@ -860,6 +968,14 @@ function analyzeParallelInsuranceDraft({
         return {
           ...item,
           periodLabel: period?.label || item.periodId,
+          contributionInputModeLabel:
+            item.contributionInputMode ===
+            PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT
+              ? "Συνολικό ποσό εισφορών κύριας σύνταξης"
+              : item.contributionInputMode ===
+                  PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS
+                ? "Μέση μηνιαία βάση και μονάδες εισφοράς"
+                : null,
         };
       }),
     });
@@ -3250,11 +3366,16 @@ function analyzeContributoryPensionInputs({
   const hasPost2017ParallelSegment = parallelInsuranceSegments.some(
     (segment) => segment?.periodType === "from_2017",
   );
+  const yearlyRowsWithinDeclaredEmployment =
+    limitYearlyEarningsRowsToDeclaredEmployment({
+      rows: yearlyEarningsRows,
+      insurancePeriodsDraft,
+    });
 
   if (hasContributionBasedPeriod || hasPost2017ParallelSegment) {
     return analyzeInsurancePeriodYearlyAmounts({
       currentFormStep,
-      yearlyEarningsRows,
+      yearlyEarningsRows: yearlyRowsWithinDeclaredEmployment,
       insurancePeriodsDraft,
       parallelInsuranceSegments,
       parallelInsuranceDraft,
@@ -3295,8 +3416,37 @@ function analyzeContributoryPensionInputs({
 
   return analyzeYearlyEarnings({
     currentFormStep,
-    yearlyEarningsRows,
+    yearlyEarningsRows: yearlyRowsWithinDeclaredEmployment,
     method,
+  });
+}
+
+function limitYearlyEarningsRowsToDeclaredEmployment({
+  rows,
+  insurancePeriodsDraft,
+}) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const toYears = (
+    Array.isArray(insurancePeriodsDraft) ? insurancePeriodsDraft : []
+  )
+    .map((period) => getIsoDateYear(period?.toDate))
+    .filter((year) => Number.isInteger(year));
+
+  if (toYears.length === 0) {
+    return safeRows;
+  }
+
+  const latestDeclaredEmploymentYear = Math.max(...toYears);
+
+  return safeRows.filter((row) => {
+    const yearText = String(row?.year || "").trim();
+    const yearResult = parseNonNegativeInteger(yearText);
+
+    if (!yearResult.isValid) {
+      return true;
+    }
+
+    return yearResult.value <= latestDeclaredEmploymentYear;
   });
 }
 

@@ -62,20 +62,68 @@ function PreparedInputPreview({ analysis }) {
           {analysis.insuranceTimeInputMethodLabel}
         </p>
 
-        <p>
-          <strong>Χρόνος ασφάλισης που χρησιμοποιείται στον υπολογισμό:</strong>{" "}
-          {analysis.insuranceTimeDisplay}
-        </p>
+        {analysis.hasParallelInsuranceTimeAdjustment ? (
+          <div style={previewBoxStyle}>
+            <h3 style={{ marginTop: 0 }}>
+              Συνολικός χρόνος μετά την παράλληλη ασφάλιση
+            </h3>
 
-        <p>
-          <strong>Σύνολο ημερών ασφάλισης:</strong>{" "}
-          {analysis.totalInsuranceDaysEquivalent}
-        </p>
+            <p>
+              <strong>
+                Αρχικός αθροισμένος χρόνος πριν αφαιρεθεί ο διπλός χρόνος:
+              </strong>{" "}
+              {analysis.initialSummedInsuranceTimeDisplay}
+            </p>
 
-        <p>
-          <strong>Σύνολο σε δεκαδικά έτη:</strong>{" "}
-          {analysis.totalInsuranceDecimalYears}
-        </p>
+            <p>
+              <strong>Αρχικό άθροισμα ημερών:</strong>{" "}
+              {analysis.initialSummedInsuranceDays} ημέρες ({" "}
+              {analysis.initialSummedInsuranceDecimalYears} έτη)
+            </p>
+
+            <p>
+              <strong>Ημέρες παράλληλης ασφάλισης που αφαιρούνται:</strong>{" "}
+              {analysis.duplicateParallelInsuranceDays}
+            </p>
+
+            <p>
+              <strong>
+                Καθαρός χρόνος μετά την αφαίρεση του διπλού χρόνου:
+              </strong>{" "}
+              {analysis.cleanedInsuranceTimeDisplay}
+            </p>
+
+            <p>
+              <strong>Καθαρό σύνολο ημερών:</strong>{" "}
+              {analysis.cleanedInsuranceDays} ημέρες ({" "}
+              {analysis.cleanedInsuranceDecimalYears} έτη)
+            </p>
+
+            <p style={{ color: "#475569", marginBottom: 0 }}>
+              Ο calculator λαμβάνει χωριστά το αρχικό άθροισμα και τις ημέρες
+              που αφαιρούνται και χρησιμοποιεί τελικά τον καθαρό χρόνο.
+            </p>
+          </div>
+        ) : (
+          <>
+            <p>
+              <strong>
+                Χρόνος ασφάλισης που χρησιμοποιείται στον υπολογισμό:
+              </strong>{" "}
+              {analysis.insuranceTimeDisplay}
+            </p>
+
+            <p>
+              <strong>Σύνολο ημερών ασφάλισης:</strong>{" "}
+              {analysis.totalInsuranceDaysEquivalent}
+            </p>
+
+            <p>
+              <strong>Σύνολο σε δεκαδικά έτη:</strong>{" "}
+              {analysis.totalInsuranceDecimalYears}
+            </p>
+          </>
+        )}
 
         {analysis.residenceYears !== null && (
           <p>
@@ -179,9 +227,11 @@ function PreparedInputPreview({ analysis }) {
                     <p key={`${segment.id}_${period.periodId}`}>
                       <strong>{period.periodLabel}:</strong>{" "}
                       {period.insuranceDaysToRemove} ημέρες
-                      {period.monthlyBaseAmount
-                        ? `, βάση ${period.monthlyBaseAmount} €, μονάδες εισφοράς ${period.contributionUnits}`
-                        : ""}
+                      {period.totalContributionAmount
+                        ? `, συνολικό ποσό εισφορών κύριας σύνταξης ${period.totalContributionAmount} €`
+                        : period.monthlyBaseAmount
+                          ? `, βάση ${period.monthlyBaseAmount} €, μονάδες εισφοράς ${period.contributionUnits}`
+                          : ""}
                     </p>
                   ))}
                 </div>

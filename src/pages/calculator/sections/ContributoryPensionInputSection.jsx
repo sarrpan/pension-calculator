@@ -47,6 +47,11 @@ function ContributoryPensionInputSection({
     parallelInsuranceSegments,
     parallelInsuranceDraft,
   });
+  const displayedYearlyEarningsRows = buildDisplayedYearlyEarningsRows({
+    rows: yearlyEarningsRows,
+    latestDeclaredEmploymentYear:
+      yearlyInputContext.latestDeclaredEmploymentYear,
+  });
 
   if (currentFormStep === "contributory_yearly") {
     return (
@@ -62,6 +67,14 @@ function ContributoryPensionInputSection({
             ? "Συμπληρώστε για κάθε έτος το ποσό που αντιστοιχεί στον τρόπο εισαγωγής της ασφαλιστικής περιόδου και τις ημέρες ασφάλισης. Το backend θα καλέσει τη σωστή ρουτίνα ΟΑΕΕ / ΕΤΑΑ / ΟΓΑ και θα δημιουργήσει τις ετήσιες συντάξιμες αποδοχές."
             : "Συμπληρώστε τις ετήσιες αποδοχές και τα ένσημα / ημέρες ασφάλισης ανά έτος. Ο μέσος μηνιαίος συντάξιμος μισθός δεν υπολογίζεται εδώ. Θα υπολογιστεί αργότερα από τον calculator με τους ΔΤΚ."}
         </p>
+
+        {yearlyInputContext.latestDeclaredEmploymentYear !== null && (
+          <p style={{ color: "#475569" }}>
+            Εμφανίζονται μόνο έτη έως το{" "}
+            <strong>{yearlyInputContext.latestDeclaredEmploymentYear}</strong>,
+            επειδή αυτό είναι το τελευταίο έτος εργασίας που έχει δηλωθεί.
+          </p>
+        )}
 
         {onLoadDevelopmentYearlyEarnings && (
           <button
@@ -86,67 +99,69 @@ function ContributoryPensionInputSection({
             </thead>
 
             <tbody>
-              {yearlyEarningsRows.map((row, index) => {
-                const rowMeaning = resolveRowMeaning({
-                  year: row.year,
-                  context: yearlyInputContext,
-                });
+              {displayedYearlyEarningsRows.map(
+                ({ row, sourceIndex }, displayIndex) => {
+                  const rowMeaning = resolveRowMeaning({
+                    year: row.year,
+                    context: yearlyInputContext,
+                  });
 
-                return (
-                  <tr key={row.id || row.year || index}>
-                    <td style={tableCellStyle}>
-                      <input
-                        type="text"
-                        value={row.year}
-                        onChange={(event) => {
-                          onYearlyEarningsRowChange(
-                            index,
-                            "year",
-                            event.target.value,
-                          );
-                        }}
-                        style={yearInputStyle}
-                      />
-                    </td>
+                  return (
+                    <tr key={row.id || row.year || displayIndex}>
+                      <td style={tableCellStyle}>
+                        <input
+                          type="text"
+                          value={row.year}
+                          onChange={(event) => {
+                            onYearlyEarningsRowChange(
+                              sourceIndex,
+                              "year",
+                              event.target.value,
+                            );
+                          }}
+                          style={yearInputStyle}
+                        />
+                      </td>
 
-                    <td style={tableCellStyle}>
-                      <input
-                        type="text"
-                        value={row.annualEarnings}
-                        onChange={(event) => {
-                          onYearlyEarningsRowChange(
-                            index,
-                            "annualEarnings",
-                            event.target.value,
-                          );
-                        }}
-                        placeholder="π.χ. 18000,50"
-                        style={moneyInputStyle}
-                      />
+                      <td style={tableCellStyle}>
+                        <input
+                          type="text"
+                          value={row.annualEarnings}
+                          onChange={(event) => {
+                            onYearlyEarningsRowChange(
+                              sourceIndex,
+                              "annualEarnings",
+                              event.target.value,
+                            );
+                          }}
+                          placeholder="π.χ. 18000,50"
+                          style={moneyInputStyle}
+                        />
 
-                      {rowMeaning && (
-                        <div style={rowMeaningStyle}>{rowMeaning}</div>
-                      )}
-                    </td>
+                        {rowMeaning && (
+                          <div style={rowMeaningStyle}>{rowMeaning}</div>
+                        )}
+                      </td>
 
-                    <td style={tableCellStyle}>
-                      <input
-                        type="text"
-                        value={row.insuranceDays}
-                        onChange={(event) => {
-                          onYearlyEarningsRowChange(
-                            index,
-                            "insuranceDays",
-                            event.target.value,
-                          );
-                        }}
-                        placeholder="π.χ. 300"
-                        style={daysInputStyle}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td style={tableCellStyle}>
+                        <input
+                          type="text"
+                          value={row.insuranceDays}
+                          onChange={(event) => {
+                            onYearlyEarningsRowChange(
+                              sourceIndex,
+                              "insuranceDays",
+                              event.target.value,
+                            );
+                          }}
+                          placeholder="π.χ. 300"
+                          style={daysInputStyle}
+                        />
+                      </td>
+                    </tr>
+                  );
+                },
+              )}
             </tbody>
           </table>
         </div>
@@ -283,15 +298,45 @@ function buildYearlyInputContext({
     amountColumnLabel = "Ετήσιο ποσό σύμφωνα με την περίοδο";
   }
 
+  const declaredToYears = periods
+    .map((period) => period.toYear)
+    .filter((year) => Number.isInteger(year));
+  const latestDeclaredEmploymentYear =
+    declaredToYears.length > 0 ? Math.max(...declaredToYears) : null;
+
   return {
     isActive: nonSalariedPeriods.length > 0 || hasPost2017ParallelSegment,
     periods,
     amountColumnLabel,
+    latestDeclaredEmploymentYear,
     parallelInsuranceSegments: safeParallelInsuranceSegments,
     parallelInsuranceDraft: normalizeParallelInsuranceDraft(
       parallelInsuranceDraft,
     ),
   };
+}
+
+function buildDisplayedYearlyEarningsRows({
+  rows,
+  latestDeclaredEmploymentYear,
+}) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+
+  return safeRows
+    .map((row, sourceIndex) => ({ row, sourceIndex }))
+    .filter(({ row }) => {
+      if (latestDeclaredEmploymentYear === null) {
+        return true;
+      }
+
+      const numericYear = Number(String(row?.year || "").trim());
+
+      if (!Number.isInteger(numericYear)) {
+        return true;
+      }
+
+      return numericYear <= latestDeclaredEmploymentYear;
+    });
 }
 
 function resolveRowMeaning({ year, context }) {

@@ -1,7 +1,11 @@
 import React from "react";
 
 import { fieldsetStyle } from "../utils/calculatorStyles";
-import { normalizeParallelInsuranceDraft } from "../utils/parallelInsuranceFormUtils";
+import {
+  PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS,
+  PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT,
+  normalizeParallelInsuranceDraft,
+} from "../utils/parallelInsuranceFormUtils";
 
 function ParallelInsuranceInputSection({
   calculatorEdition,
@@ -106,6 +110,9 @@ function ParallelInsuranceInputSection({
                   const displayedDays =
                     additionalValue.insuranceDaysToRemove ??
                     String(segment.suggestedInsuranceDays);
+                  const contributionInputMode =
+                    additionalValue.contributionInputMode ||
+                    PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS;
 
                   return (
                     <div key={period.id} style={additionalPeriodBoxStyle}>
@@ -135,37 +142,109 @@ function ParallelInsuranceInputSection({
                       </p>
 
                       {segment.periodType === "until_2016" && (
-                        <div style={gridStyle}>
-                          <TextInputWithLabel
-                            id={`${segment.id}_${period.id}_base`}
-                            label="Μέση μηνιαία βάση παράλληλης εισφοράς"
-                            value={additionalValue.monthlyBaseAmount || ""}
+                        <>
+                          <SelectWithLabel
+                            id={`${segment.id}_${period.id}_contributionInputMode`}
+                            label="Πώς θα δηλωθούν οι εισφορές της παράλληλης περιόδου;"
+                            value={contributionInputMode}
                             onChange={(fieldValue) => {
                               updateAdditionalPeriod({
                                 segmentId: segment.id,
                                 periodId: period.id,
-                                field: "monthlyBaseAmount",
+                                field: "contributionInputMode",
                                 fieldValue,
                               });
                             }}
-                            placeholder="π.χ. 1200"
+                            options={[
+                              {
+                                value:
+                                  PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS,
+                                label:
+                                  "Γνωρίζω τη μέση μηνιαία βάση και το ποσοστό εισφοράς",
+                              },
+                              {
+                                value:
+                                  PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT,
+                                label:
+                                  "Γνωρίζω το συνολικό ποσό εισφορών κύριας σύνταξης",
+                              },
+                            ]}
                           />
 
-                          <TextInputWithLabel
-                            id={`${segment.id}_${period.id}_units`}
-                            label="Μονάδες εισφοράς"
-                            value={additionalValue.contributionUnits || ""}
-                            onChange={(fieldValue) => {
-                              updateAdditionalPeriod({
-                                segmentId: segment.id,
-                                periodId: period.id,
-                                field: "contributionUnits",
-                                fieldValue,
-                              });
-                            }}
-                            placeholder="π.χ. 20"
-                          />
-                        </div>
+                          {contributionInputMode ===
+                          PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT ? (
+                            <>
+                              <TextInputWithLabel
+                                id={`${segment.id}_${period.id}_totalContributionAmount`}
+                                label="Συνολικό ποσό εισφορών κύριας σύνταξης για το παράλληλο διάστημα"
+                                value={
+                                  additionalValue.totalContributionAmount || ""
+                                }
+                                onChange={(fieldValue) => {
+                                  updateAdditionalPeriod({
+                                    segmentId: segment.id,
+                                    periodId: period.id,
+                                    field: "totalContributionAmount",
+                                    fieldValue,
+                                  });
+                                }}
+                                placeholder="π.χ. 16800"
+                              />
+
+                              <p style={helpTextStyle}>
+                                Δηλώνεται το συνολικό ποσό εισφορών κύριας
+                                σύνταξης για αυτό ακριβώς το παράλληλο διάστημα,
+                                μαζί με την εργοδοτική εισφορά όπου υπάρχει. Δεν
+                                περιλαμβάνονται υγεία, επικουρική, εφάπαξ ή ποσό
+                                εξαγοράς αναγνωρισμένου χρόνου.
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <div style={gridStyle}>
+                                <TextInputWithLabel
+                                  id={`${segment.id}_${period.id}_base`}
+                                  label="Μέση μηνιαία βάση παράλληλης εισφοράς"
+                                  value={
+                                    additionalValue.monthlyBaseAmount || ""
+                                  }
+                                  onChange={(fieldValue) => {
+                                    updateAdditionalPeriod({
+                                      segmentId: segment.id,
+                                      periodId: period.id,
+                                      field: "monthlyBaseAmount",
+                                      fieldValue,
+                                    });
+                                  }}
+                                  placeholder="π.χ. 1200"
+                                />
+
+                                <TextInputWithLabel
+                                  id={`${segment.id}_${period.id}_units`}
+                                  label="Μονάδες εισφοράς"
+                                  value={
+                                    additionalValue.contributionUnits || ""
+                                  }
+                                  onChange={(fieldValue) => {
+                                    updateAdditionalPeriod({
+                                      segmentId: segment.id,
+                                      periodId: period.id,
+                                      field: "contributionUnits",
+                                      fieldValue,
+                                    });
+                                  }}
+                                  placeholder="π.χ. 20"
+                                />
+                              </div>
+
+                              <p style={helpTextStyle}>
+                                Οι μονάδες εισφοράς είναι το συνολικό ποσοστό
+                                κύριας σύνταξης. Για παράδειγμα, 20 μονάδες
+                                σημαίνουν συνολική εισφορά 20%.
+                              </p>
+                            </>
+                          )}
+                        </>
                       )}
                     </div>
                   );
@@ -297,7 +376,7 @@ const checkboxLabelStyle = {
 const selectStyle = {
   marginTop: "0.5rem",
   padding: "0.5rem",
-  width: "420px",
+  width: "520px",
   maxWidth: "100%",
 };
 

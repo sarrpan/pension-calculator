@@ -1,6 +1,11 @@
 const PARALLEL_INSURANCE_FROM_DATE = "2017-01-01";
 const INSURANCE_DAYS_PER_YEAR = 300;
 
+const PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS =
+  "monthly_base_and_contribution_units";
+const PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT =
+  "total_main_pension_contribution_amount";
+
 function detectParallelInsuranceSegments(insurancePeriodsDraft = []) {
   const periods = normalizePeriods(insurancePeriodsDraft);
 
@@ -136,8 +141,13 @@ function normalizeParallelInsuranceDraft(value) {
       )) {
         additionalPeriods[periodId] = {
           insuranceDaysToRemove: periodValue?.insuranceDaysToRemove ?? "",
+          contributionInputMode: normalizeParallelContributionInputMode(
+            periodValue?.contributionInputMode,
+            periodValue,
+          ),
           monthlyBaseAmount: periodValue?.monthlyBaseAmount ?? "",
           contributionUnits: periodValue?.contributionUnits ?? "",
+          totalContributionAmount: periodValue?.totalContributionAmount ?? "",
         };
       }
     }
@@ -152,6 +162,28 @@ function normalizeParallelInsuranceDraft(value) {
   }
 
   return { segments };
+}
+
+function normalizeParallelContributionInputMode(value, periodValue = {}) {
+  if (value === PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT) {
+    return PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT;
+  }
+
+  if (value === PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS) {
+    return PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS;
+  }
+
+  const hasTotalContributionAmount =
+    String(periodValue?.totalContributionAmount ?? "").trim() !== "";
+  const hasLegacyBaseOrUnits =
+    String(periodValue?.monthlyBaseAmount ?? "").trim() !== "" ||
+    String(periodValue?.contributionUnits ?? "").trim() !== "";
+
+  if (hasTotalContributionAmount && !hasLegacyBaseOrUnits) {
+    return PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT;
+  }
+
+  return PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS;
 }
 
 function buildPeriodLabel(period = {}) {
@@ -272,7 +304,10 @@ function roundToDecimals(value, decimals) {
 }
 
 export {
+  PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS,
+  PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT,
   createEmptyParallelInsuranceDraft,
   detectParallelInsuranceSegments,
+  normalizeParallelContributionInputMode,
   normalizeParallelInsuranceDraft,
 };
