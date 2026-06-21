@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from "react";
 
 import BackendResponsePanel from "./components/BackendResponsePanel";
@@ -28,6 +29,9 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     getInitialFormStep(savedDraft),
   );
 
+  const [birthDateInput, setBirthDateInput] = useState(
+    savedDraft.birthDateInput || "",
+  );
   const [pensionStartDateInput, setPensionStartDateInput] = useState(
     savedDraft.pensionStartDateInput || "",
   );
@@ -176,6 +180,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     return analyzePensionForm({
       currentFormStep,
       calculatorEdition,
+      birthDateInput,
       pensionStartDateInput,
       pensionTypeInput,
       oldAgeCategoryInput,
@@ -229,6 +234,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
   }, [
     currentFormStep,
     calculatorEdition,
+    birthDateInput,
     pensionStartDateInput,
     pensionTypeInput,
     oldAgeCategoryInput,
@@ -268,6 +274,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
   useEffect(() => {
     saveDraft({
       currentFormStep,
+      birthDateInput,
       pensionStartDateInput,
       pensionTypeInput,
       oldAgeCategoryInput,
@@ -305,6 +312,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     });
   }, [
     currentFormStep,
+    birthDateInput,
     pensionStartDateInput,
     pensionTypeInput,
     oldAgeCategoryInput,
@@ -672,6 +680,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
         {currentFormStep === "main" && (
           <>
             <NationalPensionInputSection
+              birthDateInput={birthDateInput}
               pensionStartDateInput={pensionStartDateInput}
               pensionTypeInput={pensionTypeInput}
               oldAgeCategoryInput={oldAgeCategoryInput}
@@ -679,6 +688,10 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
               earlyReductionMonthsInput={earlyReductionMonthsInput}
               disabilityCategoryInput={disabilityCategoryInput}
               residenceYearsInput={residenceYearsInput}
+              onBirthDateChange={(value) => {
+                setBirthDateInput(value);
+                clearBackendResult();
+              }}
               onPensionStartDateChange={(value) => {
                 setPensionStartDateInput(value);
                 clearBackendResult();
@@ -942,10 +955,11 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
             background: "#f8fafc",
           }}
         >
-          <h2>Υπολογισμός κύριας σύνταξης</h2>
+          <h2>Υπολογισμός κύριας και επικουρικής σύνταξης</h2>
           <p style={{ color: "#475569" }}>
-            Αυτό το κουμπί στέλνει το preparedInput στο actual calculator και
-            εμφανίζει εθνική, ανταποδοτική και σύνολο κύριας σύνταξης.
+            Αυτό το κουμπί στέλνει τα προετοιμασμένα δεδομένα στον calculator.
+            Εμφανίζει την κύρια σύνταξη και, όταν υπάρχει επικουρική ασφάλιση,
+            το παλαιό τμήμα της επικουρικής έως 31/12/2014.
           </p>
 
           <button
@@ -1455,5 +1469,3 @@ function saveDraft(draft) {
 }
 
 export default PensionCalculatorPage;
-
-

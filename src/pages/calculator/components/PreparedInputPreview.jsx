@@ -1,3 +1,4 @@
+
 import React from "react";
 
 import {
@@ -11,6 +12,16 @@ function PreparedInputPreview({ analysis }) {
     <>
       <section style={sectionStyle}>
         <h2>Τι κατάλαβε η εφαρμογή</h2>
+
+        <p>
+          <strong>Ημερομηνία γέννησης:</strong>{" "}
+          {analysis.displayBirthDate}
+        </p>
+
+        <p>
+          <strong>Ηλικία κατά την έναρξη της σύνταξης:</strong>{" "}
+          {analysis.ageAtPensionStart} έτη
+        </p>
 
         <p>
           <strong>Ημερομηνία που δόθηκε:</strong> {analysis.displayDate}
@@ -367,5 +378,3 @@ const previewBoxStyle = {
 };
 
 export default PreparedInputPreview;
-
-

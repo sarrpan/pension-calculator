@@ -1,3 +1,4 @@
+
 import React from "react";
 
 function MainPensionResultPanel({ calculationResponse }) {
@@ -7,6 +8,7 @@ function MainPensionResultPanel({ calculationResponse }) {
   const parallelInsurance = calculationResponse?.parallelInsurance || {};
   const plasticYears = calculationResponse?.plasticYears || {};
   const etaaExtraBenefits = calculationResponse?.etaaExtraBenefits || {};
+  const auxiliaryPension = calculationResponse?.auxiliaryPension || null;
   const totals = calculationResponse?.totals || {};
 
   const nationalAmount = toNumberOrNull(nationalPension.amount);
@@ -24,6 +26,78 @@ function MainPensionResultPanel({ calculationResponse }) {
     article30Increase.premiumContributionAmount,
   );
   const grossMainPension = toNumberOrNull(totals.grossMainPension);
+
+  const auxiliaryOldPart = auxiliaryPension?.oldPartUntil2014 || {};
+  const auxiliaryHigherContribution =
+    auxiliaryPension?.higherContributionIncreaseUntil2014 || {};
+  const auxiliaryNdcPart = auxiliaryPension?.ndcPartFrom2015 || {};
+  const auxiliaryRanteSelection = auxiliaryPension?.ranteSelection || {};
+  const auxiliaryDisabilityAdjustment =
+    auxiliaryPension?.disabilityAdjustment || {};
+
+  const auxiliaryOldPartAmount = toNumberOrNull(auxiliaryOldPart.amount);
+  const auxiliaryHigherContributionAmount = toNumberOrNull(
+    auxiliaryHigherContribution.amount,
+  );
+  const grossAuxiliaryPension = toNumberOrNull(
+    totals.grossAuxiliaryPension ??
+      auxiliaryPension?.totals?.grossAuxiliaryPension,
+  );
+  const auxiliaryInsuranceDaysUntil2014 = toNumberOrNull(
+    auxiliaryOldPart.auxiliaryInsuranceDays,
+  );
+  const auxiliaryInsuranceYearsUntil2014 = toNumberOrNull(
+    auxiliaryOldPart.auxiliaryInsuranceYears,
+  );
+  const averageMonthlyAuxiliaryEarnings = toNumberOrNull(
+    auxiliaryOldPart.averageMonthlyAuxiliaryEarnings,
+  );
+  const auxiliaryInsuranceDaysFrom2015 = toNumberOrNull(
+    auxiliaryNdcPart.auxiliaryInsuranceDays,
+  );
+  const auxiliaryInsuranceYearsFrom2015 = toNumberOrNull(
+    auxiliaryNdcPart.auxiliaryInsuranceYears,
+  );
+  const auxiliaryNdcAmount = toNumberOrNull(auxiliaryNdcPart.amount);
+  const auxiliaryNdcOriginalContributions = toNumberOrNull(
+    auxiliaryNdcPart.totalOriginalContributions,
+  );
+  const auxiliaryNdcAccumulatedContributions = toNumberOrNull(
+    auxiliaryNdcPart.totalAccumulatedContributions,
+  );
+  const auxiliaryNdcAnnualPensionAmount = toNumberOrNull(
+    auxiliaryNdcPart.annualPensionAmount,
+  );
+  const auxiliaryNdcLastAccumulationYear = toNumberOrNull(
+    auxiliaryNdcPart.lastAccumulationYear,
+  );
+  const auxiliaryNdcYearlyBreakdown = Array.isArray(
+    auxiliaryNdcPart.yearlyBreakdown,
+  )
+    ? auxiliaryNdcPart.yearlyBreakdown
+    : [];
+  const auxiliaryDisabilityPaymentRate = toNumberOrNull(
+    auxiliaryDisabilityAdjustment.paymentRate,
+  );
+  const selectedAuxiliaryRante = toNumberOrNull(
+    auxiliaryRanteSelection.value,
+  );
+  const auxiliaryRanteAge = toNumberOrNull(auxiliaryRanteSelection.age);
+  const hasSelectedAuxiliaryRante =
+    auxiliaryRanteSelection.found === true && selectedAuxiliaryRante !== null;
+  const hasAuxiliaryPension = Boolean(auxiliaryPension);
+  const hasCalculatedNdcPart =
+    auxiliaryNdcPart.status === "calculated" ||
+    auxiliaryNdcPart.status === "calculated_with_provisional_factors";
+  const hasPendingNdcPart =
+    auxiliaryInsuranceDaysFrom2015 !== null &&
+    auxiliaryInsuranceDaysFrom2015 > 0 &&
+    !hasCalculatedNdcPart;
+  const usesProvisionalNdcFactors =
+    auxiliaryNdcPart.usesProvisionalAccumulationFactors === true;
+  const usesProvisionalNdcContributionRates =
+    auxiliaryNdcPart.usesProvisionalContributionRates === true;
+
   const cleanParallelInsuranceYears = toNumberOrNull(
     parallelInsurance.cleanInsuranceYears,
   );
@@ -243,6 +317,271 @@ function MainPensionResultPanel({ calculationResponse }) {
         )}
       </div>
 
+      {hasAuxiliaryPension && (
+        <section style={auxiliaryResultSectionStyle}>
+          <h2 style={{ marginTop: 0 }}>Αποτέλεσμα επικουρικής σύνταξης</h2>
+
+          <div style={resultCardsGridStyle}>
+            <ResultCard
+              title="Παλαιό τμήμα έως 31/12/2014"
+              value={formatMoney(auxiliaryOldPartAmount)}
+            />
+
+            {auxiliaryHigherContributionAmount !== null &&
+              auxiliaryHigherContributionAmount > 0 && (
+                <ResultCard
+                  title="Προσαύξηση αυξημένων εισφορών"
+                  value={formatMoney(auxiliaryHigherContributionAmount)}
+                />
+              )}
+
+            {hasCalculatedNdcPart && (
+              <ResultCard
+                title="Νέο/NDC τμήμα από 1/1/2015"
+                value={formatMoney(auxiliaryNdcAmount)}
+              />
+            )}
+
+            <ResultCard
+              title="Σύνολο επικουρικής σύνταξης"
+              value={formatMoney(grossAuxiliaryPension)}
+            />
+          </div>
+
+          <div style={{ color: "#1e3a8a" }}>
+            {auxiliaryInsuranceDaysUntil2014 !== null && (
+              <p>
+                Ημέρες επικουρικής έως 31/12/2014:{" "}
+                <strong>
+                  {formatNumber(auxiliaryInsuranceDaysUntil2014)}
+                </strong>
+                {auxiliaryInsuranceYearsUntil2014 !== null && (
+                  <>
+                    {" "}
+                    ({formatYears(auxiliaryInsuranceYearsUntil2014)})
+                  </>
+                )}
+              </p>
+            )}
+
+            {averageMonthlyAuxiliaryEarnings !== null && (
+              <p>
+                Μέσος μηνιαίος επικουρικός μισθός:{" "}
+                <strong>
+                  {formatMoney(averageMonthlyAuxiliaryEarnings)}
+                </strong>
+              </p>
+            )}
+
+            <p>
+              Βασικός τύπος παλαιού τμήματος:{" "}
+              <strong>
+                0,45% × έτη επικουρικής έως το 2014 × μέσος επικουρικός
+                μισθός
+              </strong>
+            </p>
+
+            {hasSelectedAuxiliaryRante && (
+              <>
+                <p>
+                  Ηλικία επιλογής ράντας:{" "}
+                  <strong>{formatNumber(auxiliaryRanteAge)} έτη</strong>
+                </p>
+                <p>
+                  Επιλεγμένη ράντα νέου/NDC τμήματος:{" "}
+                  <strong>{formatRante(selectedAuxiliaryRante)}</strong>
+                </p>
+                {auxiliaryRanteSelection.groupLabel && (
+                  <p>
+                    Ομάδα ράντας:{" "}
+                    <strong>{auxiliaryRanteSelection.groupLabel}</strong>
+                  </p>
+                )}
+              </>
+            )}
+
+            {hasCalculatedNdcPart && (
+              <>
+                <p>
+                  Συνολικές εισφορές νέου/NDC τμήματος:{" "}
+                  <strong>{formatMoney(auxiliaryNdcOriginalContributions)}</strong>
+                </p>
+                <p>
+                  Συσσωρευμένο κεφάλαιο μετά τους συντελεστές 1+g:{" "}
+                  <strong>
+                    {formatMoney(auxiliaryNdcAccumulatedContributions)}
+                  </strong>
+                </p>
+                {auxiliaryNdcLastAccumulationYear !== null && (
+                  <p>
+                    Τελευταίο έτος συσσώρευσης:{" "}
+                    <strong>
+                      {formatNumber(auxiliaryNdcLastAccumulationYear)}
+                    </strong>
+                  </p>
+                )}
+                <p>
+                  Ετήσιο ποσό νέου/NDC τμήματος:{" "}
+                  <strong>{formatMoney(auxiliaryNdcAnnualPensionAmount)}</strong>
+                </p>
+                <p>
+                  Μηνιαίο νέο/NDC τμήμα:{" "}
+                  <strong>{formatMoney(auxiliaryNdcAmount)}</strong>
+                </p>
+                <p>
+                  Τύπος νέου/NDC τμήματος:{" "}
+                  <strong>
+                    συσσωρευμένο κεφάλαιο ÷ ράντα ÷ 12
+                  </strong>
+                </p>
+
+                {auxiliaryNdcYearlyBreakdown.length > 0 && (
+                  <details style={ndcBreakdownDetailsStyle}>
+                    <summary style={{ cursor: "pointer", fontWeight: 700 }}>
+                      Αναλυτικός υπολογισμός NDC ανά έτος
+                    </summary>
+
+                    <div style={{ overflowX: "auto", marginTop: "0.75rem" }}>
+                      <table style={ndcBreakdownTableStyle}>
+                        <thead>
+                          <tr>
+                            <th style={ndcBreakdownCellStyle}>Έτος</th>
+                            <th style={ndcBreakdownCellStyle}>Αποδοχές</th>
+                            <th style={ndcBreakdownCellStyle}>Γενικό ποσοστό</th>
+                            <th style={ndcBreakdownCellStyle}>Πρόσθετο ποσοστό</th>
+                            <th style={ndcBreakdownCellStyle}>Εισφορές έτους</th>
+                            <th style={ndcBreakdownCellStyle}>Σωρευτικός 1+g</th>
+                            <th style={ndcBreakdownCellStyle}>Συσσωρευμένες εισφορές</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {auxiliaryNdcYearlyBreakdown.map((entry) => (
+                            <tr key={`auxiliary_ndc_${entry.year}`}>
+                              <td style={ndcBreakdownCellStyle}>
+                                {formatNumber(toNumberOrNull(entry.year))}
+                              </td>
+                              <td style={ndcBreakdownCellStyle}>
+                                {formatMoney(
+                                  toNumberOrNull(entry.annualEarnings),
+                                )}
+                              </td>
+                              <td style={ndcBreakdownCellStyle}>
+                                {formatPercentage(
+                                  toNumberOrNull(
+                                    entry.generalContributionRatePercent,
+                                  ),
+                                )}
+                              </td>
+                              <td style={ndcBreakdownCellStyle}>
+                                {formatPercentage(
+                                  toNumberOrNull(
+                                    entry.extraContributionRatePercent,
+                                  ),
+                                )}
+                              </td>
+                              <td style={ndcBreakdownCellStyle}>
+                                {formatMoney(
+                                  toNumberOrNull(
+                                    entry.annualContributionAmount,
+                                  ),
+                                )}
+                              </td>
+                              <td style={ndcBreakdownCellStyle}>
+                                {formatMultiplier(
+                                  toNumberOrNull(
+                                    entry.accumulationMultiplier,
+                                  ),
+                                )}
+                              </td>
+                              <td style={ndcBreakdownCellStyle}>
+                                {formatMoney(
+                                  toNumberOrNull(
+                                    entry.accumulatedContributionAmount,
+                                  ),
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                )}
+              </>
+            )}
+
+            {auxiliaryDisabilityAdjustment.applies === true &&
+              auxiliaryDisabilityPaymentRate !== null && (
+                <p>
+                  Ποσοστό καταβολής λόγω αναπηρίας:{" "}
+                  <strong>
+                    {formatPercentage(auxiliaryDisabilityPaymentRate * 100)}
+                  </strong>
+                </p>
+              )}
+          </div>
+
+          {hasCalculatedNdcPart && usesProvisionalNdcFactors && (
+            <div style={pendingAuxiliaryNoticeStyle}>
+              <strong>
+                Το νέο/NDC τμήμα χρησιμοποιεί προσωρινούς συντελεστές 1+g.
+              </strong>
+              <p style={{ marginBottom: 0 }}>
+                Η μέθοδος συσσώρευσης και η ράντα έχουν συνδεθεί, αλλά οι
+                ετήσιοι συντελεστές 1+g θα αντικατασταθούν όταν επιβεβαιωθούν
+                οι επίσημες τιμές.
+              </p>
+            </div>
+          )}
+
+          {hasCalculatedNdcPart &&
+            usesProvisionalNdcContributionRates && (
+              <div style={pendingAuxiliaryNoticeStyle}>
+                <strong>
+                  Χρησιμοποιήθηκε προσωρινή παραδοχή ειδικής πρόσθετης
+                  επικουρικής εισφοράς.
+                </strong>
+                <p style={{ marginBottom: 0 }}>
+                  Η παραδοχή αφορά μόνο κατηγορία για την οποία δεν έχει
+                  ακόμη επιβεβαιωθεί χωριστό ποσοστό. Πραγματικό ποσό
+                  εισφορών, όταν δοθεί, υπερισχύει.
+                </p>
+              </div>
+            )}
+
+          {hasPendingNdcPart && (
+            <div style={pendingAuxiliaryNoticeStyle}>
+              <strong>Δεν ολοκληρώθηκε ο υπολογισμός του τμήματος από 1/1/2015.</strong>
+              <p style={{ marginBottom: 0 }}>
+                Έχουν καταγραφεί{" "}
+                <strong>
+                  {formatNumber(auxiliaryInsuranceDaysFrom2015)} ημέρες
+                </strong>
+                {auxiliaryInsuranceYearsFrom2015 !== null && (
+                  <>
+                    {" "}
+                    ({formatYears(auxiliaryInsuranceYearsFrom2015)})
+                  </>
+                )}
+                . Δες τις εκκρεμότητες του calculator για το στοιχείο που
+                λείπει από τον υπολογισμό.
+              </p>
+              {hasSelectedAuxiliaryRante ? (
+                <p style={{ marginBottom: 0, marginTop: "0.5rem" }}>
+                  Η ηλικία και η ασφαλιστική κατηγορία συνδέθηκαν επιτυχώς με
+                  τη σωστή ράντα.
+                </p>
+              ) : auxiliaryRanteSelection.warning ? (
+                <p style={{ marginBottom: 0, marginTop: "0.5rem" }}>
+                  <strong>Εκκρεμότητα ράντας:</strong>{" "}
+                  {auxiliaryRanteSelection.warning}
+                </p>
+              ) : null}
+            </div>
+          )}
+        </section>
+      )}
+
       {Array.isArray(calculationResponse?.warnings) &&
         calculationResponse.warnings.length > 0 && (
           <div
@@ -272,6 +611,51 @@ function MainPensionResultPanel({ calculationResponse }) {
     </section>
   );
 }
+
+const resultCardsGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+  gap: "0.75rem",
+  marginBottom: "1rem",
+};
+
+const auxiliaryResultSectionStyle = {
+  marginTop: "1.25rem",
+  border: "1px solid #bfdbfe",
+  borderRadius: "8px",
+  padding: "1rem",
+  background: "#eff6ff",
+};
+
+const ndcBreakdownDetailsStyle = {
+  marginTop: "0.75rem",
+  border: "1px solid #bfdbfe",
+  borderRadius: "6px",
+  padding: "0.75rem",
+  background: "#ffffff",
+};
+
+const ndcBreakdownTableStyle = {
+  width: "100%",
+  borderCollapse: "collapse",
+  fontSize: "0.88rem",
+};
+
+const ndcBreakdownCellStyle = {
+  border: "1px solid #dbeafe",
+  padding: "0.45rem",
+  textAlign: "right",
+  whiteSpace: "nowrap",
+};
+
+const pendingAuxiliaryNoticeStyle = {
+  marginTop: "1rem",
+  border: "1px solid #f59e0b",
+  borderRadius: "8px",
+  padding: "0.75rem",
+  background: "#fffbeb",
+  color: "#78350f",
+};
 
 function getEtaaBenefitLabel(benefitType) {
   const labels = {
@@ -352,6 +736,28 @@ function formatNumber(value) {
   return value.toLocaleString("el-GR", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
+  });
+}
+
+function formatRante(value) {
+  if (value === null) {
+    return "—";
+  }
+
+  return value.toLocaleString("el-GR", {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  });
+}
+
+function formatMultiplier(value) {
+  if (value === null) {
+    return "—";
+  }
+
+  return value.toLocaleString("el-GR", {
+    minimumFractionDigits: 6,
+    maximumFractionDigits: 6,
   });
 }
 

@@ -1,9 +1,11 @@
+
 import React from 'react';
 
 import { RadioOption } from '../components/FormControls';
 import { fieldsetStyle } from '../utils/calculatorStyles';
 
 function NationalPensionInputSection({
+  birthDateInput,
   pensionStartDateInput,
   pensionTypeInput,
   oldAgeCategoryInput,
@@ -11,6 +13,7 @@ function NationalPensionInputSection({
   earlyReductionMonthsInput,
   disabilityCategoryInput,
   residenceYearsInput,
+  onBirthDateChange,
   onPensionStartDateChange,
   onPensionTypeChange,
   onOldAgeCategoryChange,
@@ -21,6 +24,30 @@ function NationalPensionInputSection({
 }) {
   return (
     <>
+      <div style={{ marginBottom: '1rem' }}>
+        <label htmlFor="birthDate">Ημερομηνία γέννησης</label>
+
+        <br />
+
+        <input
+          id="birthDate"
+          type="text"
+          value={birthDateInput}
+          onChange={(event) => onBirthDateChange(event.target.value)}
+          placeholder="π.χ. 31/12/1967"
+          style={{
+            marginTop: '0.5rem',
+            padding: '0.5rem',
+            width: '220px',
+          }}
+        />
+
+        <p style={{ color: '#475569', marginBottom: 0 }}>
+          Χρησιμοποιείται για να υπολογιστεί η ηλικία κατά την έναρξη της
+          σύνταξης και να επιλεγεί η σωστή ράντα της επικουρικής.
+        </p>
+      </div>
+
       <div style={{ marginBottom: '1rem' }}>
         <label htmlFor="pensionStartDate">
           Ημερομηνία έναρξης σύνταξης

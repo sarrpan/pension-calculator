@@ -1,4 +1,5 @@
 
+
 import {
   PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS,
   PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT,
@@ -321,6 +322,7 @@ const PLASTIC_YEARS_FINANCIAL_INPUT_MODE_OPTIONS = [
 function analyzePensionForm({
   currentFormStep = "main",
   calculatorEdition = "professional",
+  birthDateInput,
   pensionStartDateInput,
   pensionTypeInput,
   oldAgeCategoryInput,
@@ -373,6 +375,10 @@ function analyzePensionForm({
   multiPeriod2EmploymentCategoryInput,
 }) {
   const dateAnalysis = analyzePensionStartDate(pensionStartDateInput);
+  const birthDateAnalysis = analyzeBirthDate({
+    value: birthDateInput,
+    pensionDate: dateAnalysis.pensionDate,
+  });
   const pensionTypeAnalysis = analyzePensionType(pensionTypeInput);
   const oldAgeAnalysis = analyzeOldAgeInputs({
     pensionType: pensionTypeAnalysis.pensionType,
@@ -480,6 +486,7 @@ function analyzePensionForm({
 
   const errors = [
     dateAnalysis.error,
+    birthDateAnalysis.error,
     pensionTypeAnalysis.error,
     oldAgeAnalysis.error,
     disabilityAnalysis.error,
@@ -504,6 +511,7 @@ function analyzePensionForm({
 
   const isReady =
     dateAnalysis.hasValue &&
+    birthDateAnalysis.hasValue &&
     pensionTypeAnalysis.hasValue &&
     oldAgeAnalysis.hasValue &&
     disabilityAnalysis.hasValue &&
@@ -539,6 +547,8 @@ function analyzePensionForm({
 
   const calculationInput = {
     generalInfoData: {
+      birthDate: birthDateAnalysis.birthDate,
+      ageAtPensionStart: birthDateAnalysis.ageAtPensionStart,
       pensionDate: dateAnalysis.pensionDate,
       pensionYear: dateAnalysis.pensionYear,
       pensionType: pensionTypeAnalysis.pensionType,
@@ -582,6 +592,8 @@ function analyzePensionForm({
     requiresContributoryYearlyStep:
       contributoryAnalysis.requiresContributoryYearlyStep === true,
 
+    displayBirthDate: birthDateAnalysis.displayBirthDate,
+    ageAtPensionStart: birthDateAnalysis.ageAtPensionStart,
     displayDate: dateAnalysis.displayDate,
     pensionYear: dateAnalysis.pensionYear,
 
@@ -1269,6 +1281,130 @@ function analyzePlasticYearsDuration({ years, months, days, entryNumber }) {
 
 function formatPlasticYearsDuration({ years, months, days }) {
   return `${years} έτη, ${months} μήνες, ${days} ημέρες`;
+}
+
+function analyzeBirthDate({ value, pensionDate }) {
+  const trimmedValue = String(value || "").trim();
+
+  if (!trimmedValue) {
+    return {
+      hasValue: false,
+      error: null,
+    };
+  }
+
+  const parsedInput = parseBirthDateInput(trimmedValue);
+
+  if (!parsedInput.isValidFormat) {
+    return {
+      hasValue: true,
+      error:
+        "Συμπληρώστε έγκυρη ημερομηνία γέννησης με τετραψήφιο έτος, π.χ. 31/12/1967 ή 31121967.",
+    };
+  }
+
+  const { day, month, year } = parsedInput;
+  const parsedDate = new Date(Date.UTC(year, month - 1, day));
+  const isRealDate =
+    parsedDate.getUTCFullYear() === year &&
+    parsedDate.getUTCMonth() === month - 1 &&
+    parsedDate.getUTCDate() === day;
+
+  if (!isRealDate) {
+    return {
+      hasValue: true,
+      error: "Η ημερομηνία γέννησης που δόθηκε δεν είναι πραγματική.",
+    };
+  }
+
+  const normalizedBirthDate = formatIsoDate(day, month, year);
+  const parsedPensionDate = parseIsoDate(pensionDate);
+
+  if (!parsedPensionDate) {
+    return {
+      hasValue: true,
+      error: null,
+      displayBirthDate: formatGreekDate(day, month, year),
+      birthDate: normalizedBirthDate,
+      ageAtPensionStart: null,
+    };
+  }
+
+  if (parsedDate >= parsedPensionDate) {
+    return {
+      hasValue: true,
+      error:
+        "Η ημερομηνία γέννησης πρέπει να είναι πριν από την ημερομηνία έναρξης της σύνταξης.",
+    };
+  }
+
+  const ageAtPensionStart = calculateCompletedAge({
+    birthDate: parsedDate,
+    referenceDate: parsedPensionDate,
+  });
+
+  if (ageAtPensionStart < 15 || ageAtPensionStart > 110) {
+    return {
+      hasValue: true,
+      error:
+        "Η ηλικία κατά την έναρξη της σύνταξης πρέπει να είναι από 15 έως 110 έτη, ώστε να υπάρχει αντίστοιχη ράντα.",
+    };
+  }
+
+  return {
+    hasValue: true,
+    error: null,
+    displayBirthDate: formatGreekDate(day, month, year),
+    birthDate: normalizedBirthDate,
+    ageAtPensionStart,
+  };
+}
+
+function parseBirthDateInput(value) {
+  const normalizedValue = String(value || "").trim();
+  const separatedDateMatch = normalizedValue.match(
+    /^(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{4})$/,
+  );
+
+  if (separatedDateMatch) {
+    return {
+      isValidFormat: true,
+      day: Number(separatedDateMatch[1]),
+      month: Number(separatedDateMatch[2]),
+      year: Number(separatedDateMatch[3]),
+    };
+  }
+
+  const digitsOnly = normalizedValue.replace(/\D/g, "");
+
+  if (digitsOnly.length === 8) {
+    return {
+      isValidFormat: true,
+      day: Number(digitsOnly.slice(0, 2)),
+      month: Number(digitsOnly.slice(2, 4)),
+      year: Number(digitsOnly.slice(4, 8)),
+    };
+  }
+
+  return {
+    isValidFormat: false,
+  };
+}
+
+function calculateCompletedAge({ birthDate, referenceDate }) {
+  let age = referenceDate.getUTCFullYear() - birthDate.getUTCFullYear();
+  const referenceMonth = referenceDate.getUTCMonth();
+  const birthMonth = birthDate.getUTCMonth();
+
+  if (
+    referenceMonth < birthMonth ||
+    (referenceMonth === birthMonth &&
+      referenceDate.getUTCDate() < birthDate.getUTCDate())
+  ) {
+    age -= 1;
+  }
+
+  return age;
 }
 
 function analyzePensionStartDate(value) {
@@ -4151,6 +4287,28 @@ function formatGreekDate(day, month, year) {
 
 function formatIsoDate(day, month, year) {
   return `${year}-${padTwoDigits(month)}-${padTwoDigits(day)}`;
+}
+
+function parseIsoDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(
+    String(value || "").trim(),
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsedDate = new Date(Date.UTC(year, month - 1, day));
+
+  const isRealDate =
+    parsedDate.getUTCFullYear() === year &&
+    parsedDate.getUTCMonth() === month - 1 &&
+    parsedDate.getUTCDate() === day;
+
+  return isRealDate ? parsedDate : null;
 }
 
 function padTwoDigits(value) {
