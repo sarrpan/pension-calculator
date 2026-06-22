@@ -1,4 +1,3 @@
-
 import React from "react";
 
 function MainPensionResultPanel({ calculationResponse }) {
@@ -343,7 +342,11 @@ function MainPensionResultPanel({ calculationResponse }) {
             )}
 
             <ResultCard
-              title="Σύνολο επικουρικής σύνταξης"
+              title={
+                hasPendingNdcPart
+                  ? "Μερικό σύνολο επικουρικής έως 31/12/2014"
+                  : "Σύνολο επικουρικής σύνταξης"
+              }
               value={formatMoney(grossAuxiliaryPension)}
             />
           </div>
@@ -797,3 +800,4 @@ function formatPercentage(value) {
 }
 
 export default MainPensionResultPanel;
+

@@ -1,5 +1,6 @@
 
 
+
 import {
   PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS,
   PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT,
@@ -7,6 +8,10 @@ import {
   normalizeParallelContributionInputMode,
   normalizeParallelInsuranceDraft,
 } from "./parallelInsuranceFormUtils";
+import {
+  normalizeAuxiliaryContributionDraft,
+  resolveAuxiliaryFormClassification,
+} from "./auxiliaryContributionFormUtils";
 
 const INSURANCE_DAYS_PER_YEAR = 300;
 const INSURANCE_DAYS_PER_MONTH = 25;
@@ -357,6 +362,7 @@ function analyzePensionForm({
   parallelInsuranceDraft,
   plasticYearsDraft,
   etaaExtraBenefitDraft,
+  auxiliaryContributionDraft,
   multiPeriodTimeInputMethod,
   multiPeriodInsuranceDaysInput,
   multiPeriodInsuranceYearsInput,
@@ -413,6 +419,7 @@ function analyzePensionForm({
     simpleInsuranceMonthsInput,
     simpleInsuranceExtraDaysInput,
     simpleUniformedSpecialTimeDraft,
+    auxiliaryContributionDraft,
     insurancePeriodGroups,
     multiPeriodTimeInputMethod,
     multiPeriodInsuranceDaysInput,
@@ -650,6 +657,8 @@ function analyzePensionForm({
       insurancePeriodsAnalysis.insurancePeriodsDraft.length,
     insurancePeriodDraftDisplay:
       insurancePeriodsAnalysis.insurancePeriodDraftDisplay,
+    auxiliaryContributionDisplay:
+      insurancePeriodsAnalysis.auxiliaryContributionDisplay,
 
     parallelInsuranceSegments,
     parallelInsuranceDraft: parallelInsuranceAnalysis.parallelInsuranceDraft,
@@ -1963,6 +1972,7 @@ function analyzeInsurancePeriodsDraft({
   simpleInsuranceMonthsInput,
   simpleInsuranceExtraDaysInput,
   simpleUniformedSpecialTimeDraft,
+  auxiliaryContributionDraft,
   insurancePeriodGroups,
   multiPeriodTimeInputMethod,
   multiPeriodInsuranceDaysInput,
@@ -1983,6 +1993,8 @@ function analyzeInsurancePeriodsDraft({
   insuranceTimeAnalysis,
 }) {
   const mode = String(insurancePeriodsInputMode || "disabled").trim();
+  const normalizedAuxiliaryContributionDraft =
+    normalizeAuxiliaryContributionDraft(auxiliaryContributionDraft);
 
   if (!INSURANCE_PERIODS_INPUT_MODE_OPTIONS[mode]) {
     return {
@@ -1993,6 +2005,7 @@ function analyzeInsurancePeriodsDraft({
       insurancePeriodsInputModeLabel: null,
       insurancePeriodsDraft: [],
       insurancePeriodDraftDisplay: null,
+      auxiliaryContributionDisplay: [],
     };
   }
 
@@ -2007,6 +2020,7 @@ function analyzeInsurancePeriodsDraft({
       insurancePeriodsDraft: [],
       insurancePeriodDraftDisplay:
         "Δεν δηλώθηκε κατηγορία συνολικού χρόνου ασφάλισης.",
+      auxiliaryContributionDisplay: [],
     };
   }
 
@@ -2071,6 +2085,14 @@ function analyzeInsurancePeriodsDraft({
         tsaySinglePensionerStatus:
           groups[index].tsaySinglePensionerStatus,
         uniformedSpecialTimeDraft: groups[index].uniformedSpecialTimeDraft,
+        auxiliaryExtraContributionChoice:
+          normalizedAuxiliaryContributionDraft[
+            groups[index].id || `period_${index + 1}`
+          ]?.extraContributionChoice || "",
+        formerAuxiliaryFund:
+          normalizedAuxiliaryContributionDraft[
+            groups[index].id || `period_${index + 1}`
+          ]?.formerAuxiliaryFund || "",
         isRequired: true,
       });
 
@@ -2098,11 +2120,17 @@ function analyzeInsurancePeriodsDraft({
       error: null,
       warnings: [
         "Οι περίοδοι / ομάδες προετοιμάζονται ως insurancePeriodsDraft και το backend τις μετατρέπει σε κανονικό insurancePeriods για τον calculator.",
+        ...periods
+          .map((period) => period.auxiliaryWarning)
+          .filter(Boolean),
       ],
       insurancePeriodsInputMode: mode,
       insurancePeriodsInputModeLabel:
         INSURANCE_PERIODS_INPUT_MODE_OPTIONS[mode].label,
       insurancePeriodsDraft: periods,
+      auxiliaryContributionDisplay: periods.map(
+        buildAuxiliaryContributionDisplay,
+      ),
       insurancePeriodDraftDisplay: periods
         .map((period, index) => {
           return (
@@ -2188,6 +2216,12 @@ function analyzeInsurancePeriodsDraft({
     nonSalariedEarningsInputMode: simpleNonSalariedEarningsInputMode,
     tsaySinglePensionerStatus: simpleTsaySinglePensionerStatus,
     uniformedSpecialTimeDraft: simpleUniformedSpecialTimeDraft,
+    auxiliaryExtraContributionChoice:
+      normalizedAuxiliaryContributionDraft.period_1
+        ?.extraContributionChoice || "",
+    formerAuxiliaryFund:
+      normalizedAuxiliaryContributionDraft.period_1
+        ?.formerAuxiliaryFund || "",
     fromDate: fromDateResult.isoDate,
     fromDateDisplay: fromDateResult.displayDate,
     toDate: toDateResult.isoDate,
@@ -2210,11 +2244,15 @@ function analyzeInsurancePeriodsDraft({
     error: null,
     warnings: [
       "Η ασφαλιστική περίοδος προετοιμάζεται ως insurancePeriodsDraft και το backend τη μετατρέπει σε κανονικό insurancePeriods για τον calculator.",
-    ],
+      period.auxiliaryWarning,
+    ].filter(Boolean),
     insurancePeriodsInputMode: mode,
     insurancePeriodsInputModeLabel:
       INSURANCE_PERIODS_INPUT_MODE_OPTIONS[mode].label,
     insurancePeriodsDraft: [period],
+    auxiliaryContributionDisplay: [
+      buildAuxiliaryContributionDisplay(period),
+    ],
     insurancePeriodDraftDisplay:
       `${period.fromDateDisplay} έως ${period.toDateDisplay}: ` +
       `${period.fundLabel} - ${period.insuredTypeLabel} - ` +
@@ -2305,6 +2343,8 @@ function analyzeMultiInsurancePeriodDraft({
   nonSalariedEarningsInputMode,
   tsaySinglePensionerStatus,
   uniformedSpecialTimeDraft,
+  auxiliaryExtraContributionChoice,
+  formerAuxiliaryFund,
   isRequired,
 }) {
   const hasAnyValue = [
@@ -2408,6 +2448,8 @@ function analyzeMultiInsurancePeriodDraft({
     nonSalariedEarningsInputMode,
     tsaySinglePensionerStatus,
     uniformedSpecialTimeDraft,
+    auxiliaryExtraContributionChoice,
+    formerAuxiliaryFund,
     fromDate: fromDateResult.isoDate,
     fromDateDisplay: fromDateResult.displayDate,
     toDate: toDateResult.isoDate,
@@ -2472,6 +2514,8 @@ function buildValidatedInsurancePeriodDraft({
   nonSalariedEarningsInputMode,
   tsaySinglePensionerStatus,
   uniformedSpecialTimeDraft,
+  auxiliaryExtraContributionChoice = "",
+  formerAuxiliaryFund = "",
   fromDate = null,
   fromDateDisplay = null,
   toDate = null,
@@ -2587,6 +2631,33 @@ function buildValidatedInsurancePeriodDraft({
     );
   }
 
+  const auxiliaryClassification = resolveAuxiliaryFormClassification({
+    fund,
+    employmentCategory,
+    choice: auxiliaryExtraContributionChoice,
+    formerAuxiliaryFund,
+  });
+
+  if (
+    auxiliaryClassification.requiresFormerAuxiliaryFundChoice === true &&
+    !auxiliaryClassification.formerAuxiliaryFundSelection
+  ) {
+    return createInsurancePeriodDraftError(
+      "Επιλέξτε την πραγματική ομάδα εργαζομένων / το πρώην επικουρικό ταμείο της γενικής ασφαλιστικής περιόδου.",
+      mode,
+    );
+  }
+
+  if (
+    auxiliaryClassification.requiresUserChoice === true &&
+    !auxiliaryClassification.userChoice
+  ) {
+    return createInsurancePeriodDraftError(
+      "Απαντήστε στην ερώτηση για την πρόσθετη επικουρική εισφορά της ειδικής ασφαλιστικής περιόδου.",
+      mode,
+    );
+  }
+
   const category = buildInsurancePeriodCategory({
     fund,
     insuredType,
@@ -2620,6 +2691,24 @@ function buildValidatedInsurancePeriodDraft({
       categoryKey: category.categoryKey,
       contributionCategory: category.contributionCategory,
       specialWorkFacts: category.specialWorkFacts,
+      auxiliaryContributionClassification: auxiliaryClassification.code,
+      auxiliaryContributionClassificationLabel: auxiliaryClassification.label,
+      hasAutomaticAuxiliary: auxiliaryClassification.hasAuxiliary,
+      formerAuxiliaryFundSelection:
+        auxiliaryClassification.formerAuxiliaryFundSelection || null,
+      formerAuxiliaryFund:
+        auxiliaryClassification.formerAuxiliaryFund || null,
+      formerAuxiliaryFundLabel:
+        auxiliaryClassification.formerAuxiliaryFundLabel || null,
+      auxiliaryWorkerGroupLabel:
+        auxiliaryClassification.workerGroupLabel || null,
+      auxiliaryExtraContributionChoice:
+        auxiliaryClassification.userChoice || null,
+      auxiliaryExtraContributionRatePercent:
+        auxiliaryClassification.extraContributionRatePercent,
+      auxiliaryExtraContributionIsProvisional:
+        auxiliaryClassification.isProvisional === true,
+      auxiliaryWarning: auxiliaryClassification.warning || null,
       uniformedSpecialTimeDraft:
         fund === "uniformed"
           ? normalizeUniformedSpecialTimeDraft(uniformedSpecialTimeDraft)
@@ -2699,6 +2788,24 @@ function analyzeNonSalariedEarningsInputMode({ fund, value }) {
   };
 }
 
+function buildAuxiliaryContributionDisplay(period = {}) {
+  return {
+    periodId: period.id,
+    fundLabel: period.fundLabel,
+    classification: period.auxiliaryContributionClassification,
+    classificationLabel: period.auxiliaryContributionClassificationLabel,
+    hasAuxiliary: period.hasAutomaticAuxiliary === true,
+    formerAuxiliaryFund: period.formerAuxiliaryFund || null,
+    formerAuxiliaryFundLabel: period.formerAuxiliaryFundLabel || null,
+    workerGroupLabel: period.auxiliaryWorkerGroupLabel || null,
+    extraContributionRatePercent:
+      period.auxiliaryExtraContributionRatePercent,
+    isProvisional:
+      period.auxiliaryExtraContributionIsProvisional === true,
+    warning: period.auxiliaryWarning || null,
+  };
+}
+
 function createInsurancePeriodDraftError(error, mode) {
   return {
     hasValue: true,
@@ -2709,6 +2816,7 @@ function createInsurancePeriodDraftError(error, mode) {
       INSURANCE_PERIODS_INPUT_MODE_OPTIONS[mode]?.label || null,
     insurancePeriodsDraft: [],
     insurancePeriodDraftDisplay: null,
+    auxiliaryContributionDisplay: [],
     totalInsuranceTimeAnalysis: null,
   };
 }
@@ -2729,6 +2837,20 @@ function createBackendSafeInsurancePeriodDraft(period) {
     categoryKey: period.categoryKey,
     contributionCategory: period.contributionCategory,
     specialWorkFacts: period.specialWorkFacts,
+    auxiliaryContributionClassification:
+      period.auxiliaryContributionClassification || null,
+    formerAuxiliaryFund:
+      period.formerAuxiliaryFund || null,
+    formerAuxiliaryFundSelection:
+      period.formerAuxiliaryFundSelection || null,
+    auxiliaryWorkerGroupLabel:
+      period.auxiliaryWorkerGroupLabel || null,
+    auxiliaryExtraContributionChoice:
+      period.auxiliaryExtraContributionChoice || null,
+    auxiliaryExtraContributionRatePercent:
+      period.auxiliaryExtraContributionRatePercent,
+    auxiliaryExtraContributionIsProvisional:
+      period.auxiliaryExtraContributionIsProvisional === true,
     uniformedSpecialTimeDraft: period.uniformedSpecialTimeDraft || null,
   };
 }
@@ -2856,6 +2978,7 @@ function isAllowedEmploymentCategoryForFund({
     fund === "nat" ||
     fund === "banking_funds" ||
     fund === "tsay_salaried" ||
+    fund === "uniformed" ||
     ARTICLE30_MAIN_CONTRIBUTION_FUNDS.includes(fund)
   ) {
     return employmentCategory === "common";

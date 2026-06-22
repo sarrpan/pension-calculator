@@ -1,4 +1,5 @@
 
+
 import React from "react";
 
 import {
@@ -210,11 +211,64 @@ function PreparedInputPreview({ analysis }) {
                   <strong>Εσωτερικά values:</strong> fund={period.fund},
                   insuredType={period.insuredType}, employmentCategory=
                   {period.employmentCategory}
+                  {period.formerAuxiliaryFund
+                    ? `, formerAuxiliaryFund=${period.formerAuxiliaryFund}`
+                    : ""}
                 </p>
               </div>
             ))}
           </div>
         )}
+
+        {Array.isArray(analysis.auxiliaryContributionDisplay) &&
+          analysis.auxiliaryContributionDisplay.length > 0 && (
+            <div style={previewBoxStyle}>
+              <h3 style={{ marginTop: 0 }}>Αντιστοίχιση επικουρικής σύνταξης</h3>
+
+              {analysis.auxiliaryContributionDisplay.map((item, index) => (
+                <div key={`${item.periodId || "auxiliary"}_${index}`}>
+                  <p>
+                    <strong>{item.fundLabel || `Περίοδος ${index + 1}`}:</strong>{" "}
+                    {item.classificationLabel}
+                  </p>
+
+                  {item.workerGroupLabel && (
+                    <p>
+                      <strong>Ομάδα εργαζομένων:</strong>{" "}
+                      {item.workerGroupLabel}
+                    </p>
+                  )}
+
+                  {item.formerAuxiliaryFundLabel && (
+                    <p>
+                      <strong>Πρώην επικουρικό ταμείο:</strong>{" "}
+                      {item.formerAuxiliaryFundLabel}
+                    </p>
+                  )}
+
+                  {item.hasAuxiliary &&
+                    item.extraContributionRatePercent !== null && (
+                      <p>
+                        <strong>Πρόσθετη επικουρική εισφορά:</strong>{" "}
+                        {Number(item.extraContributionRatePercent).toLocaleString(
+                          "el-GR",
+                          { maximumFractionDigits: 2 },
+                        )}
+                        %
+                        {item.isProvisional ? " (παραδοχή / προσεγγιστική τιμή)" : ""}
+                      </p>
+                    )}
+
+                  {!item.hasAuxiliary && (
+                    <p style={{ color: "#475569" }}>
+                      Η περίοδος δεν ενεργοποιεί αυτόματο υπολογισμό
+                      επικουρικής στην τρέχουσα υλοποίηση.
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
         {Array.isArray(analysis.parallelInsuranceDisplay) &&
           analysis.parallelInsuranceDisplay.length > 0 && (

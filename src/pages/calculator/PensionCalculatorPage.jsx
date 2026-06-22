@@ -1,10 +1,10 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 
 import BackendResponsePanel from "./components/BackendResponsePanel";
 import MainPensionResultPanel from "./components/MainPensionResultPanel";
 import PreparedInputPreview from "./components/PreparedInputPreview";
 import ContributoryPensionInputSection from "./sections/ContributoryPensionInputSection";
+import AuxiliaryContributionInputSection from "./sections/AuxiliaryContributionInputSection";
 import EtaaExtraBenefitInputSection from "./sections/EtaaExtraBenefitInputSection";
 import InsurancePeriodsInputSection from "./sections/InsurancePeriodsInputSection";
 import InsuranceTimeInputSection from "./sections/InsuranceTimeInputSection";
@@ -14,6 +14,7 @@ import NationalPensionInputSection from "./sections/NationalPensionInputSection"
 import { errorSectionStyle } from "./utils/calculatorStyles";
 import { analyzePensionForm } from "./utils/pensionFormAnalysis";
 import { normalizeParallelInsuranceDraft } from "./utils/parallelInsuranceFormUtils";
+import { normalizeAuxiliaryContributionDraft } from "./utils/auxiliaryContributionFormUtils";
 
 const PREPARE_PENSION_INPUT_URL =
   "http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/preparePensionCalculationInput";
@@ -155,6 +156,10 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     normalizeSavedEtaaExtraBenefitDraft(savedDraft.etaaExtraBenefitDraft),
   );
 
+  const [auxiliaryContributionDraft, setAuxiliaryContributionDraft] = useState(
+    normalizeAuxiliaryContributionDraft(savedDraft.auxiliaryContributionDraft),
+  );
+
   const [contributoryEarningsInputMethod, setContributoryEarningsInputMethod] =
     useState(savedDraft.contributoryEarningsInputMethod || "");
   const [
@@ -227,6 +232,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
       parallelInsuranceDraft,
       plasticYearsDraft,
       etaaExtraBenefitDraft,
+      auxiliaryContributionDraft,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
       yearlyEarningsRows,
@@ -266,6 +272,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     parallelInsuranceDraft,
     plasticYearsDraft,
     etaaExtraBenefitDraft,
+    auxiliaryContributionDraft,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
     yearlyEarningsRows,
@@ -306,6 +313,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
       parallelInsuranceDraft,
       plasticYearsDraft,
       etaaExtraBenefitDraft,
+      auxiliaryContributionDraft,
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
       yearlyEarningsRows,
@@ -344,6 +352,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     parallelInsuranceDraft,
     plasticYearsDraft,
     etaaExtraBenefitDraft,
+    auxiliaryContributionDraft,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
     yearlyEarningsRows,
@@ -354,6 +363,24 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     setBackendError("");
     setCalculationResponse(null);
     setCalculationError("");
+  }
+
+  function clearAuxiliaryContributionForPeriod(periodId) {
+    setAuxiliaryContributionDraft((currentValue) => {
+      const normalizedValue = normalizeAuxiliaryContributionDraft(currentValue);
+
+      if (!Object.prototype.hasOwnProperty.call(normalizedValue, periodId)) {
+        return normalizedValue;
+      }
+
+      const nextValue = { ...normalizedValue };
+      delete nextValue[periodId];
+      return nextValue;
+    });
+  }
+
+  function clearAllAuxiliaryContributionSelections() {
+    setAuxiliaryContributionDraft({});
   }
 
   function handlePensionTypeChange(value) {
@@ -394,6 +421,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
 
   function handleInsurancePeriodsInputModeChange(value) {
     setInsurancePeriodsInputMode(value);
+    clearAllAuxiliaryContributionSelections();
     clearBackendResult();
 
     if (value !== "simple") {
@@ -486,6 +514,10 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
       });
     });
 
+    if (field === "fund" || field === "employmentCategory") {
+      clearAuxiliaryContributionForPeriod(groupId);
+    }
+
     clearBackendResult();
   }
 
@@ -502,6 +534,8 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
   }
 
   function handleRemoveInsurancePeriodGroup(groupId) {
+    clearAuxiliaryContributionForPeriod(groupId);
+
     setInsurancePeriodGroups((currentGroups) => {
       if (currentGroups.length <= 1) {
         return [createEmptyInsurancePeriodGroup()];
@@ -773,6 +807,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
               }
               onSimpleFundChange={(value) => {
                 setSimpleFundInput(value);
+                clearAuxiliaryContributionForPeriod("period_1");
                 clearBackendResult();
               }}
               onSimpleInsuredTypeChange={(value) => {
@@ -781,6 +816,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
               }}
               onSimpleEmploymentCategoryChange={(value) => {
                 setSimpleEmploymentCategoryInput(value);
+                clearAuxiliaryContributionForPeriod("period_1");
                 clearBackendResult();
               }}
               onSimpleNonSalariedEarningsInputModeChange={(value) => {
@@ -836,6 +872,33 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
               onInsurancePeriodGroupChange={handleInsurancePeriodGroupChange}
               onAddInsurancePeriodGroup={handleAddInsurancePeriodGroup}
               onRemoveInsurancePeriodGroup={handleRemoveInsurancePeriodGroup}
+            />
+
+            <AuxiliaryContributionInputSection
+              insurancePeriodsInputMode={insurancePeriodsInputMode}
+              simpleFundInput={simpleFundInput}
+              simpleEmploymentCategoryInput={simpleEmploymentCategoryInput}
+              insurancePeriodGroups={insurancePeriodGroups}
+              value={auxiliaryContributionDraft}
+              onChange={(periodId, field, fieldValue) => {
+                setAuxiliaryContributionDraft((currentValue) => {
+                  const normalizedValue =
+                    normalizeAuxiliaryContributionDraft(currentValue);
+                  const currentPeriodValue = normalizedValue[periodId] || {
+                    extraContributionChoice: "",
+                    formerAuxiliaryFund: "",
+                  };
+
+                  return {
+                    ...normalizedValue,
+                    [periodId]: {
+                      ...currentPeriodValue,
+                      [field]: fieldValue,
+                    },
+                  };
+                });
+                clearBackendResult();
+              }}
             />
 
             <ParallelInsuranceInputSection
@@ -1202,6 +1265,8 @@ function normalizeSavedYesNoValue(value) {
 
 function createEmptyUniformedSpecialTimeDraft() {
   return {
+    insuranceRegime: "",
+    article36ACategory: "",
     combatFiveYearService: {
       status: "none",
       years: "",
@@ -1209,12 +1274,20 @@ function createEmptyUniformedSpecialTimeDraft() {
       days: "",
       recognitionPeriod: "",
       paidAmount: "",
+      contributionRatePercent: "",
+      explicitPensionableEarningsBase: "",
+      earningsReferenceYear: "",
     },
     specialSemesters: {
       status: "none",
+      specialSemestersType: "",
       semestersCount: "",
+      milestoneCompletionYear: "",
       recognitionPeriod: "",
       paidAmount: "",
+      contributionRatePercent: "",
+      explicitPensionableEarningsBase: "",
+      earningsReferenceYear: "",
     },
   };
 }
@@ -1227,6 +1300,8 @@ function normalizeSavedUniformedSpecialTimeDraft(value) {
   }
 
   return {
+    insuranceRegime: value.insuranceRegime || "",
+    article36ACategory: value.article36ACategory || "",
     combatFiveYearService: {
       ...defaultValue.combatFiveYearService,
       ...(value.combatFiveYearService || {}),
