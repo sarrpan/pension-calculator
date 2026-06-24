@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import BackendResponsePanel from "./components/BackendResponsePanel";
 import MainPensionResultPanel from "./components/MainPensionResultPanel";
 import PreparedInputPreview from "./components/PreparedInputPreview";
+import PensionInputJsonImportSection from "./components/PensionInputJsonImportSection";
 import ContributoryPensionInputSection from "./sections/ContributoryPensionInputSection";
 import AuxiliaryContributionInputSection from "./sections/AuxiliaryContributionInputSection";
 import EtaaExtraBenefitInputSection from "./sections/EtaaExtraBenefitInputSection";
@@ -14,6 +15,11 @@ import ParallelInsuranceInputSection from "./sections/ParallelInsuranceInputSect
 import NationalPensionInputSection from "./sections/NationalPensionInputSection";
 import { errorSectionStyle } from "./utils/calculatorStyles";
 import { analyzePensionForm } from "./utils/pensionFormAnalysis";
+import {
+  createPensionInputPackage,
+  downloadPensionInputPackage,
+  readPensionInputPackageFile,
+} from "./utils/pensionInputPackage";
 import { normalizeParallelInsuranceDraft } from "./utils/parallelInsuranceFormUtils";
 import { normalizeAuxiliaryContributionDraft } from "./utils/auxiliaryContributionFormUtils";
 
@@ -181,6 +187,14 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
   const [calculationResponse, setCalculationResponse] = useState(null);
   const [calculationError, setCalculationError] = useState("");
   const [isCalculatingPension, setIsCalculatingPension] = useState(false);
+  const [pensionInputExportError, setPensionInputExportError] = useState("");
+  const [importedPensionInputPackage, setImportedPensionInputPackage] =
+    useState(null);
+  const [importedPensionInputFileName, setImportedPensionInputFileName] =
+    useState("");
+  const [pensionInputImportError, setPensionInputImportError] = useState("");
+  const [isPreparingImportedJson, setIsPreparingImportedJson] =
+    useState(false);
 
   const analysis = useMemo(() => {
     return analyzePensionForm({
@@ -364,6 +378,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     setBackendError("");
     setCalculationResponse(null);
     setCalculationError("");
+    setPensionInputExportError("");
   }
 
   function clearAuxiliaryContributionForPeriod(periodId) {
@@ -588,6 +603,88 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     clearBackendResult();
   }
 
+  function handleExportPensionInputJson() {
+    setPensionInputExportError("");
+
+    try {
+      const pensionInputPackage = createPensionInputPackage({
+        calculationInput: analysis.calculationInput,
+        calculatorEdition,
+      });
+
+      downloadPensionInputPackage(pensionInputPackage);
+    } catch (error) {
+      setPensionInputExportError(
+        error?.message || "Αποτυχία δημιουργίας του αρχείου JSON.",
+      );
+    }
+  }
+
+  async function handlePensionInputJsonFileSelected(file) {
+    setPensionInputImportError("");
+    setImportedPensionInputPackage(null);
+    setImportedPensionInputFileName("");
+    clearBackendResult();
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const parsedPackage = await readPensionInputPackageFile(file);
+
+      setImportedPensionInputPackage(parsedPackage);
+      setImportedPensionInputFileName(file.name || "");
+    } catch (error) {
+      setPensionInputImportError(
+        error?.message || "Αποτυχία ανάγνωσης του αρχείου JSON.",
+      );
+    }
+  }
+
+  async function handlePrepareImportedPensionInput() {
+    setBackendResponse(null);
+    setBackendError("");
+    setCalculationResponse(null);
+    setCalculationError("");
+
+    const calculationInput = importedPensionInputPackage?.calculationInput;
+
+    if (!calculationInput) {
+      setPensionInputImportError(
+        "Δεν έχει φορτωθεί έγκυρο κοινό αρχείο JSON.",
+      );
+      return;
+    }
+
+    setIsPreparingImportedJson(true);
+
+    try {
+      const response = await fetch(PREPARE_PENSION_INPUT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(calculationInput),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || "Αποτυχία προετοιμασίας δεδομένων.");
+      }
+
+      setBackendResponse(data);
+      setPensionInputImportError("");
+    } catch (error) {
+      setPensionInputImportError(
+        error?.message || "Αποτυχία προετοιμασίας του αρχείου JSON.",
+      );
+    } finally {
+      setIsPreparingImportedJson(false);
+    }
+  }
+
   function handleOpenParallelInsuranceStep() {
     setCurrentFormStep("parallel_insurance");
     clearBackendResult();
@@ -702,6 +799,15 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
             ? "Ξεχωριστή φόρμα: Ανάλυση παράλληλης ασφάλισης"
             : "Βήμα 1: Βασικά στοιχεία σύνταξης"}
       </p>
+
+      <PensionInputJsonImportSection
+        importedPackage={importedPensionInputPackage}
+        importedFileName={importedPensionInputFileName}
+        importError={pensionInputImportError}
+        isPreparing={isPreparingImportedJson}
+        onFileSelected={handlePensionInputJsonFileSelected}
+        onPrepare={handlePrepareImportedPensionInput}
+      />
 
       {(currentFormStep === "contributory_yearly" ||
         currentFormStep === "parallel_insurance") && (
@@ -1035,6 +1141,38 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
 
       {!analysis.error && analysis.isReady && (
         <PreparedInputPreview analysis={analysis} />
+      )}
+
+      {!analysis.error && analysis.isReady && (
+        <section
+          style={{
+            marginTop: "1rem",
+            border: "1px solid #cbd5e1",
+            borderRadius: "8px",
+            padding: "1rem",
+            background: "#f8fafc",
+          }}
+        >
+          <h2>Κοινό αρχείο εισόδου</h2>
+
+          <p style={{ color: "#475569" }}>
+            Το αρχείο περιέχει τα ίδια δεδομένα που στέλνει σήμερα η φόρμα
+            στο function προετοιμασίας. Δεν περιέχει αποτέλεσμα σύνταξης και
+            δεν αλλάζει κανέναν calculator.
+          </p>
+
+          <button
+            type="button"
+            onClick={handleExportPensionInputJson}
+            style={{ padding: "0.6rem 1rem" }}
+          >
+            Εξαγωγή αρχείου JSON
+          </button>
+
+          {pensionInputExportError && (
+            <p style={{ color: "crimson" }}>{pensionInputExportError}</p>
+          )}
+        </section>
       )}
 
       {backendError && (
@@ -1584,5 +1722,6 @@ function saveDraft(draft) {
 }
 
 export default PensionCalculatorPage;
+
 
 
