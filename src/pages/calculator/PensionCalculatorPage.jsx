@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 
 import BackendResponsePanel from "./components/BackendResponsePanel";
 import MainPensionResultPanel from "./components/MainPensionResultPanel";
@@ -587,6 +588,11 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     clearBackendResult();
   }
 
+  function handleOpenParallelInsuranceStep() {
+    setCurrentFormStep("parallel_insurance");
+    clearBackendResult();
+  }
+
   async function handlePrepareCalculationInput() {
     setBackendResponse(null);
     setBackendError("");
@@ -692,10 +698,13 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
           ? hasNonSalariedPeriodInput
             ? "Βήμα 2: Ετήσια στοιχεία ασφαλιστικών περιόδων"
             : "Βήμα 2: Αποδοχές και ένσημα ανά έτος"
-          : "Βήμα 1: Βασικά στοιχεία σύνταξης"}
+          : currentFormStep === "parallel_insurance"
+            ? "Ξεχωριστή φόρμα: Ανάλυση παράλληλης ασφάλισης"
+            : "Βήμα 1: Βασικά στοιχεία σύνταξης"}
       </p>
 
-      {currentFormStep === "contributory_yearly" && (
+      {(currentFormStep === "contributory_yearly" ||
+        currentFormStep === "parallel_insurance") && (
         <button
           type="button"
           onClick={handleBackToMainStep}
@@ -905,6 +914,8 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
               calculatorEdition={calculatorEdition}
               detectedSegments={analysis.parallelInsuranceSegments || []}
               value={parallelInsuranceDraft}
+              viewMode="summary"
+              onOpenDetails={handleOpenParallelInsuranceStep}
               onChange={(value) => {
                 setParallelInsuranceDraft(
                   normalizeParallelInsuranceDraft(value),
@@ -946,7 +957,33 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
           </>
         )}
 
-        <ContributoryPensionInputSection
+        {currentFormStep === "parallel_insurance" && (
+          <>
+            <ParallelInsuranceInputSection
+              calculatorEdition={calculatorEdition}
+              detectedSegments={analysis.parallelInsuranceSegments || []}
+              value={parallelInsuranceDraft}
+              viewMode="details"
+              onChange={(value) => {
+                setParallelInsuranceDraft(
+                  normalizeParallelInsuranceDraft(value),
+                );
+                clearBackendResult();
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={handleBackToMainStep}
+              style={{ marginBottom: "1rem", padding: "0.6rem 1rem" }}
+            >
+              Αποθήκευση και επιστροφή στα βασικά στοιχεία
+            </button>
+          </>
+        )}
+
+        {currentFormStep !== "parallel_insurance" && (
+          <ContributoryPensionInputSection
           currentFormStep={currentFormStep}
           contributoryEarningsInputMethod={contributoryEarningsInputMethod}
           averageMonthlyPensionableEarningsInput={
@@ -973,8 +1010,10 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
           onYearlyEarningsRowChange={handleYearlyEarningsRowChange}
           onLoadDevelopmentYearlyEarnings={handleLoadDevelopmentYearlyEarnings}
         />
+        )}
 
-        <button
+        {currentFormStep !== "parallel_insurance" && (
+          <button
           type="submit"
           disabled={
             !analysis.isReady || Boolean(analysis.error) || isSendingToBackend
@@ -989,6 +1028,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
         >
           {submitButtonText}
         </button>
+        )}
       </form>
 
       {analysis.error && <p style={{ color: "crimson" }}>{analysis.error}</p>}
@@ -1544,3 +1584,5 @@ function saveDraft(draft) {
 }
 
 export default PensionCalculatorPage;
+
+

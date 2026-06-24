@@ -1,10 +1,19 @@
+const PARALLEL_INSURANCE_REFERENCE_EARNINGS_FROM_DATE = "2002-01-01";
 const PARALLEL_INSURANCE_FROM_DATE = "2017-01-01";
-const INSURANCE_DAYS_PER_YEAR = 300;
+
+const PARALLEL_REFERENCE_EARNINGS_MODE_POST_2002 =
+  "post_2002_reference_earnings";
+const PARALLEL_REFERENCE_EARNINGS_MODE_DECLARED =
+  "declared_parallel_contribution_data";
+const PARALLEL_REFERENCE_EARNINGS_MODE_COMBINED =
+  "combined_annual_earnings";
 
 const PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS =
   "monthly_base_and_contribution_units";
 const PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT =
   "total_main_pension_contribution_amount";
+const PARALLEL_CONTRIBUTION_INPUT_MODE_POST_2002_REFERENCE =
+  "post_2002_reference_earnings_and_units";
 
 function detectParallelInsuranceSegments(insurancePeriodsDraft = []) {
   const periods = normalizePeriods(insurancePeriodsDraft);
@@ -20,6 +29,9 @@ function detectParallelInsuranceSegments(insurancePeriodsDraft = []) {
     boundaries.add(addDays(period.toDate, 1).getTime());
   }
 
+  boundaries.add(
+    parseIsoDate(PARALLEL_INSURANCE_REFERENCE_EARNINGS_FROM_DATE).getTime(),
+  );
   boundaries.add(parseIsoDate(PARALLEL_INSURANCE_FROM_DATE).getTime());
 
   const sortedBoundaries = Array.from(boundaries)
@@ -55,6 +67,10 @@ function detectParallelInsuranceSegments(insurancePeriodsDraft = []) {
         toDate < parseIsoDate(PARALLEL_INSURANCE_FROM_DATE)
           ? "until_2016"
           : "from_2017",
+      referenceEarningsMode: resolveParallelReferenceEarningsMode({
+        fromDate,
+        toDate,
+      }),
       periodIds,
       activePeriods,
     });
@@ -67,6 +83,7 @@ function detectParallelInsuranceSegments(insurancePeriodsDraft = []) {
     const samePeriods =
       previous &&
       previous.periodType === segment.periodType &&
+      previous.referenceEarningsMode === segment.referenceEarningsMode &&
       arraysEqual(previous.periodIds, segment.periodIds);
     const adjacent =
       previous &&
@@ -83,6 +100,9 @@ function detectParallelInsuranceSegments(insurancePeriodsDraft = []) {
   return mergedSegments.map((segment) => {
     const fromDate = formatIsoDate(segment.fromDate);
     const toDate = formatIsoDate(segment.toDate);
+    const maximumDuplicateInsuranceDays =
+      calculatePossibleMaximumDuplicateDaysForSegment(segment.activePeriods);
+    const overlapGroupId = createOverlapGroupId(segment.periodIds);
 
     return {
       id: createSegmentId({
@@ -90,27 +110,31 @@ function detectParallelInsuranceSegments(insurancePeriodsDraft = []) {
         fromDate,
         toDate,
       }),
+      overlapGroupId,
+      overlapGroupMaximumDuplicateInsuranceDays:
+        maximumDuplicateInsuranceDays,
       fromDate,
       toDate,
       fromDateDisplay: formatGreekDate(segment.fromDate),
       toDateDisplay: formatGreekDate(segment.toDate),
       periodType: segment.periodType,
-      periodTypeLabel:
-        segment.periodType === "until_2016"
-          ? "Έως 31/12/2016"
-          : "Από 01/01/2017",
+      referenceEarningsMode: segment.referenceEarningsMode,
+      periodTypeLabel: buildParallelSegmentPeriodLabel(segment),
       periodIds: segment.periodIds,
       activePeriodCount: segment.periodIds.length,
-      suggestedInsuranceDays: roundToDecimals(
-        calculateInsuranceDaysBetweenDates(segment.fromDate, segment.toDate),
-        4,
-      ),
+      maximumDuplicateInsuranceDays,
       periods: segment.activePeriods.map((period) => ({
         id: period.id,
         label: buildPeriodLabel(period),
         fundLabel: period.fundLabel || period.fund,
         fromDateDisplay: period.fromDateDisplay || "",
         toDateDisplay: period.toDateDisplay || "",
+        insuranceDays: period.insuranceDays,
+        maximumDuplicateInsuranceDays:
+          calculatePossibleMaximumDuplicateDaysForPeriod({
+            periodId: period.id,
+            periods: segment.activePeriods,
+          }),
       })),
     };
   });
@@ -157,11 +181,33 @@ function normalizeParallelInsuranceDraft(value) {
       baseEarningsConfirmed: segmentValue?.baseEarningsConfirmed === true,
       combinedEarningsConfirmed:
         segmentValue?.combinedEarningsConfirmed === true,
+      annualAuxiliaryContributionAmounts:
+        normalizeAnnualAuxiliaryContributionAmounts(
+          segmentValue?.annualAuxiliaryContributionAmounts,
+        ),
       additionalPeriods,
     };
   }
 
   return { segments };
+}
+
+function normalizeAnnualAuxiliaryContributionAmounts(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const normalized = {};
+
+  for (const [year, amount] of Object.entries(value)) {
+    if (!/^\d{4}$/.test(String(year))) {
+      continue;
+    }
+
+    normalized[year] = amount ?? "";
+  }
+
+  return normalized;
 }
 
 function normalizeParallelContributionInputMode(value, periodValue = {}) {
@@ -171,6 +217,10 @@ function normalizeParallelContributionInputMode(value, periodValue = {}) {
 
   if (value === PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS) {
     return PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS;
+  }
+
+  if (value === PARALLEL_CONTRIBUTION_INPUT_MODE_POST_2002_REFERENCE) {
+    return PARALLEL_CONTRIBUTION_INPUT_MODE_POST_2002_REFERENCE;
   }
 
   const hasTotalContributionAmount =
@@ -200,6 +250,7 @@ function normalizePeriods(periods = []) {
     .map((period, index) => {
       const fromDate = parseIsoDate(period?.fromDate);
       const toDate = parseIsoDate(period?.toDate);
+      const insuranceDays = toPositiveNumber(period?.insuranceDays);
 
       if (!fromDate || !toDate || toDate < fromDate) {
         return null;
@@ -210,9 +261,93 @@ function normalizePeriods(periods = []) {
         id: String(period?.id || `period_${index + 1}`),
         fromDate,
         toDate,
+        insuranceDays,
       };
     })
     .filter(Boolean);
+}
+
+function calculatePossibleMaximumDuplicateDaysForPeriod({
+  periodId,
+  periods = [],
+}) {
+  const currentPeriod = periods.find((period) => period.id === periodId);
+  const currentInsuranceDays = toPositiveNumber(currentPeriod?.insuranceDays);
+  const otherInsuranceDays = periods.reduce((sum, period) => {
+    if (period.id === periodId) {
+      return sum;
+    }
+
+    return sum + toPositiveNumber(period.insuranceDays);
+  }, 0);
+
+  if (currentInsuranceDays <= 0 || otherInsuranceDays <= 0) {
+    return null;
+  }
+
+  return roundToDecimals(
+    Math.min(currentInsuranceDays, otherInsuranceDays),
+    4,
+  );
+}
+
+function calculatePossibleMaximumDuplicateDaysForSegment(periods = []) {
+  const declaredDays = periods
+    .map((period) => toPositiveNumber(period?.insuranceDays))
+    .filter((value) => value > 0);
+
+  if (declaredDays.length < 2 || declaredDays.length !== periods.length) {
+    return null;
+  }
+
+  const totalDays = declaredDays.reduce((sum, value) => sum + value, 0);
+  const largestPeriodDays = Math.max(...declaredDays);
+
+  return roundToDecimals(totalDays - largestPeriodDays, 4);
+}
+
+function resolveParallelReferenceEarningsMode({ fromDate, toDate }) {
+  const referenceStartDate = parseIsoDate(
+    PARALLEL_INSURANCE_REFERENCE_EARNINGS_FROM_DATE,
+  );
+  const unifiedStartDate = parseIsoDate(PARALLEL_INSURANCE_FROM_DATE);
+
+  if (toDate < referenceStartDate) {
+    return PARALLEL_REFERENCE_EARNINGS_MODE_POST_2002;
+  }
+
+  if (fromDate >= unifiedStartDate) {
+    return PARALLEL_REFERENCE_EARNINGS_MODE_COMBINED;
+  }
+
+  return PARALLEL_REFERENCE_EARNINGS_MODE_DECLARED;
+}
+
+function buildParallelSegmentPeriodLabel(segment = {}) {
+  if (
+    segment.referenceEarningsMode ===
+    PARALLEL_REFERENCE_EARNINGS_MODE_POST_2002
+  ) {
+    return "Έως 31/12/2001";
+  }
+
+  if (
+    segment.referenceEarningsMode ===
+    PARALLEL_REFERENCE_EARNINGS_MODE_DECLARED
+  ) {
+    return "Από 01/01/2002 έως 31/12/2016";
+  }
+
+  return "Από 01/01/2017";
+}
+
+function createOverlapGroupId(periodIds = []) {
+  const safePeriodIds = [...periodIds]
+    .map((value) => String(value).replace(/[^a-zA-Z0-9_-]/g, "_"))
+    .sort((a, b) => a.localeCompare(b))
+    .join("__");
+
+  return `parallel_group_${safePeriodIds}`;
 }
 
 function createSegmentId({ periodIds, fromDate, toDate }) {
@@ -221,32 +356,6 @@ function createSegmentId({ periodIds, fromDate, toDate }) {
     .join("__");
 
   return `parallel_${safePeriodIds}_${fromDate}_${toDate}`;
-}
-
-function calculateInsuranceDaysBetweenDates(fromDate, toDate) {
-  let totalInsuranceDays = 0;
-
-  for (
-    let year = fromDate.getUTCFullYear();
-    year <= toDate.getUTCFullYear();
-    year += 1
-  ) {
-    const yearStart = new Date(Date.UTC(year, 0, 1));
-    const yearEnd = new Date(Date.UTC(year, 11, 31));
-    const periodStart = fromDate > yearStart ? fromDate : yearStart;
-    const periodEnd = toDate < yearEnd ? toDate : yearEnd;
-
-    if (periodEnd < periodStart) {
-      continue;
-    }
-
-    const calendarDays = Math.floor((periodEnd - periodStart) / 86400000) + 1;
-    const daysInYear = isLeapYear(year) ? 366 : 365;
-
-    totalInsuranceDays += (calendarDays / daysInYear) * INSURANCE_DAYS_PER_YEAR;
-  }
-
-  return totalInsuranceDays;
 }
 
 function parseIsoDate(value) {
@@ -294,8 +403,9 @@ function arraysEqual(first = [], second = []) {
   );
 }
 
-function isLeapYear(year) {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+function toPositiveNumber(value) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 0;
 }
 
 function roundToDecimals(value, decimals) {
@@ -306,7 +416,12 @@ function roundToDecimals(value, decimals) {
 export {
   PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS,
   PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT,
+  PARALLEL_CONTRIBUTION_INPUT_MODE_POST_2002_REFERENCE,
+  PARALLEL_REFERENCE_EARNINGS_MODE_POST_2002,
+  PARALLEL_REFERENCE_EARNINGS_MODE_DECLARED,
+  PARALLEL_REFERENCE_EARNINGS_MODE_COMBINED,
   createEmptyParallelInsuranceDraft,
+  createOverlapGroupId,
   detectParallelInsuranceSegments,
   normalizeParallelContributionInputMode,
   normalizeParallelInsuranceDraft,

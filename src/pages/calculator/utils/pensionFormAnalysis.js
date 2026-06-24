@@ -4,6 +4,9 @@
 import {
   PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS,
   PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT,
+  PARALLEL_CONTRIBUTION_INPUT_MODE_POST_2002_REFERENCE,
+  PARALLEL_REFERENCE_EARNINGS_MODE_POST_2002,
+  PARALLEL_REFERENCE_EARNINGS_MODE_DECLARED,
   detectParallelInsuranceSegments,
   normalizeParallelContributionInputMode,
   normalizeParallelInsuranceDraft,
@@ -771,6 +774,9 @@ function analyzeParallelInsuranceDraft({
   );
   const normalizedSegments = [];
   const display = [];
+  const removedDaysByPeriodId = new Map();
+  const removedDaysByOverlapGroupId = new Map();
+  let totalDeclaredDuplicateDays = 0;
 
   for (const segment of segments) {
     const segmentDraft = normalizedDraft.segments[segment.id] || {};
@@ -792,6 +798,9 @@ function analyzeParallelInsuranceDraft({
       };
     }
 
+    const overlapGroupId = getParallelOverlapGroupId(segment);
+    const overlapGroupMaximumDuplicateInsuranceDays =
+      getParallelOverlapGroupMaximumDuplicateDays(segment);
     const additionalPeriods = [];
     let duplicateInsuranceDays = 0;
 
@@ -802,15 +811,20 @@ function analyzeParallelInsuranceDraft({
 
       const additionalDraft = segmentDraft.additionalPeriods?.[periodId] || {};
       const daysText = String(
-        additionalDraft.insuranceDaysToRemove ?? segment.suggestedInsuranceDays,
+        additionalDraft.insuranceDaysToRemove ?? "",
       ).trim();
       const daysResult = parseNonNegativeDecimal(daysText);
+      const period = segment.periods.find(
+        (candidate) => candidate.id === periodId,
+      );
+      const maximumDuplicateInsuranceDays =
+        getPossibleMaximumParallelDuplicateDaysForPeriod(segment, periodId);
 
-      if (!daysResult.isValid || daysResult.value <= 0) {
+      if (!daysResult.isValid) {
         return {
           hasValue: false,
           error:
-            "Συμπληρώστε τις ημέρες που δεν πρέπει να μετρηθούν δεύτερη φορά για κάθε παράλληλη περίοδο.",
+            "Συμπληρώστε τις πραγματικές ημέρες που δεν πρέπει να μετρηθούν δεύτερη φορά για κάθε πρόσθετη περίοδο. Επιτρέπεται τιμή από 0 έως το εμφανιζόμενο ανώτατο όριο.",
           warnings: [],
           parallelInsuranceDraft: {
             calculationMode: "single_unified_main_pension",
@@ -820,6 +834,49 @@ function analyzeParallelInsuranceDraft({
         };
       }
 
+      if (
+        Number.isFinite(maximumDuplicateInsuranceDays) &&
+        daysResult.value > maximumDuplicateInsuranceDays + 0.0001
+      ) {
+        return {
+          hasValue: false,
+          error:
+            `Οι ημέρες που δηλώθηκαν για την περίοδο ${period?.label || periodId} ` +
+            `δεν μπορούν να ξεπερνούν τις ${maximumDuplicateInsuranceDays}.`,
+          warnings: [],
+          parallelInsuranceDraft: {
+            calculationMode: "single_unified_main_pension",
+            segments: [],
+          },
+          parallelInsuranceDisplay: display,
+        };
+      }
+
+      const previousRemovedDays = removedDaysByPeriodId.get(periodId) || 0;
+      const newRemovedDays = previousRemovedDays + daysResult.value;
+      const declaredPeriodInsuranceDays =
+        getParallelPeriodDeclaredInsuranceDays(segment, periodId);
+
+      if (
+        Number.isFinite(declaredPeriodInsuranceDays) &&
+        newRemovedDays > declaredPeriodInsuranceDays + 0.0001
+      ) {
+        return {
+          hasValue: false,
+          error:
+            `Οι συνολικές ημέρες που αφαιρούνται από την περίοδο ${period?.label || periodId} ` +
+            `δεν μπορούν να ξεπερνούν τις ${declaredPeriodInsuranceDays} δηλωμένες ημέρες της.`,
+          warnings: [],
+          parallelInsuranceDraft: {
+            calculationMode: "single_unified_main_pension",
+            segments: [],
+          },
+          parallelInsuranceDisplay: display,
+        };
+      }
+
+      removedDaysByPeriodId.set(periodId, newRemovedDays);
+
       const normalizedAdditionalPeriod = {
         periodId,
         insuranceDaysToRemove: roundToDecimals(daysResult.value, 4),
@@ -827,99 +884,168 @@ function analyzeParallelInsuranceDraft({
 
       duplicateInsuranceDays += daysResult.value;
 
-      if (segment.periodType === "until_2016") {
-        const contributionInputMode = normalizeParallelContributionInputMode(
-          additionalDraft.contributionInputMode,
-          additionalDraft,
+      if (
+        segment.periodType === "until_2016" &&
+        daysResult.value > 0
+      ) {
+        const contributionUnitsResult = parseNonNegativeDecimal(
+          additionalDraft.contributionUnits,
         );
 
-        normalizedAdditionalPeriod.contributionInputMode =
-          contributionInputMode;
-
         if (
-          contributionInputMode ===
-          PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT
+          segment.referenceEarningsMode ===
+          PARALLEL_REFERENCE_EARNINGS_MODE_POST_2002
         ) {
-          const totalContributionAmountResult = parseNonNegativeDecimal(
-            additionalDraft.totalContributionAmount,
-          );
-
-          if (
-            !totalContributionAmountResult.isValid ||
-            totalContributionAmountResult.value <= 0
-          ) {
-            return {
-              hasValue: false,
-              error:
-                "Συμπληρώστε το συνολικό ποσό εισφορών κύριας σύνταξης για την παράλληλη περίοδο έως 31/12/2016.",
-              warnings: [],
-              parallelInsuranceDraft: {
-                calculationMode: "single_unified_main_pension",
-                segments: [],
-              },
-              parallelInsuranceDisplay: display,
-            };
-          }
-
-          normalizedAdditionalPeriod.totalContributionAmount =
-            roundToDecimals(totalContributionAmountResult.value, 2);
+          normalizedAdditionalPeriod.contributionInputMode =
+            PARALLEL_CONTRIBUTION_INPUT_MODE_POST_2002_REFERENCE;
+          normalizedAdditionalPeriod.referenceEarningsSource =
+            "post_2002_contributory_pensionable_earnings";
+          normalizedAdditionalPeriod.contributionUnitsSource =
+            "automatic_from_insurance_period";
         } else {
-          const monthlyBaseResult = parseNonNegativeDecimal(
-            additionalDraft.monthlyBaseAmount,
+          const contributionInputMode = normalizeParallelContributionInputMode(
+            additionalDraft.contributionInputMode,
+            additionalDraft,
           );
-          const contributionUnitsResult = parseNonNegativeDecimal(
-            additionalDraft.contributionUnits,
-          );
-
-          if (!monthlyBaseResult.isValid || monthlyBaseResult.value <= 0) {
-            return {
-              hasValue: false,
-              error:
-                "Συμπληρώστε τη μηνιαία βάση της παράλληλης εισφοράς έως 31/12/2016.",
-              warnings: [],
-              parallelInsuranceDraft: {
-                calculationMode: "single_unified_main_pension",
-                segments: [],
-              },
-              parallelInsuranceDisplay: display,
-            };
-          }
-
-          if (
-            !contributionUnitsResult.isValid ||
-            contributionUnitsResult.value <= 0
-          ) {
-            return {
-              hasValue: false,
-              error:
-                "Συμπληρώστε τις μονάδες εισφοράς της παράλληλης ασφάλισης έως 31/12/2016.",
-              warnings: [],
-              parallelInsuranceDraft: {
-                calculationMode: "single_unified_main_pension",
-                segments: [],
-              },
-              parallelInsuranceDisplay: display,
-            };
-          }
 
           normalizedAdditionalPeriod.contributionInputMode =
-            PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS;
-          normalizedAdditionalPeriod.monthlyBaseAmount = roundToDecimals(
-            monthlyBaseResult.value,
-            2,
-          );
-          normalizedAdditionalPeriod.contributionUnits = roundToDecimals(
-            contributionUnitsResult.value,
-            6,
-          );
+            contributionInputMode;
+
+          if (
+            contributionInputMode ===
+            PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT
+          ) {
+            const totalContributionAmountResult = parseNonNegativeDecimal(
+              additionalDraft.totalContributionAmount,
+            );
+
+            if (
+              !totalContributionAmountResult.isValid ||
+              totalContributionAmountResult.value <= 0
+            ) {
+              return {
+                hasValue: false,
+                error:
+                  "Συμπληρώστε το συνολικό ποσό εισφορών κύριας σύνταξης για την παράλληλη περίοδο από 1/1/2002 έως 31/12/2016.",
+                warnings: [],
+                parallelInsuranceDraft: {
+                  calculationMode: "single_unified_main_pension",
+                  segments: [],
+                },
+                parallelInsuranceDisplay: display,
+              };
+            }
+
+            normalizedAdditionalPeriod.totalContributionAmount =
+              roundToDecimals(totalContributionAmountResult.value, 2);
+          } else {
+            const monthlyBaseResult = parseNonNegativeDecimal(
+              additionalDraft.monthlyBaseAmount,
+            );
+
+            if (!monthlyBaseResult.isValid || monthlyBaseResult.value <= 0) {
+              return {
+                hasValue: false,
+                error:
+                  "Συμπληρώστε τη μηνιαία βάση της παράλληλης εισφοράς από 1/1/2002 έως 31/12/2016.",
+                warnings: [],
+                parallelInsuranceDraft: {
+                  calculationMode: "single_unified_main_pension",
+                  segments: [],
+                },
+                parallelInsuranceDisplay: display,
+              };
+            }
+
+            if (
+              !contributionUnitsResult.isValid ||
+              contributionUnitsResult.value <= 0
+            ) {
+              return {
+                hasValue: false,
+                error:
+                  "Συμπληρώστε τις μονάδες εισφοράς της παράλληλης ασφάλισης από 1/1/2002 έως 31/12/2016.",
+                warnings: [],
+                parallelInsuranceDraft: {
+                  calculationMode: "single_unified_main_pension",
+                  segments: [],
+                },
+                parallelInsuranceDisplay: display,
+              };
+            }
+
+            normalizedAdditionalPeriod.contributionInputMode =
+              PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS;
+            normalizedAdditionalPeriod.monthlyBaseAmount = roundToDecimals(
+              monthlyBaseResult.value,
+              2,
+            );
+            normalizedAdditionalPeriod.contributionUnits = roundToDecimals(
+              contributionUnitsResult.value,
+              6,
+            );
+          }
         }
       }
 
       additionalPeriods.push(normalizedAdditionalPeriod);
     }
 
+    const maximumSegmentDuplicateInsuranceDays =
+      getPossibleMaximumParallelDuplicateDaysForSegment(segment);
+
+    if (
+      Number.isFinite(maximumSegmentDuplicateInsuranceDays) &&
+      duplicateInsuranceDays > maximumSegmentDuplicateInsuranceDays + 0.0001
+    ) {
+      return {
+        hasValue: false,
+        error:
+          `Οι συνολικές ημέρες που αφαιρούνται στο διάστημα ${segment.fromDateDisplay}–${segment.toDateDisplay} ` +
+          `δεν μπορούν να ξεπερνούν τις ${maximumSegmentDuplicateInsuranceDays}.`,
+        warnings: [],
+        parallelInsuranceDraft: {
+          calculationMode: "single_unified_main_pension",
+          segments: [],
+        },
+        parallelInsuranceDisplay: display,
+      };
+    }
+
+    const previousOverlapGroupRemovedDays =
+      removedDaysByOverlapGroupId.get(overlapGroupId) || 0;
+    const newOverlapGroupRemovedDays =
+      previousOverlapGroupRemovedDays + duplicateInsuranceDays;
+
+    if (
+      Number.isFinite(overlapGroupMaximumDuplicateInsuranceDays) &&
+      newOverlapGroupRemovedDays >
+        overlapGroupMaximumDuplicateInsuranceDays + 0.0001
+    ) {
+      return {
+        hasValue: false,
+        error:
+          `Οι συνολικές ημέρες που δηλώθηκαν σε όλα τα τεχνικά τμήματα της ίδιας επικάλυψης ` +
+          `δεν μπορούν να ξεπερνούν τις ${overlapGroupMaximumDuplicateInsuranceDays}.`,
+        warnings: [],
+        parallelInsuranceDraft: {
+          calculationMode: "single_unified_main_pension",
+          segments: [],
+        },
+        parallelInsuranceDisplay: display,
+      };
+    }
+
+    removedDaysByOverlapGroupId.set(
+      overlapGroupId,
+      newOverlapGroupRemovedDays,
+    );
+
     if (
       segment.periodType === "until_2016" &&
+      segment.referenceEarningsMode ===
+        PARALLEL_REFERENCE_EARNINGS_MODE_DECLARED &&
+      duplicateInsuranceDays > 0 &&
       segmentDraft.baseEarningsConfirmed !== true
     ) {
       return {
@@ -935,7 +1061,10 @@ function analyzeParallelInsuranceDraft({
       };
     }
 
-    if (segment.periodType === "from_2017") {
+    if (
+      segment.periodType === "from_2017" &&
+      duplicateInsuranceDays > 0
+    ) {
       if (currentFormStep === "contributory_yearly" && !hasDetailedYearsData) {
         return {
           hasValue: false,
@@ -965,15 +1094,45 @@ function analyzeParallelInsuranceDraft({
       }
     }
 
+    const annualAuxiliaryContributionAmountsResult =
+      normalizeParallelAnnualAuxiliaryContributionAmounts(
+        segmentDraft.annualAuxiliaryContributionAmounts,
+        segment,
+      );
+
+    if (!annualAuxiliaryContributionAmountsResult.ok) {
+      return {
+        hasValue: false,
+        error: annualAuxiliaryContributionAmountsResult.error,
+        warnings: [],
+        parallelInsuranceDraft: {
+          calculationMode: "single_unified_main_pension",
+          segments: [],
+        },
+        parallelInsuranceDisplay: display,
+      };
+    }
+
+    totalDeclaredDuplicateDays += duplicateInsuranceDays;
+
     normalizedSegments.push({
       id: segment.id,
+      overlapGroupId,
+      overlapGroupMaximumDuplicateInsuranceDays,
       fromDate: segment.fromDate,
       toDate: segment.toDate,
       periodType: segment.periodType,
+      referenceEarningsMode: segment.referenceEarningsMode,
       periodIds: segment.periodIds,
       timeCountingPeriodId,
-      baseEarningsConfirmed: segment.periodType === "until_2016",
-      combinedEarningsConfirmed: segment.periodType === "from_2017",
+      baseEarningsConfirmed:
+        segment.referenceEarningsMode ===
+          PARALLEL_REFERENCE_EARNINGS_MODE_DECLARED &&
+        duplicateInsuranceDays > 0,
+      combinedEarningsConfirmed:
+        segment.periodType === "from_2017" && duplicateInsuranceDays > 0,
+      annualAuxiliaryContributionAmounts:
+        annualAuxiliaryContributionAmountsResult.value,
       additionalPeriods,
     });
 
@@ -987,6 +1146,11 @@ function analyzeParallelInsuranceDraft({
       toDateDisplay: segment.toDateDisplay,
       periodTypeLabel: segment.periodTypeLabel,
       timeCountingPeriodLabel: countingPeriod?.label || timeCountingPeriodId,
+      maximumDuplicateInsuranceDays:
+        overlapGroupMaximumDuplicateInsuranceDays ??
+        maximumSegmentDuplicateInsuranceDays,
+      overlapGroupId,
+      overlapGroupMaximumDuplicateInsuranceDays,
       duplicateInsuranceDays: roundToDecimals(duplicateInsuranceDays, 4),
       additionalPeriods: additionalPeriods.map((item) => {
         const period = segment.periods.find(
@@ -996,6 +1160,11 @@ function analyzeParallelInsuranceDraft({
         return {
           ...item,
           periodLabel: period?.label || item.periodId,
+          maximumDuplicateInsuranceDays:
+            getPossibleMaximumParallelDuplicateDaysForPeriod(
+              segment,
+              item.periodId,
+            ),
           contributionInputModeLabel:
             item.contributionInputMode ===
             PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT
@@ -1003,7 +1172,10 @@ function analyzeParallelInsuranceDraft({
               : item.contributionInputMode ===
                   PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS
                 ? "Μέση μηνιαία βάση και μονάδες εισφοράς"
-                : null,
+                : item.contributionInputMode ===
+                    PARALLEL_CONTRIBUTION_INPUT_MODE_POST_2002_REFERENCE
+                  ? "Μέσος συντάξιμος μισθός από το 2002 και μετά· ποσοστό εισφοράς αυτόματα"
+                  : null,
         };
       }),
     });
@@ -1012,15 +1184,117 @@ function analyzeParallelInsuranceDraft({
   return {
     hasValue: true,
     error: null,
-    warnings: [
-      "Η παράλληλη ασφάλιση θα υπολογιστεί μόνο ως μία ενιαία κύρια σύνταξη. Δεν εξετάζεται δεύτερη σύνταξη πριν υλοποιηθεί η θεμελίωση δικαιώματος.",
-    ],
+    warnings:
+      totalDeclaredDuplicateDays > 0
+        ? [
+            "Η παράλληλη ασφάλιση θα υπολογιστεί μόνο ως μία ενιαία κύρια σύνταξη. Δεν εξετάζεται δεύτερη σύνταξη πριν υλοποιηθεί η θεμελίωση δικαιώματος.",
+          ]
+        : [
+            "Εντοπίστηκε ημερολογιακή επικάλυψη, αλλά δηλώθηκαν 0 πραγματικές ημέρες που έχουν μετρηθεί δεύτερη φορά.",
+          ],
     parallelInsuranceDraft: {
       calculationMode: "single_unified_main_pension",
       segments: normalizedSegments,
     },
     parallelInsuranceDisplay: display,
   };
+}
+
+function getParallelOverlapGroupId(segment = {}) {
+  if (segment.overlapGroupId) {
+    return String(segment.overlapGroupId);
+  }
+
+  const periodIds = Array.isArray(segment.periodIds)
+    ? [...segment.periodIds]
+    : [];
+
+  return `parallel_group_${periodIds
+    .map((value) => String(value))
+    .sort((a, b) => a.localeCompare(b))
+    .join("__")}`;
+}
+
+function getParallelOverlapGroupMaximumDuplicateDays(segment = {}) {
+  const providedMaximum = Number(
+    segment.overlapGroupMaximumDuplicateInsuranceDays ??
+      segment.maximumDuplicateInsuranceDays,
+  );
+
+  if (Number.isFinite(providedMaximum) && providedMaximum >= 0) {
+    return providedMaximum;
+  }
+
+  return getPossibleMaximumParallelDuplicateDaysForSegment(segment);
+}
+
+function getParallelPeriodDeclaredInsuranceDays(segment, periodId) {
+  const period = (Array.isArray(segment?.periods) ? segment.periods : []).find(
+    (candidate) => candidate.id === periodId,
+  );
+  const insuranceDays = Number(period?.insuranceDays);
+
+  return Number.isFinite(insuranceDays) && insuranceDays > 0
+    ? insuranceDays
+    : null;
+}
+
+function getPossibleMaximumParallelDuplicateDaysForPeriod(segment, periodId) {
+  const period = (Array.isArray(segment?.periods) ? segment.periods : []).find(
+    (candidate) => candidate.id === periodId,
+  );
+  const providedMaximum = Number(period?.maximumDuplicateInsuranceDays);
+
+  if (Number.isFinite(providedMaximum) && providedMaximum >= 0) {
+    return providedMaximum;
+  }
+
+  const currentDays = getParallelPeriodDeclaredInsuranceDays(
+    segment,
+    periodId,
+  );
+  const otherDays = (Array.isArray(segment?.periods) ? segment.periods : [])
+    .filter((candidate) => candidate.id !== periodId)
+    .reduce((sum, candidate) => {
+      const candidateDays = Number(candidate?.insuranceDays);
+      return (
+        sum +
+        (Number.isFinite(candidateDays) && candidateDays > 0
+          ? candidateDays
+          : 0)
+      );
+    }, 0);
+
+  if (!Number.isFinite(currentDays) || currentDays <= 0 || otherDays <= 0) {
+    return null;
+  }
+
+  return roundToDecimals(Math.min(currentDays, otherDays), 4);
+}
+
+function getPossibleMaximumParallelDuplicateDaysForSegment(segment) {
+  const providedMaximum = Number(segment?.maximumDuplicateInsuranceDays);
+
+  if (Number.isFinite(providedMaximum) && providedMaximum >= 0) {
+    return providedMaximum;
+  }
+
+  const declaredDays = (Array.isArray(segment?.periods)
+    ? segment.periods
+    : []
+  )
+    .map((period) => Number(period?.insuranceDays))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  if (
+    declaredDays.length < 2 ||
+    declaredDays.length !== (segment?.periods || []).length
+  ) {
+    return null;
+  }
+
+  const totalDays = declaredDays.reduce((sum, value) => sum + value, 0);
+  return roundToDecimals(totalDays - Math.max(...declaredDays), 4);
 }
 
 function analyzePlasticYearsDraft({
@@ -4281,6 +4555,53 @@ function normalizeYearlyEarningsRows(rows) {
     error: null,
     yearsData,
   };
+}
+
+function normalizeParallelAnnualAuxiliaryContributionAmounts(
+  value,
+  segment = {},
+) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { ok: true, value: {} };
+  }
+
+  const fromYear = Number(String(segment.fromDate || "").slice(0, 4));
+  const toYear = Number(String(segment.toDate || "").slice(0, 4));
+  const normalized = {};
+
+  for (const [yearText, rawAmount] of Object.entries(value)) {
+    const year = Number(yearText);
+    const amountText = String(rawAmount ?? "").trim();
+
+    if (!amountText) {
+      continue;
+    }
+
+    if (
+      !Number.isInteger(year) ||
+      year < 2017 ||
+      (Number.isInteger(fromYear) && year < fromYear) ||
+      (Number.isInteger(toYear) && year > toYear)
+    ) {
+      continue;
+    }
+
+    const amountResult = parseNonNegativeDecimal(amountText);
+
+    if (!amountResult.isValid) {
+      return {
+        ok: false,
+        error:
+          `Το συνολικό ποσό επικουρικών εισφορών για το έτος ${year} πρέπει να είναι μη αρνητικός αριθμός.`,
+      };
+    }
+
+    if (amountResult.value > 0) {
+      normalized[year] = roundToDecimals(amountResult.value, 2);
+    }
+  }
+
+  return { ok: true, value: normalized };
 }
 
 function parseNonNegativeInteger(value) {

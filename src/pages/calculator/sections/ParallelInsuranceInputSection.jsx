@@ -4,6 +4,9 @@ import { fieldsetStyle } from "../utils/calculatorStyles";
 import {
   PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS,
   PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT,
+  PARALLEL_CONTRIBUTION_INPUT_MODE_POST_2002_REFERENCE,
+  PARALLEL_REFERENCE_EARNINGS_MODE_POST_2002,
+  PARALLEL_REFERENCE_EARNINGS_MODE_DECLARED,
   normalizeParallelInsuranceDraft,
 } from "../utils/parallelInsuranceFormUtils";
 
@@ -12,6 +15,8 @@ function ParallelInsuranceInputSection({
   detectedSegments,
   value,
   onChange,
+  viewMode = "summary",
+  onOpenDetails,
 }) {
   const segments = Array.isArray(detectedSegments) ? detectedSegments : [];
 
@@ -21,11 +26,22 @@ function ParallelInsuranceInputSection({
 
   const safeValue = normalizeParallelInsuranceDraft(value);
 
+  if (viewMode === "summary") {
+    return (
+      <ParallelInsuranceSummary
+        segments={segments}
+        value={safeValue}
+        onOpenDetails={onOpenDetails}
+      />
+    );
+  }
+
   function updateSegment(segmentId, updater) {
     const currentSegment = safeValue.segments[segmentId] || {
       timeCountingPeriodId: "",
       baseEarningsConfirmed: false,
       combinedEarningsConfirmed: false,
+      annualAuxiliaryContributionAmounts: {},
       additionalPeriods: {},
     };
 
@@ -53,11 +69,18 @@ function ParallelInsuranceInputSection({
 
   return (
     <fieldset style={fieldsetStyle}>
-      <legend>Παράλληλη κύρια ασφάλιση</legend>
+      <legend>Αναλυτική παράλληλη ασφάλιση</legend>
 
       <p style={{ marginTop: 0, color: "#475569" }}>
-        Εντοπίστηκαν ασφαλιστικές περίοδοι που ισχύουν ταυτόχρονα. Ο υπολογισμός
-        θα γίνει ως μία ενιαία κύρια σύνταξη, χωρίς δεύτερη σύνταξη.
+        Εδώ καταχωρίζονται τα αναλυτικά στοιχεία των περιόδων που ισχύουν
+        ταυτόχρονα. Η βασική φόρμα παραμένει καθαρή και εμφανίζει μόνο τη
+        σύνοψη της ανάλυσης.
+      </p>
+
+      <p style={noticeStyle}>
+        Η σημερινή καταχώριση είναι το ενδιάμεσο βήμα ελέγχου του calculator.
+        Στην τελική πλήρη έκδοση οι τεχνικές τιμές θα παράγονται από το
+        αναλυτικό ασφαλιστικό ιστορικό ή τις καρτέλες.
       </p>
 
       {segments.map((segment, index) => {
@@ -65,6 +88,17 @@ function ParallelInsuranceInputSection({
         const timeCountingPeriodId = segmentValue.timeCountingPeriodId || "";
         const additionalPeriods = segment.periods.filter(
           (period) => period.id !== timeCountingPeriodId,
+        );
+        const segmentHasPositiveDuplicateDays = additionalPeriods.some(
+          (period) => {
+            const periodValue =
+              segmentValue.additionalPeriods?.[period.id] || {};
+            return (
+              parseNonNegativeDecimalInput(
+                periodValue.insuranceDaysToRemove,
+              ) > 0
+            );
+          },
         );
 
         return (
@@ -83,6 +117,14 @@ function ParallelInsuranceInputSection({
                 : "Ο χρόνος μετρά μία φορά και οι αποδοχές των δραστηριοτήτων συνυπολογίζονται."}
             </p>
 
+            {Number.isFinite(segment.maximumDuplicateInsuranceDays) && (
+              <p style={helpTextStyle}>
+                Πιθανό συνολικό ανώτατο όριο ημερών που μπορούν να αφαιρεθούν
+                σε αυτό το διάστημα: {segment.maximumDuplicateInsuranceDays}.
+                Το πραγματικό πλήθος το δηλώνει ο χρήστης.
+              </p>
+            )}
+
             <SelectWithLabel
               id={`${segment.id}_timeCountingPeriod`}
               label="Ποια περίοδος θα κρατηθεί στον συνολικό ασφαλιστικό χρόνο;"
@@ -91,6 +133,11 @@ function ParallelInsuranceInputSection({
                 updateSegment(segment.id, (currentSegment) => ({
                   ...currentSegment,
                   timeCountingPeriodId: fieldValue,
+                  additionalPeriods: Object.fromEntries(
+                    Object.entries(currentSegment.additionalPeriods || {}).filter(
+                      ([periodId]) => periodId !== fieldValue,
+                    ),
+                  ),
                 }));
               }}
               options={[
@@ -108,11 +155,25 @@ function ParallelInsuranceInputSection({
                   const additionalValue =
                     segmentValue.additionalPeriods?.[period.id] || {};
                   const displayedDays =
-                    additionalValue.insuranceDaysToRemove ??
-                    String(segment.suggestedInsuranceDays);
-                  const contributionInputMode =
-                    additionalValue.contributionInputMode ||
-                    PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS;
+                    additionalValue.insuranceDaysToRemove ?? "";
+                  const remainingDaysInfo =
+                    getRemainingDuplicateDaysInfo({
+                      segments,
+                      value: safeValue,
+                      segmentId: segment.id,
+                      periodId: period.id,
+                    });
+                  const maximumDuplicateInsuranceDays =
+                    remainingDaysInfo.maximumForCurrentInput;
+                  const hasPositiveDuplicateDays =
+                    parseNonNegativeDecimalInput(displayedDays) > 0;
+                  const usesPost2002ReferenceEarnings =
+                    segment.referenceEarningsMode ===
+                    PARALLEL_REFERENCE_EARNINGS_MODE_POST_2002;
+                  const contributionInputMode = usesPost2002ReferenceEarnings
+                    ? PARALLEL_CONTRIBUTION_INPUT_MODE_POST_2002_REFERENCE
+                    : additionalValue.contributionInputMode ||
+                      PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS;
 
                   return (
                     <div key={period.id} style={additionalPeriodBoxStyle}>
@@ -122,7 +183,9 @@ function ParallelInsuranceInputSection({
 
                       <TextInputWithLabel
                         id={`${segment.id}_${period.id}_days`}
-                        label="Ημέρες που δεν πρέπει να μετρηθούν δεύτερη φορά"
+                        label={buildDuplicateDaysLabel(
+                          maximumDuplicateInsuranceDays,
+                        )}
                         value={displayedDays}
                         onChange={(fieldValue) => {
                           updateAdditionalPeriod({
@@ -136,12 +199,40 @@ function ParallelInsuranceInputSection({
                       />
 
                       <p style={helpTextStyle}>
-                        Η εφαρμογή προτείνει τις ημέρες από τις ημερομηνίες.
-                        Μπορείτε να τις διορθώσετε με τις πραγματικές ημέρες
-                        παράλληλης ασφάλισης.
+                        Δηλώστε τις πραγματικές ημέρες αυτής της περιόδου που
+                        έχουν ήδη μετρηθεί στην επιλεγμένη ή σε άλλη προηγούμενη
+                        περίοδο. Η εφαρμογή δεν τις υπολογίζει από τις
+                        ημερομηνίες. Επιτρέπεται και το 0.
                       </p>
 
-                      {segment.periodType === "until_2016" && (
+                      {remainingDaysInfo.overlapGroupMaximum !== null && (
+                        <p style={remainingTextStyle}>
+                          Κοινό συνολικό όριο για όλα τα τεχνικά τμήματα της
+                          ίδιας επικάλυψης: {" "}
+                          {remainingDaysInfo.overlapGroupMaximum}. Έχουν ήδη
+                          δηλωθεί στα υπόλοιπα τμήματα: {" "}
+                          {remainingDaysInfo.usedOutsideCurrent}. Διαθέσιμο
+                          υπόλοιπο για αυτό το πεδίο: {" "}
+                          {remainingDaysInfo.maximumForCurrentInput}.
+                        </p>
+                      )}
+
+                      {segment.periodType === "until_2016" &&
+                        hasPositiveDuplicateDays &&
+                        usesPost2002ReferenceEarnings && (
+                          <p style={noticeStyle}>
+                            Για παράλληλο χρόνο πριν από το 2002 δεν ζητούνται
+                            παλιές αποδοχές, συνολικό ποσό εισφορών ή μονάδες
+                            εισφοράς από τον χρήστη. Η χρηματική βάση θα ληφθεί
+                            από τον μέσο συντάξιμο μισθό του 2002 και μετά και
+                            το ποσοστό κύριας σύνταξης θα προσδιοριστεί αυτόματα
+                            από τον φορέα, την κατηγορία και τη χρονική περίοδο.
+                          </p>
+                        )}
+
+                      {segment.periodType === "until_2016" &&
+                        hasPositiveDuplicateDays &&
+                        !usesPost2002ReferenceEarnings && (
                         <>
                           <SelectWithLabel
                             id={`${segment.id}_${period.id}_contributionInputMode`}
@@ -250,7 +341,10 @@ function ParallelInsuranceInputSection({
                   );
                 })}
 
-                {segment.periodType === "until_2016" && (
+                {segment.periodType === "until_2016" &&
+                  segment.referenceEarningsMode ===
+                    PARALLEL_REFERENCE_EARNINGS_MODE_DECLARED &&
+                  segmentHasPositiveDuplicateDays && (
                   <CheckboxWithLabel
                     id={`${segment.id}_baseEarningsConfirmed`}
                     checked={segmentValue.baseEarningsConfirmed === true}
@@ -264,18 +358,61 @@ function ParallelInsuranceInputSection({
                   />
                 )}
 
-                {segment.periodType === "from_2017" && (
-                  <CheckboxWithLabel
-                    id={`${segment.id}_combinedEarningsConfirmed`}
-                    checked={segmentValue.combinedEarningsConfirmed === true}
-                    onChange={(checked) => {
-                      updateSegment(segment.id, (currentSegment) => ({
-                        ...currentSegment,
-                        combinedEarningsConfirmed: checked,
-                      }));
-                    }}
-                    label="Επιβεβαιώνω ότι τα ετήσια στοιχεία περιλαμβάνουν τις αποδοχές όλων των παράλληλων δραστηριοτήτων."
-                  />
+                {segment.periodType === "from_2017" &&
+                  segmentHasPositiveDuplicateDays && (
+                  <>
+                    <CheckboxWithLabel
+                      id={`${segment.id}_combinedEarningsConfirmed`}
+                      checked={segmentValue.combinedEarningsConfirmed === true}
+                      onChange={(checked) => {
+                        updateSegment(segment.id, (currentSegment) => ({
+                          ...currentSegment,
+                          combinedEarningsConfirmed: checked,
+                        }));
+                      }}
+                      label="Επιβεβαιώνω ότι τα ετήσια στοιχεία περιλαμβάνουν τις αποδοχές όλων των παράλληλων δραστηριοτήτων."
+                    />
+
+                    <details style={annualAuxiliaryDetailsStyle}>
+                      <summary style={{ cursor: "pointer", fontWeight: 700 }}>
+                        Πραγματικές επικουρικές εισφορές ανά έτος από το 2017
+                      </summary>
+
+                      <p style={helpTextStyle}>
+                        Συμπληρώστε το συνολικό πραγματικό ποσό επικουρικών
+                        εισφορών κάθε έτους μόνο όταν οι παράλληλες
+                        δραστηριότητες έχουν διαφορετικά ποσοστά επικουρικής ή
+                        όταν το ποσό είναι γνωστό από το ασφαλιστικό ιστορικό.
+                        Το ποσό αφορά όλες τις δραστηριότητες μαζί και
+                        χρησιμοποιείται απευθείας στο NDC.
+                      </p>
+
+                      <div style={annualAuxiliaryGridStyle}>
+                        {getSegmentYears(segment).map((year) => (
+                          <TextInputWithLabel
+                            key={`${segment.id}_auxiliary_${year}`}
+                            id={`${segment.id}_auxiliary_${year}`}
+                            label={`${year} — συνολικές επικουρικές εισφορές (€)`}
+                            value={
+                              segmentValue.annualAuxiliaryContributionAmounts?.[
+                                year
+                              ] ?? ""
+                            }
+                            onChange={(fieldValue) => {
+                              updateSegment(segment.id, (currentSegment) => ({
+                                ...currentSegment,
+                                annualAuxiliaryContributionAmounts: {
+                                  ...(currentSegment.annualAuxiliaryContributionAmounts || {}),
+                                  [year]: fieldValue,
+                                },
+                              }));
+                            }}
+                            placeholder="π.χ. 2.400"
+                          />
+                        ))}
+                      </div>
+                    </details>
+                  </>
                 )}
               </>
             )}
@@ -284,6 +421,204 @@ function ParallelInsuranceInputSection({
       })}
     </fieldset>
   );
+}
+
+function getSegmentYears(segment = {}) {
+  const fromYear = Number(String(segment.fromDate || "").slice(0, 4));
+  const toYear = Number(String(segment.toDate || "").slice(0, 4));
+
+  if (!Number.isInteger(fromYear) || !Number.isInteger(toYear)) {
+    return [];
+  }
+
+  const firstYear = Math.max(2017, fromYear);
+  const years = [];
+
+  for (let year = firstYear; year <= toYear; year += 1) {
+    years.push(year);
+  }
+
+  return years;
+}
+
+function ParallelInsuranceSummary({ segments, value, onOpenDetails }) {
+  const progress = buildParallelInsuranceProgress(segments, value);
+
+  return (
+    <fieldset style={fieldsetStyle}>
+      <legend>Παράλληλη ασφάλιση</legend>
+
+      <p style={{ marginTop: 0, color: "#475569" }}>
+        Εντοπίστηκαν {segments.length} επικαλυπτόμενα ασφαλιστικά {segments.length === 1 ? "διάστημα" : "διαστήματα"}.
+        Η ανάλυση γίνεται σε ξεχωριστή φόρμα, όπως η αναλυτική καταχώριση
+        αποδοχών ανά έτος.
+      </p>
+
+      <div style={summaryBoxStyle}>
+        <strong>Κατάσταση:</strong>{" "}
+        {progress.configuredSegments === segments.length
+          ? "Έχουν δηλωθεί οι βασικές επιλογές και οι ημέρες για όλα τα διαστήματα."
+          : `${progress.configuredSegments} από ${segments.length} διαστήματα έχουν βασική καταχώριση.`}
+      </div>
+
+      <button
+        type="button"
+        onClick={onOpenDetails}
+        style={openDetailsButtonStyle}
+      >
+        {progress.hasAnyData
+          ? "Συνέχεια ανάλυσης παράλληλης ασφάλισης"
+          : "Άνοιγμα ανάλυσης παράλληλης ασφάλισης"}
+      </button>
+    </fieldset>
+  );
+}
+
+function buildParallelInsuranceProgress(segments, value) {
+  let configuredSegments = 0;
+  let hasAnyData = false;
+
+  for (const segment of segments) {
+    const segmentValue = value.segments?.[segment.id] || {};
+    const countingPeriodId = String(
+      segmentValue.timeCountingPeriodId || "",
+    ).trim();
+
+    if (countingPeriodId) {
+      hasAnyData = true;
+    }
+
+    if (!segment.periodIds.includes(countingPeriodId)) {
+      continue;
+    }
+
+    const additionalPeriodIds = segment.periodIds.filter(
+      (periodId) => periodId !== countingPeriodId,
+    );
+    const hasAllDayValues = additionalPeriodIds.every((periodId) => {
+      const rawValue =
+        segmentValue.additionalPeriods?.[periodId]?.insuranceDaysToRemove;
+      const normalizedValue = String(rawValue ?? "").trim();
+
+      if (normalizedValue !== "") {
+        hasAnyData = true;
+      }
+
+      return /^\d+([.,]\d+)?$/.test(normalizedValue);
+    });
+
+    if (hasAllDayValues) {
+      configuredSegments += 1;
+    }
+  }
+
+  return {
+    configuredSegments,
+    hasAnyData,
+  };
+}
+
+function getRemainingDuplicateDaysInfo({
+  segments,
+  value,
+  segmentId,
+  periodId,
+}) {
+  const currentSegment = (Array.isArray(segments) ? segments : []).find(
+    (segment) => segment.id === segmentId,
+  );
+
+  if (!currentSegment) {
+    return {
+      overlapGroupMaximum: null,
+      usedOutsideCurrent: 0,
+      maximumForCurrentInput: null,
+    };
+  }
+
+  const overlapGroupId = getOverlapGroupId(currentSegment);
+  const groupSegments = (Array.isArray(segments) ? segments : []).filter(
+    (segment) => getOverlapGroupId(segment) === overlapGroupId,
+  );
+
+  const groupMaximumCandidates = groupSegments
+    .map((segment) =>
+      Number(
+        segment.overlapGroupMaximumDuplicateInsuranceDays ??
+          segment.maximumDuplicateInsuranceDays,
+      ),
+    )
+    .filter((candidate) => Number.isFinite(candidate) && candidate >= 0);
+
+  const overlapGroupMaximum =
+    groupMaximumCandidates.length > 0
+      ? Math.min(...groupMaximumCandidates)
+      : null;
+
+  let usedOutsideCurrent = 0;
+
+  for (const segment of groupSegments) {
+    const segmentValue = value.segments?.[segment.id] || {};
+    const timeCountingPeriodId = String(
+      segmentValue.timeCountingPeriodId || "",
+    );
+    const additionalPeriods = segmentValue.additionalPeriods || {};
+
+    for (const [candidatePeriodId, candidateValue] of Object.entries(
+      additionalPeriods,
+    )) {
+      const isActiveAdditionalPeriod =
+        Array.isArray(segment.periodIds) &&
+        segment.periodIds.includes(candidatePeriodId) &&
+        candidatePeriodId !== timeCountingPeriodId;
+      const isCurrentField =
+        segment.id === segmentId && candidatePeriodId === periodId;
+
+      if (!isActiveAdditionalPeriod || isCurrentField) {
+        continue;
+      }
+
+      usedOutsideCurrent += parseNonNegativeDecimalInput(
+        candidateValue?.insuranceDaysToRemove,
+      );
+    }
+  }
+
+  const maximumForCurrentInput =
+    overlapGroupMaximum === null
+      ? null
+      : Math.max(0, overlapGroupMaximum - usedOutsideCurrent);
+
+  return {
+    overlapGroupMaximum:
+      overlapGroupMaximum === null
+        ? null
+        : roundDisplayNumber(overlapGroupMaximum),
+    usedOutsideCurrent: roundDisplayNumber(usedOutsideCurrent),
+    maximumForCurrentInput:
+      maximumForCurrentInput === null
+        ? null
+        : roundDisplayNumber(maximumForCurrentInput),
+  };
+}
+
+function getOverlapGroupId(segment = {}) {
+  if (segment.overlapGroupId) {
+    return String(segment.overlapGroupId);
+  }
+
+  const periodIds = Array.isArray(segment.periodIds)
+    ? [...segment.periodIds]
+    : [];
+
+  return `parallel_group_${periodIds
+    .map((value) => String(value))
+    .sort((a, b) => a.localeCompare(b))
+    .join("__")}`;
+}
+
+function roundDisplayNumber(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 10000) / 10000;
 }
 
 function SelectWithLabel({ id, label, value, onChange, options }) {
@@ -339,6 +674,58 @@ function CheckboxWithLabel({ id, checked, onChange, label }) {
   );
 }
 
+function buildDuplicateDaysLabel(maximumDuplicateInsuranceDays) {
+  if (!Number.isFinite(maximumDuplicateInsuranceDays)) {
+    return "Πραγματικές ημέρες που δεν πρέπει να μετρηθούν δεύτερη φορά";
+  }
+
+  return (
+    "Πραγματικές ημέρες που δεν πρέπει να μετρηθούν δεύτερη φορά " +
+    `(0 έως ${maximumDuplicateInsuranceDays})`
+  );
+}
+
+function parseNonNegativeDecimalInput(value) {
+  const normalizedValue = String(value ?? "").trim().replace(",", ".");
+
+  if (!/^\d+(\.\d+)?$/.test(normalizedValue)) {
+    return 0;
+  }
+
+  const numberValue = Number(normalizedValue);
+  return Number.isFinite(numberValue) && numberValue >= 0 ? numberValue : 0;
+}
+
+const summaryBoxStyle = {
+  marginTop: "0.75rem",
+  padding: "0.75rem",
+  border: "1px solid #cbd5e1",
+  borderRadius: "6px",
+  background: "#f8fafc",
+};
+
+const openDetailsButtonStyle = {
+  marginTop: "0.9rem",
+  padding: "0.6rem 0.9rem",
+  cursor: "pointer",
+};
+
+const noticeStyle = {
+  marginTop: "0.75rem",
+  padding: "0.75rem",
+  border: "1px solid #fde68a",
+  borderRadius: "6px",
+  background: "#fffbeb",
+  color: "#854d0e",
+};
+
+const remainingTextStyle = {
+  marginTop: "0.25rem",
+  color: "#334155",
+  fontSize: "0.9rem",
+  fontWeight: 600,
+};
+
 const segmentBoxStyle = {
   marginTop: "1rem",
   border: "1px solid #cbd5e1",
@@ -385,6 +772,20 @@ const inputStyle = {
   padding: "0.5rem",
   width: "220px",
   maxWidth: "100%",
+};
+
+const annualAuxiliaryDetailsStyle = {
+  marginTop: "0.75rem",
+  padding: "0.75rem",
+  border: "1px solid #cbd5e1",
+  borderRadius: "0.5rem",
+  background: "#f8fafc",
+};
+
+const annualAuxiliaryGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: "0.75rem",
 };
 
 export default ParallelInsuranceInputSection;
