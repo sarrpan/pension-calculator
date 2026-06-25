@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import BackendResponsePanel from "./components/BackendResponsePanel";
 import MainPensionResultPanel from "./components/MainPensionResultPanel";
 import PreparedInputPreview from "./components/PreparedInputPreview";
-import PensionInputJsonImportSection from "./components/PensionInputJsonImportSection";
 import ContributoryPensionInputSection from "./sections/ContributoryPensionInputSection";
 import AuxiliaryContributionInputSection from "./sections/AuxiliaryContributionInputSection";
 import EtaaExtraBenefitInputSection from "./sections/EtaaExtraBenefitInputSection";
@@ -18,15 +17,13 @@ import { analyzePensionForm } from "./utils/pensionFormAnalysis";
 import {
   createPensionInputPackage,
   downloadPensionInputPackage,
-  readPensionInputPackageFile,
 } from "./utils/pensionInputPackage";
 import { normalizeParallelInsuranceDraft } from "./utils/parallelInsuranceFormUtils";
 import { normalizeAuxiliaryContributionDraft } from "./utils/auxiliaryContributionFormUtils";
 
-const PREPARE_PENSION_INPUT_URL =
-  "http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/preparePensionCalculationInput";
-const CALCULATE_PENSION_URL =
-  "http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/calculateDeiPension";
+const PENSION_ENGINE_URL = String(
+  import.meta.env.VITE_PENSION_ENGINE_URL || "",
+).trim();
 const LOCAL_STORAGE_KEY = "geodora_pension_calculator_draft_v1";
 const MAX_INSURANCE_PERIOD_GROUPS = 10;
 
@@ -185,16 +182,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
   const [isSendingToBackend, setIsSendingToBackend] = useState(false);
 
   const [calculationResponse, setCalculationResponse] = useState(null);
-  const [calculationError, setCalculationError] = useState("");
-  const [isCalculatingPension, setIsCalculatingPension] = useState(false);
   const [pensionInputExportError, setPensionInputExportError] = useState("");
-  const [importedPensionInputPackage, setImportedPensionInputPackage] =
-    useState(null);
-  const [importedPensionInputFileName, setImportedPensionInputFileName] =
-    useState("");
-  const [pensionInputImportError, setPensionInputImportError] = useState("");
-  const [isPreparingImportedJson, setIsPreparingImportedJson] =
-    useState(false);
 
   const analysis = useMemo(() => {
     return analyzePensionForm({
@@ -377,7 +365,6 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     setBackendResponse(null);
     setBackendError("");
     setCalculationResponse(null);
-    setCalculationError("");
     setPensionInputExportError("");
   }
 
@@ -620,83 +607,19 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     }
   }
 
-  async function handlePensionInputJsonFileSelected(file) {
-    setPensionInputImportError("");
-    setImportedPensionInputPackage(null);
-    setImportedPensionInputFileName("");
-    clearBackendResult();
-
-    if (!file) {
-      return;
-    }
-
-    try {
-      const parsedPackage = await readPensionInputPackageFile(file);
-
-      setImportedPensionInputPackage(parsedPackage);
-      setImportedPensionInputFileName(file.name || "");
-    } catch (error) {
-      setPensionInputImportError(
-        error?.message || "Αποτυχία ανάγνωσης του αρχείου JSON.",
-      );
-    }
-  }
-
-  async function handlePrepareImportedPensionInput() {
-    setBackendResponse(null);
-    setBackendError("");
-    setCalculationResponse(null);
-    setCalculationError("");
-
-    const calculationInput = importedPensionInputPackage?.calculationInput;
-
-    if (!calculationInput) {
-      setPensionInputImportError(
-        "Δεν έχει φορτωθεί έγκυρο κοινό αρχείο JSON.",
-      );
-      return;
-    }
-
-    setIsPreparingImportedJson(true);
-
-    try {
-      const response = await fetch(PREPARE_PENSION_INPUT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(calculationInput),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data.ok === false) {
-        throw new Error(data.error || "Αποτυχία προετοιμασίας δεδομένων.");
-      }
-
-      setBackendResponse(data);
-      setPensionInputImportError("");
-    } catch (error) {
-      setPensionInputImportError(
-        error?.message || "Αποτυχία προετοιμασίας του αρχείου JSON.",
-      );
-    } finally {
-      setIsPreparingImportedJson(false);
-    }
-  }
-
   function handleOpenParallelInsuranceStep() {
     setCurrentFormStep("parallel_insurance");
     clearBackendResult();
   }
 
-  async function handlePrepareCalculationInput() {
+  async function handleCalculateFromInputPackage() {
     setBackendResponse(null);
     setBackendError("");
+    setCalculationResponse(null);
 
     if (!analysis.isReady || analysis.error) {
       setBackendError(
-        "Συμπληρώστε σωστά τα πεδία της φόρμας πριν την προετοιμασία.",
+        "Συμπληρώστε σωστά τα πεδία της φόρμας πριν τον υπολογισμό.",
       );
       return;
     }
@@ -709,68 +632,57 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
       return;
     }
 
-    setIsSendingToBackend(true);
-
-    try {
-      const response = await fetch(PREPARE_PENSION_INPUT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(analysis.calculationInput),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data.ok === false) {
-        throw new Error(data.error || "Αποτυχία προετοιμασίας δεδομένων.");
-      }
-
-      setBackendResponse(data);
-      setCalculationResponse(null);
-      setCalculationError("");
-    } catch (error) {
-      setBackendError(error.message);
-    } finally {
-      setIsSendingToBackend(false);
-    }
-  }
-
-  async function handleCalculatePension() {
-    setCalculationResponse(null);
-    setCalculationError("");
-
-    const preparedInput = backendResponse?.preparedInput;
-
-    if (!preparedInput) {
-      setCalculationError(
-        "Δεν υπάρχει preparedInput. Πατήστε πρώτα «Προετοιμασία δεδομένων».",
+    if (!PENSION_ENGINE_URL) {
+      setBackendError(
+        "Δεν έχει οριστεί η διεύθυνση του Pension Engine στη ρύθμιση VITE_PENSION_ENGINE_URL.",
       );
       return;
     }
 
-    setIsCalculatingPension(true);
+    setIsSendingToBackend(true);
 
     try {
-      const response = await fetch(CALCULATE_PENSION_URL, {
+      const pensionInputPackage = createPensionInputPackage({
+        calculationInput: analysis.calculationInput,
+        calculatorEdition,
+      });
+
+      const response = await fetch(PENSION_ENGINE_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(preparedInput),
+        body: JSON.stringify(pensionInputPackage),
       });
 
       const data = await response.json();
 
       if (!response.ok || data.ok === false) {
-        throw new Error(data.error || "Αποτυχία υπολογισμού σύνταξης.");
+        throw new Error(
+          data.error ||
+            "Αποτυχία αποστολής ή υπολογισμού από το Pension Engine.",
+        );
       }
 
-      setCalculationResponse(data);
+      if (!data.pensionResult) {
+        throw new Error(
+          "Το Pension Engine ολοκλήρωσε την επεξεργασία χωρίς να επιστρέψει αποτέλεσμα σύνταξης.",
+        );
+      }
+
+      setBackendResponse({
+        ...data,
+        message:
+          "Το versioned JSON ελέγχθηκε, προετοιμάστηκε και υπολογίστηκε από το ανεξάρτητο Pension Engine.",
+      });
+      setCalculationResponse(data.pensionResult);
     } catch (error) {
-      setCalculationError(error.message);
+      setBackendError(
+        error?.message ||
+          "Αποτυχία επικοινωνίας με το ανεξάρτητο Pension Engine.",
+      );
     } finally {
-      setIsCalculatingPension(false);
+      setIsSendingToBackend(false);
     }
   }
 
@@ -800,15 +712,6 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
             : "Βήμα 1: Βασικά στοιχεία σύνταξης"}
       </p>
 
-      <PensionInputJsonImportSection
-        importedPackage={importedPensionInputPackage}
-        importedFileName={importedPensionInputFileName}
-        importError={pensionInputImportError}
-        isPreparing={isPreparingImportedJson}
-        onFileSelected={handlePensionInputJsonFileSelected}
-        onPrepare={handlePrepareImportedPensionInput}
-      />
-
       {(currentFormStep === "contributory_yearly" ||
         currentFormStep === "parallel_insurance") && (
         <button
@@ -823,7 +726,7 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          handlePrepareCalculationInput();
+          handleCalculateFromInputPackage();
         }}
       >
         {currentFormStep === "main" && (
@@ -1156,9 +1059,9 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
           <h2>Κοινό αρχείο εισόδου</h2>
 
           <p style={{ color: "#475569" }}>
-            Το αρχείο περιέχει τα ίδια δεδομένα που στέλνει σήμερα η φόρμα
-            στο function προετοιμασίας. Δεν περιέχει αποτέλεσμα σύνταξης και
-            δεν αλλάζει κανέναν calculator.
+            Το αρχείο περιέχει ακριβώς τα ίδια δεδομένα που στέλνονται
+            αυτόματα στο ανεξάρτητο Pension Engine. Περιέχει μόνο τα δεδομένα
+            εισόδου και δεν αλλάζει κανέναν calculator.
           </p>
 
           <button
@@ -1186,40 +1089,6 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
         <BackendResponsePanel backendResponse={backendResponse} />
       )}
 
-      {backendResponse?.preparedInput && (
-        <section
-          style={{
-            marginTop: "1rem",
-            border: "1px solid #cbd5e1",
-            borderRadius: "8px",
-            padding: "1rem",
-            background: "#f8fafc",
-          }}
-        >
-          <h2>Υπολογισμός κύριας και επικουρικής σύνταξης</h2>
-          <p style={{ color: "#475569" }}>
-            Αυτό το κουμπί στέλνει τα προετοιμασμένα δεδομένα στον calculator.
-            Εμφανίζει την κύρια σύνταξη και, όταν υπάρχει επικουρική ασφάλιση,
-            το παλαιό τμήμα της επικουρικής έως 31/12/2014.
-          </p>
-
-          <button
-            type="button"
-            onClick={handleCalculatePension}
-            disabled={isCalculatingPension}
-            style={{
-              padding: "0.6rem 1rem",
-              cursor: isCalculatingPension ? "not-allowed" : "pointer",
-            }}
-          >
-            {isCalculatingPension ? "Υπολογισμός..." : "Υπολογισμός σύνταξης"}
-          </button>
-
-          {calculationError && (
-            <p style={{ color: "crimson" }}>{calculationError}</p>
-          )}
-        </section>
-      )}
 
       {calculationResponse && (
         <MainPensionResultPanel calculationResponse={calculationResponse} />
@@ -1244,7 +1113,7 @@ function getSubmitButtonText({
     return "Επόμενο: ετήσια στοιχεία ανά έτος";
   }
 
-  return "Προετοιμασία δεδομένων";
+  return "Υπολογισμός σύνταξης";
 }
 
 function createEmptyYearlyEarningsRows() {
