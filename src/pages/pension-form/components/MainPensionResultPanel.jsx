@@ -1,6 +1,6 @@
 import React from "react";
 
-function MainPensionResultPanel({ calculationResponse }) {
+function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }) {
   const nationalPension = calculationResponse?.nationalPension || {};
   const contributoryPension = calculationResponse?.contributoryPension || {};
   const article30Increase = calculationResponse?.article30Increase || {};
@@ -566,7 +566,7 @@ function MainPensionResultPanel({ calculationResponse }) {
                     ({formatYears(auxiliaryInsuranceYearsFrom2015)})
                   </>
                 )}
-                . Δες τις εκκρεμότητες του calculator για το στοιχείο που
+                . Δες τις εκκρεμότητες του υπολογισμού για το στοιχείο που
                 λείπει από τον υπολογισμό.
               </p>
               {hasSelectedAuxiliaryRante ? (
@@ -605,12 +605,14 @@ function MainPensionResultPanel({ calculationResponse }) {
           </div>
         )}
 
-      <details>
-        <summary>Πλήρης απάντηση calculator</summary>
-        <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-          {JSON.stringify(calculationResponse, null, 2)}
-        </pre>
-      </details>
+      {showDiagnostics && (
+        <details>
+          <summary>Πλήρης τεχνική απάντηση Pension Engine</summary>
+          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+            {JSON.stringify(calculationResponse, null, 2)}
+          </pre>
+        </details>
+      )}
     </section>
   );
 }

@@ -18,7 +18,7 @@ import ScrollToTop from './components/ScrollToTop';
 import PremiumUploadPage from './pages/PremiumUploadPage';
 import AdminDashboard from './pages/AdminDashboard';
 
-import PensionCalculatorPage from './pages/calculator/PensionCalculatorPage';
+import PensionFormPage from './pages/pension-form/PensionFormPage';
 
 function App() {
   return (
@@ -32,7 +32,7 @@ function App() {
         <Route path="/free-guide" element={<FreeGuidePage />} />
         <Route path="/report-guide" element={<ReportGuidePage />} />
 
-        <Route path="/calculator" element={<PensionCalculatorPage />} />
+        <Route path="/calculator" element={<PensionFormPage />} />
 
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/terms" element={<TermsPage />} />

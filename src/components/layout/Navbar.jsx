@@ -17,7 +17,10 @@ const Navbar = () => {
             </Link>
           </li>
           <li>
-            <Link to="/calculator" className={location.pathname === "/calculator" ? "active" : ""}>
+            <Link
+              to="/calculator?start=main"
+              className={location.pathname === "/calculator" ? "active" : ""}
+            >
               Υπολογισμός
             </Link>
           </li>

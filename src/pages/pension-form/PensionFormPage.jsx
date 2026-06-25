@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 
 import BackendResponsePanel from "./components/BackendResponsePanel";
@@ -24,14 +25,23 @@ import { normalizeAuxiliaryContributionDraft } from "./utils/auxiliaryContributi
 const PENSION_ENGINE_URL = String(
   import.meta.env.VITE_PENSION_ENGINE_URL || "",
 ).trim();
+const PENSION_DEBUG_ENABLED =
+  import.meta.env.DEV &&
+  String(import.meta.env.VITE_PENSION_DEBUG || "")
+    .trim()
+    .toLowerCase() === "true";
 const LOCAL_STORAGE_KEY = "geodora_pension_calculator_draft_v1";
 const MAX_INSURANCE_PERIOD_GROUPS = 10;
 
-function PensionCalculatorPage({ calculatorEdition = "professional" }) {
+function PensionFormPage({ calculatorEdition = "professional" }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const savedDraft = useMemo(() => loadSavedDraft(), []);
 
-  const [currentFormStep, setCurrentFormStep] = useState(
-    getInitialFormStep(savedDraft),
+  const [currentFormStep, setCurrentFormStep] = useState(() =>
+    shouldOpenMainStep(location.search)
+      ? "main"
+      : getInitialFormStep(savedDraft),
   );
 
   const [birthDateInput, setBirthDateInput] = useState(
@@ -183,6 +193,32 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
 
   const [calculationResponse, setCalculationResponse] = useState(null);
   const [pensionInputExportError, setPensionInputExportError] = useState("");
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!shouldOpenMainStep(location.search)) {
+      return;
+    }
+
+    setCurrentFormStep("main");
+    setBackendResponse(null);
+    setBackendError("");
+    setCalculationResponse(null);
+    setPensionInputExportError("");
+
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.delete("start");
+
+    const nextSearch = searchParams.toString();
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: nextSearch ? `?${nextSearch}` : "",
+      },
+      { replace: true },
+    );
+  }, [location.pathname, location.search, navigate]);
 
   const analysis = useMemo(() => {
     return analyzePensionForm({
@@ -698,9 +734,53 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
     insurancePeriodGroups,
   });
 
+  const canShowDiagnostics =
+    calculatorEdition === "professional" && PENSION_DEBUG_ENABLED;
+
   return (
     <main style={{ padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
       <h1>Υπολογισμός σύνταξης</h1>
+
+      {canShowDiagnostics && (
+        <section
+          style={{
+            marginBottom: "1rem",
+            border: "1px solid #94a3b8",
+            borderRadius: "8px",
+            padding: "0.75rem 1rem",
+            background: "#f8fafc",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "1rem",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <strong>Λειτουργία ελέγχου</strong>
+              <div style={{ color: "#475569", fontSize: "0.9rem" }}>
+                Εμφανίζεται μόνο όταν είναι ενεργό το VITE_PENSION_DEBUG.
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setIsDiagnosticsOpen((currentValue) => !currentValue)
+              }
+              style={{ padding: "0.55rem 0.9rem" }}
+            >
+              {isDiagnosticsOpen
+                ? "Κλείσιμο ελέγχου δεδομένων"
+                : "Έλεγχος δεδομένων"}
+            </button>
+          </div>
+        </section>
+      )}
 
       <p style={{ color: "#555" }}>
         {currentFormStep === "contributory_yearly"
@@ -1042,58 +1122,144 @@ function PensionCalculatorPage({ calculatorEdition = "professional" }) {
 
       {analysis.error && <p style={{ color: "crimson" }}>{analysis.error}</p>}
 
-      {!analysis.error && analysis.isReady && (
-        <PreparedInputPreview analysis={analysis} />
+      {backendError && (
+        <section style={errorSectionStyle}>
+          <h2>Δεν ήταν δυνατός ο υπολογισμός</h2>
+          <p style={{ color: "crimson" }}>
+            {getUserFacingBackendError(backendError)}
+          </p>
+        </section>
       )}
 
-      {!analysis.error && analysis.isReady && (
+      {canShowDiagnostics && isDiagnosticsOpen && (
         <section
           style={{
             marginTop: "1rem",
-            border: "1px solid #cbd5e1",
-            borderRadius: "8px",
+            border: "2px solid #64748b",
+            borderRadius: "10px",
             padding: "1rem",
             background: "#f8fafc",
           }}
         >
-          <h2>Κοινό αρχείο εισόδου</h2>
-
+          <h2 style={{ marginTop: 0 }}>Έλεγχος δεδομένων</h2>
           <p style={{ color: "#475569" }}>
-            Το αρχείο περιέχει ακριβώς τα ίδια δεδομένα που στέλνονται
-            αυτόματα στο ανεξάρτητο Pension Engine. Περιέχει μόνο τα δεδομένα
-            εισόδου και δεν αλλάζει κανέναν calculator.
+            Οι παρακάτω ενότητες είναι μόνο για δικό μας έλεγχο. Δεν
+            εμφανίζονται στην κανονική λειτουργία της εφαρμογής.
           </p>
 
-          <button
-            type="button"
-            onClick={handleExportPensionInputJson}
-            style={{ padding: "0.6rem 1rem" }}
-          >
-            Εξαγωγή αρχείου JSON
-          </button>
+          {analysis.error && (
+            <details open style={diagnosticDetailsStyle}>
+              <summary style={diagnosticSummaryStyle}>
+                1. Σφάλμα προετοιμασίας της φόρμας
+              </summary>
+              <p style={{ color: "crimson" }}>{analysis.error}</p>
+            </details>
+          )}
 
-          {pensionInputExportError && (
-            <p style={{ color: "crimson" }}>{pensionInputExportError}</p>
+          {!analysis.error && analysis.isReady && (
+            <details open style={diagnosticDetailsStyle}>
+              <summary style={diagnosticSummaryStyle}>
+                1. Τι καταχώρισε και τι κατάλαβε η εφαρμογή
+              </summary>
+              <PreparedInputPreview analysis={analysis} />
+            </details>
+          )}
+
+          {!analysis.error && analysis.isReady && (
+            <details style={diagnosticDetailsStyle}>
+              <summary style={diagnosticSummaryStyle}>
+                2. Αρχείο που στέλνεται στον Pension Engine
+              </summary>
+
+              <p style={{ color: "#475569" }}>
+                Περιέχει ακριβώς τα ίδια δεδομένα εισόδου που αποστέλλονται
+                αυτόματα στον ανεξάρτητο Pension Engine.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleExportPensionInputJson}
+                style={{ padding: "0.6rem 1rem" }}
+              >
+                Λήψη διαγνωστικού JSON
+              </button>
+
+              {pensionInputExportError && (
+                <p style={{ color: "crimson" }}>{pensionInputExportError}</p>
+              )}
+            </details>
+          )}
+
+          {backendError && (
+            <details style={diagnosticDetailsStyle}>
+              <summary style={diagnosticSummaryStyle}>
+                3. Πλήρες τεχνικό μήνυμα σφάλματος
+              </summary>
+              <pre style={diagnosticPreStyle}>{backendError}</pre>
+            </details>
+          )}
+
+          {backendResponse && (
+            <details style={diagnosticDetailsStyle}>
+              <summary style={diagnosticSummaryStyle}>
+                3. Απάντηση του Pension Engine
+              </summary>
+              <BackendResponsePanel backendResponse={backendResponse} />
+            </details>
+          )}
+
+          {!backendError && !backendResponse && (
+            <p style={{ color: "#64748b", marginBottom: 0 }}>
+              Η απάντηση του Pension Engine θα εμφανιστεί εδώ μετά τον
+              υπολογισμό.
+            </p>
           )}
         </section>
       )}
 
-      {backendError && (
-        <section style={errorSectionStyle}>
-          <h2>Απάντηση από functions</h2>
-          <p style={{ color: "crimson" }}>{backendError}</p>
-        </section>
-      )}
-
-      {backendResponse && (
-        <BackendResponsePanel backendResponse={backendResponse} />
-      )}
-
-
       {calculationResponse && (
-        <MainPensionResultPanel calculationResponse={calculationResponse} />
+        <MainPensionResultPanel
+          calculationResponse={calculationResponse}
+          showDiagnostics={canShowDiagnostics && isDiagnosticsOpen}
+        />
       )}
     </main>
+  );
+}
+
+const diagnosticDetailsStyle = {
+  marginTop: "0.75rem",
+  border: "1px solid #cbd5e1",
+  borderRadius: "8px",
+  padding: "0.75rem",
+  background: "#ffffff",
+};
+
+const diagnosticSummaryStyle = {
+  cursor: "pointer",
+  fontWeight: 700,
+  color: "#334155",
+};
+
+const diagnosticPreStyle = {
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-word",
+  background: "#0f172a",
+  color: "#e2e8f0",
+  padding: "0.75rem",
+  borderRadius: "6px",
+};
+
+function getUserFacingBackendError(errorMessage) {
+  const normalizedMessage = String(errorMessage || "").trim();
+
+  if (normalizedMessage.includes("Συμπληρώστε σωστά τα πεδία")) {
+    return normalizedMessage;
+  }
+
+  return (
+    "Δεν ήταν δυνατή η ολοκλήρωση του υπολογισμού. " +
+    "Δοκιμάστε ξανά σε λίγο."
   );
 }
 
@@ -1493,6 +1659,11 @@ function normalizeSavedEtaaExtraBenefitDraft(value) {
   };
 }
 
+function shouldOpenMainStep(search = "") {
+  const searchParams = new URLSearchParams(search);
+  return searchParams.get("start") === "main";
+}
+
 function getInitialFormStep(savedDraft = {}) {
   if (savedDraft.currentFormStep !== "contributory_yearly") {
     return "main";
@@ -1590,7 +1761,7 @@ function saveDraft(draft) {
   }
 }
 
-export default PensionCalculatorPage;
+export default PensionFormPage;
 
 
 
