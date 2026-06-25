@@ -9,7 +9,6 @@ import ContributoryPensionInputSection from "./sections/ContributoryPensionInput
 import AuxiliaryContributionInputSection from "./sections/AuxiliaryContributionInputSection";
 import EtaaExtraBenefitInputSection from "./sections/EtaaExtraBenefitInputSection";
 import InsurancePeriodsInputSection from "./sections/InsurancePeriodsInputSection";
-import InsuranceTimeInputSection from "./sections/InsuranceTimeInputSection";
 import PlasticYearsInputSection from "./sections/PlasticYearsInputSection";
 import ParallelInsuranceInputSection from "./sections/ParallelInsuranceInputSection";
 import NationalPensionInputSection from "./sections/NationalPensionInputSection";
@@ -68,29 +67,18 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
     savedDraft.disabilityCategoryInput || "",
   );
 
-  const [insuranceTimeInputMethod, setInsuranceTimeInputMethod] = useState(
-    savedDraft.insuranceTimeInputMethod || "",
-  );
-  const [insuranceDaysInput, setInsuranceDaysInput] = useState(
-    savedDraft.insuranceDaysInput || "",
-  );
-  const [insuranceYearsInput, setInsuranceYearsInput] = useState(
-    savedDraft.insuranceYearsInput || "",
-  );
-  const [insuranceMonthsInput, setInsuranceMonthsInput] = useState(
-    savedDraft.insuranceMonthsInput || "",
-  );
-  const [insuranceExtraDaysInput, setInsuranceExtraDaysInput] = useState(
-    savedDraft.insuranceExtraDaysInput || "",
-  );
+  const [insuranceTimeInputMethod, setInsuranceTimeInputMethod] = useState("");
+  const [insuranceDaysInput, setInsuranceDaysInput] = useState("");
+  const [insuranceYearsInput, setInsuranceYearsInput] = useState("");
+  const [insuranceMonthsInput, setInsuranceMonthsInput] = useState("");
+  const [insuranceExtraDaysInput, setInsuranceExtraDaysInput] = useState("");
 
   const [residenceYearsInput, setResidenceYearsInput] = useState(
     savedDraft.residenceYearsInput || "",
   );
 
-  const [insurancePeriodsInputMode, setInsurancePeriodsInputMode] = useState(
-    savedDraft.insurancePeriodsInputMode || "disabled",
-  );
+  const [insurancePeriodsInputMode, setInsurancePeriodsInputMode] =
+    useState("multiple");
   const [simpleFundInput, setSimpleFundInput] = useState(
     savedDraft.simpleFundInput || "",
   );
@@ -845,36 +833,6 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
               }}
             />
 
-            {insurancePeriodsInputMode === "disabled" && (
-              <InsuranceTimeInputSection
-                insuranceTimeInputMethod={insuranceTimeInputMethod}
-                insuranceDaysInput={insuranceDaysInput}
-                insuranceYearsInput={insuranceYearsInput}
-                insuranceMonthsInput={insuranceMonthsInput}
-                insuranceExtraDaysInput={insuranceExtraDaysInput}
-                onInsuranceTimeInputMethodChange={(value) => {
-                  setInsuranceTimeInputMethod(value);
-                  clearBackendResult();
-                }}
-                onInsuranceDaysChange={(value) => {
-                  setInsuranceDaysInput(value);
-                  clearBackendResult();
-                }}
-                onInsuranceYearsChange={(value) => {
-                  setInsuranceYearsInput(value);
-                  clearBackendResult();
-                }}
-                onInsuranceMonthsChange={(value) => {
-                  setInsuranceMonthsInput(value);
-                  clearBackendResult();
-                }}
-                onInsuranceExtraDaysChange={(value) => {
-                  setInsuranceExtraDaysInput(value);
-                  clearBackendResult();
-                }}
-              />
-            )}
-
             <InsurancePeriodsInputSection
               insurancePeriodsInputMode={insurancePeriodsInputMode}
               simpleFundInput={simpleFundInput}
@@ -1345,6 +1303,8 @@ function createDevelopmentYearlyEarningsRows() {
 function createEmptyInsurancePeriodGroup() {
   return {
     id: createInsurancePeriodGroupId(),
+    fromDate: "",
+    toDate: "",
     timeInputMethod: "",
     insuranceDays: "",
     insuranceYears: "",
@@ -1364,12 +1324,18 @@ function createInsurancePeriodGroupId() {
 }
 
 function normalizeSavedInsurancePeriodGroups(savedDraft = {}) {
+  if (savedDraft.insurancePeriodsInputMode === "simple") {
+    return [createInsurancePeriodGroupFromSimpleDraft(savedDraft)];
+  }
+
   if (Array.isArray(savedDraft.insurancePeriodGroups)) {
     const normalizedGroups = savedDraft.insurancePeriodGroups
       .slice(0, MAX_INSURANCE_PERIOD_GROUPS)
       .map((group) => {
         return {
           id: group.id || createInsurancePeriodGroupId(),
+          fromDate: group.fromDate || "",
+          toDate: group.toDate || "",
           timeInputMethod: group.timeInputMethod || "",
           insuranceDays: group.insuranceDays || "",
           insuranceYears: group.insuranceYears || "",
@@ -1431,6 +1397,36 @@ function normalizeSavedInsurancePeriodGroups(savedDraft = {}) {
   return [createEmptyInsurancePeriodGroup()];
 }
 
+function createInsurancePeriodGroupFromSimpleDraft(savedDraft = {}) {
+  return {
+    id: "period_1",
+    fromDate: savedDraft.simpleFromDateInput || "",
+    toDate: savedDraft.simpleToDateInput || "",
+    timeInputMethod: savedDraft.simpleTimeInputMethod || "",
+    insuranceDays: savedDraft.simpleInsuranceDaysInput || "",
+    insuranceYears: savedDraft.simpleInsuranceYearsInput || "",
+    insuranceMonths: savedDraft.simpleInsuranceMonthsInput || "",
+    insuranceExtraDays: savedDraft.simpleInsuranceExtraDaysInput || "",
+    fund: savedDraft.simpleFundInput || "",
+    insuredType: savedDraft.simpleInsuredTypeInput || "",
+    employmentCategory: normalizeSavedEmploymentCategory({
+      fund: savedDraft.simpleFundInput,
+      insuredType: savedDraft.simpleInsuredTypeInput,
+      employmentCategory: savedDraft.simpleEmploymentCategoryInput,
+    }),
+    nonSalariedEarningsInputMode:
+      normalizeSavedNonSalariedEarningsInputMode(
+        savedDraft.simpleNonSalariedEarningsInputMode,
+      ),
+    tsaySinglePensionerStatus: normalizeSavedYesNoValue(
+      savedDraft.simpleTsaySinglePensionerStatus,
+    ),
+    uniformedSpecialTimeDraft: normalizeSavedUniformedSpecialTimeDraft(
+      savedDraft.simpleUniformedSpecialTimeDraft,
+    ),
+  };
+}
+
 function createLegacyInsurancePeriodGroup({
   timeInputMethod,
   insuranceDays,
@@ -1458,6 +1454,8 @@ function createLegacyInsurancePeriodGroup({
 
   return {
     id: createInsurancePeriodGroupId(),
+    fromDate: "",
+    toDate: "",
     timeInputMethod: timeInputMethod || "",
     insuranceDays: insuranceDays || "",
     insuranceYears: insuranceYears || "",

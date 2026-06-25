@@ -119,214 +119,53 @@ function InsurancePeriodsInputSection({
 
   return (
     <fieldset style={fieldsetStyle}>
-      <legend>Τρόπος κατανομής χρόνου ασφάλισης</legend>
+      <legend>Ασφαλιστικές περίοδοι</legend>
 
       <p style={{ marginTop: 0, color: '#475569' }}>
-        Επιλέγουμε αν όλος ο χρόνος ασφάλισης ανήκει σε μία κατηγορία ή αν θα
-        χωριστεί σε περισσότερες κατηγορίες / περιόδους.
+        Συμπληρώστε την πρώτη ασφαλιστική περίοδο. Αν ο χρόνος ασφάλισης
+        ανήκει σε διαφορετική κατηγορία ή φορέα, προσθέστε ακόμη μία περίοδο.
+        Ο συνολικός χρόνος θα προκύψει αυτόματα από το άθροισμα των περιόδων.
       </p>
 
-      <label htmlFor="insurancePeriodsInputMode">
-        Πώς θα δηλωθεί ο χρόνος ασφάλισης;
-      </label>
-
-      <br />
-
-      <select
-        id="insurancePeriodsInputMode"
-        value={insurancePeriodsInputMode}
-        onChange={(event) => handleModeChange(event.target.value)}
-        style={selectStyle}
-      >
-        <option value="disabled">Όχι ακόμα</option>
-        <option value="simple">Μία κατηγορία ασφάλισης</option>
-        <option value="multiple">Περισσότερες κατηγορίες / περίοδοι</option>
-      </select>
-
-      {insurancePeriodsInputMode === 'simple' && (
-        <div style={{ marginTop: '1rem' }}>
-          <h3 style={{ marginBottom: '0.75rem' }}>
-            Κατηγορία συνολικού χρόνου ασφάλισης
-          </h3>
-
-          <div style={gridStyle}>
-            <SelectWithLabel
-              id="simpleFund"
-              label="Φορέας / κατηγορία ασφάλισης"
-              value={simpleFundInput}
-              onChange={handleSimpleFundChange}
-              options={FUND_OPTIONS}
-            />
-
-            {!isSimpleContributionBasedFund && (
-              <SelectWithLabel
-                id="simpleInsuredType"
-                label="Ασφαλισμένος"
-                value={simpleInsuredTypeInput}
-                onChange={handleSimpleInsuredTypeChange}
-                options={simpleInsuredTypeOptions}
-                disabled={!simpleFundInput}
-              />
-            )}
-
-            {!isSimpleUniformedFund &&
-              !isSimpleContributionBasedFund &&
-              !isSimpleArticle30MainContributionFund && (
-              <SelectWithLabel
-                id="simpleEmploymentCategory"
-                label="Κατηγορία εργασίας / εισφορών"
-                value={simpleEmploymentCategoryInput}
-                onChange={onSimpleEmploymentCategoryChange}
-                options={simpleEmploymentCategoryOptions}
-                disabled={!simpleFundInput}
-              />
-            )}
-
-            {isSimpleContributionBasedFund && (
-              <SelectWithLabel
-                id="simpleNonSalariedEarningsInputMode"
-                label="Πώς θα δηλωθούν οι εισφορές ή οι συντάξιμες αποδοχές αυτής της περιόδου;"
-                value={simpleNonSalariedEarningsInputMode}
-                onChange={onSimpleNonSalariedEarningsInputModeChange}
-                options={NON_SALARIED_EARNINGS_INPUT_MODE_OPTIONS}
-              />
-            )}
-
-            {isSimpleTsayFund && (
-              <SelectWithLabel
-                id="simpleTsaySinglePensionerStatus"
-                label="Υπήρχε υπαγωγή στον Κλάδο Μονοσυνταξιούχων ΤΣΑΥ σε αυτή την περίοδο;"
-                value={simpleTsaySinglePensionerStatus}
-                onChange={onSimpleTsaySinglePensionerStatusChange}
-                options={YES_NO_OPTIONS}
-              />
-            )}
-
-            <TextInputWithLabel
-              id="simpleFromDate"
-              label="Ημερομηνία έναρξης περιόδου"
-              value={simpleFromDateInput}
-              onChange={onSimpleFromDateChange}
-              placeholder="π.χ. 01/01/2002"
-            />
-
-            <TextInputWithLabel
-              id="simpleToDate"
-              label="Ημερομηνία λήξης περιόδου"
-              value={simpleToDateInput}
-              onChange={onSimpleToDateChange}
-              placeholder="π.χ. 31/12/2025"
-            />
-
-            <SelectWithLabel
-              id="simpleTimeInputMethod"
-              label="Τρόπος εισαγωγής χρόνου"
-              value={simpleTimeInputMethod}
-              onChange={onSimpleTimeInputMethodChange}
-              options={INSURANCE_TIME_METHOD_OPTIONS}
-            />
-
-            {simpleTimeInputMethod === 'insurance_days' && (
-              <TextInputWithLabel
-                id="simpleInsuranceDays"
-                label="Ένσημα / ημέρες ασφάλισης"
-                value={simpleInsuranceDaysInput}
-                onChange={onSimpleInsuranceDaysChange}
-                placeholder="π.χ. 8000"
-              />
-            )}
-
-            {simpleTimeInputMethod === 'years_months_days' && (
-              <>
-                <TextInputWithLabel
-                  id="simpleInsuranceYears"
-                  label="Έτη"
-                  value={simpleInsuranceYearsInput}
-                  onChange={onSimpleInsuranceYearsChange}
-                  placeholder="π.χ. 15"
-                />
-
-                <TextInputWithLabel
-                  id="simpleInsuranceMonths"
-                  label="Μήνες"
-                  value={simpleInsuranceMonthsInput}
-                  onChange={onSimpleInsuranceMonthsChange}
-                  placeholder="0 έως 11"
-                />
-
-                <TextInputWithLabel
-                  id="simpleInsuranceExtraDays"
-                  label="Ημέρες"
-                  value={simpleInsuranceExtraDaysInput}
-                  onChange={onSimpleInsuranceExtraDaysChange}
-                  placeholder="0 έως 24"
-                />
-              </>
-            )}
-          </div>
-
-          {isSimpleUniformedFund && (
-            <UniformedSpecialTimeFields
-              idPrefix="simpleUniformed"
-              value={simpleUniformedSpecialTimeDraft}
-              onChange={onSimpleUniformedSpecialTimeDraftChange}
-            />
-          )}
-
-          <p style={{ color: '#475569', marginBottom: 0 }}>
-            Οι ημερομηνίες περιγράφουν πότε ίσχυε η κατηγορία. Ο πραγματικός
-            ασφαλιστικός χρόνος προκύπτει από τα ένσημα / ημέρες ή από τα έτη,
-            τους μήνες και τις ημέρες που δηλώνονται παραπάνω.
-          </p>
-        </div>
-      )}
-
-      {insurancePeriodsInputMode === 'multiple' && (
-        <div style={{ marginTop: '1rem' }}>
-          <p style={{ color: '#475569' }}>
-            Στο πλήρες μοντέλο δηλώνουμε όσες ομάδες / περίοδοι χρειάζονται,
-            μέχρι {maxInsurancePeriodGroups}. Οι ημέρες όλων των ομάδων
-            αθροίζονται για τον συνολικό χρόνο ασφάλισης.
-          </p>
-
-          {safeInsurancePeriodGroups.map((group, index) => (
-            <InsurancePeriodGroupFields
-              key={group.id}
-              groupNumber={index + 1}
-              title={`Περίοδος / ομάδα ${index + 1}`}
-              group={group}
-              canRemove={safeInsurancePeriodGroups.length > 1}
-              onGroupChange={(field, value) => {
-                onInsurancePeriodGroupChange(group.id, field, value);
-              }}
-              onRemove={() => {
-                onRemoveInsurancePeriodGroup(group.id);
-              }}
-            />
-          ))}
-
-          <button
-            type="button"
-            onClick={onAddInsurancePeriodGroup}
-            disabled={safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups}
-            style={{
-              ...secondaryButtonStyle,
-              cursor:
-                safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups
-                  ? 'not-allowed'
-                  : 'pointer',
+      <div style={{ marginTop: '1rem' }}>
+        {safeInsurancePeriodGroups.map((group, index) => (
+          <InsurancePeriodGroupFields
+            key={group.id}
+            groupNumber={index + 1}
+            title={`Ασφαλιστική περίοδος ${index + 1}`}
+            group={group}
+            canRemove={safeInsurancePeriodGroups.length > 1}
+            onGroupChange={(field, value) => {
+              onInsurancePeriodGroupChange(group.id, field, value);
             }}
-          >
-            + Προσθήκη περιόδου / ομάδας
-          </button>
+            onRemove={() => {
+              onRemoveInsurancePeriodGroup(group.id);
+            }}
+          />
+        ))}
 
-          {safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups && (
-            <p style={{ color: '#8a5a00', marginBottom: 0 }}>
-              Έχει συμπληρωθεί το μέγιστο όριο των {maxInsurancePeriodGroups} ομάδων.
-            </p>
-          )}
-        </div>
-      )}
+        <button
+          type="button"
+          onClick={onAddInsurancePeriodGroup}
+          disabled={safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups}
+          style={{
+            ...secondaryButtonStyle,
+            cursor:
+              safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups
+                ? 'not-allowed'
+                : 'pointer',
+          }}
+        >
+          + Προσθήκη ασφαλιστικής περιόδου
+        </button>
+
+        {safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups && (
+          <p style={{ color: '#8a5a00', marginBottom: 0 }}>
+            Έχει συμπληρωθεί το μέγιστο όριο των {maxInsurancePeriodGroups}{' '}
+            περιόδων.
+          </p>
+        )}
+      </div>
 
       {calculatorEdition !== 'free' &&
         conditionalPremiumPresence.hasAny && (
