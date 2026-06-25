@@ -1,7 +1,10 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
 import { getAuth } from "firebase/auth";
-import { getStorage } from "firebase/storage"; // 1. ΠΡΟΣΘΗΚΗ: Φέρνουμε τη λειτουργία Storage
+import {
+  connectStorageEmulator,
+  getStorage,
+} from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -17,4 +20,12 @@ const app = initializeApp(firebaseConfig);
 
 export const db = getDatabase(app);
 export const auth = getAuth(app);
-export const storage = getStorage(app); // 2. ΠΡΟΣΘΗΚΗ: Κάνουμε export το storage για να το χρησιμοποιήσουμε μετά
+export const storage = getStorage(app);
+
+const useStorageEmulator =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_USE_FIREBASE_STORAGE_EMULATOR === "true";
+
+if (useStorageEmulator) {
+  connectStorageEmulator(storage, "127.0.0.1", 9199);
+}

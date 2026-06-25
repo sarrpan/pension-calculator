@@ -1,0 +1,22 @@
+{
+  "name": "geodora-web-functions",
+  "description": "Stripe and email backend for the Geodora Pension website",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions:web-backend",
+    "deploy": "firebase deploy --only functions:web-backend",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^7.0.0",
+    "nodemailer": "^8.0.3",
+    "stripe": "^20.4.1"
+  },
+  "private": true
+}

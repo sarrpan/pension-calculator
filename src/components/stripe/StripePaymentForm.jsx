@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
+const CREATE_PAYMENT_INTENT_URL = import.meta.env.VITE_CREATE_PAYMENT_INTENT_URL;
+
 const StripePaymentForm = ({ onFileSubmit }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [paymentError, setPaymentError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  
+
   // States για να παρακολουθούμε αν συμπληρώθηκαν σωστά τα πεδία
   const [isCardNumberComplete, setIsCardNumberComplete] = useState(false);
   const [isCardExpiryComplete, setIsCardExpiryComplete] = useState(false);
@@ -26,14 +28,22 @@ const StripePaymentForm = ({ onFileSubmit }) => {
     setPaymentError(null);
 
     try {
-      const response = await fetch("https://createpaymentintent-jh2ye45fkq-uc.a.run.app", {
+      if (!CREATE_PAYMENT_INTENT_URL) {
+        throw new Error(
+          'Δεν έχει οριστεί η διεύθυνση δημιουργίας πληρωμής.'
+        );
+      }
+
+      const response = await fetch(CREATE_PAYMENT_INTENT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });
       const data = await response.json();
 
-      if (data.error) {
-        throw new Error(data.error);
+      if (!response.ok || data.success === false || !data.clientSecret) {
+        throw new Error(
+          data.error || 'Αποτυχία δημιουργίας της πληρωμής.'
+        );
       }
 
       const cardElement = elements.getElement(CardNumberElement);
@@ -53,7 +63,9 @@ const StripePaymentForm = ({ onFileSubmit }) => {
       }
     } catch (err) {
       console.error("Σφάλμα:", err);
-      setPaymentError("Υπήρξε πρόβλημα με την επικοινωνία. Δοκιμάστε ξανά.");
+      setPaymentError(
+        err.message || "Υπήρξε πρόβλημα με την επικοινωνία. Δοκιμάστε ξανά."
+      );
       setIsProcessing(false); // Σταματάμε το loading αν "σκάσει" το fetch
     }
   };
@@ -76,7 +88,7 @@ const StripePaymentForm = ({ onFileSubmit }) => {
       <label style={{ fontWeight: '600', display: 'block', margin: '0 0 20px 0', color: '#1e293b', fontSize: '1.1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
         💳 Στοιχεία Κάρτας (Δέσμευση 10€)
       </label>
-      
+
       {/* Πεδίο: Αριθμός Κάρτας */}
       <div style={{ marginBottom: '15px' }}>
         <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: '#475569', fontWeight: '500' }}>Αριθμός Κάρτας</label>
@@ -99,7 +111,7 @@ const StripePaymentForm = ({ onFileSubmit }) => {
             />
           </div>
         </div>
-        
+
         <div style={{ flex: 1 }}>
           <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: '#475569', fontWeight: '500' }}>CVC</label>
           <div style={{ padding: '14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#ffffff' }}>
@@ -136,7 +148,7 @@ const StripePaymentForm = ({ onFileSubmit }) => {
       >
         {isProcessing ? 'Επεξεργασία & Ανέβασμα Αρχείου... ⏳' : 'Έγκριση Δέσμευσης & Υποβολή'}
       </button>
-      
+
       <p style={{ fontSize: '13px', color: '#64748b', marginTop: '16px', textAlign: 'center', lineHeight: '1.5' }}>
         🔒 Η πληρωμή είναι απολύτως ασφαλής μέσω <strong>Stripe</strong>. <br/> Τα χρήματα θα δεσμευτούν και θα χρεωθούν οριστικά <strong>μόνο</strong> μετά την παράδοση του Report.
       </p>

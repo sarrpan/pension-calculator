@@ -5,6 +5,8 @@ import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebas
 import { db, auth, storage } from "../firebase"; 
 import './AdminDashboard.css';
 
+const CAPTURE_PAYMENT_URL = import.meta.env.VITE_CAPTURE_PAYMENT_URL;
+
 const AdminDashboard = () => {
   const [requests, setRequests] = useState({});
   const [loading, setLoading] = useState(true);
@@ -37,12 +39,12 @@ const AdminDashboard = () => {
     try {
       const reportRef = sRef(storage, `final_reports/${pin}_Report.pdf`);
       await uploadBytes(reportRef, file);
-      
+
       const downloadUrl = await getDownloadURL(reportRef);
-      
+
       const requestRef = ref(db, `premium_requests/${pin}`);
       await update(requestRef, { finalReportUrl: downloadUrl });
-      
+
       alert(`✅ Το Report για το ${pin} ανέβηκε και συνδέθηκε!`);
     } catch (error) {
       console.error(error);
@@ -57,7 +59,13 @@ const AdminDashboard = () => {
 
       if (newData.status === 'completed' && currentRequest.status !== 'completed') {
         if (currentRequest.paymentIntentId) {
-          const response = await fetch("https://capturepayment-jh2ye45fkq-uc.a.run.app", {
+          if (!CAPTURE_PAYMENT_URL) {
+            throw new Error(
+              'Δεν έχει οριστεί η διεύθυνση οριστικής είσπραξης.'
+            );
+          }
+
+          const response = await fetch(CAPTURE_PAYMENT_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -67,10 +75,12 @@ const AdminDashboard = () => {
             })
           });
           const result = await response.json();
-          if (!result.success) {
-            alert(`⚠️ Η πληρωμή απέτυχε: ${result.error}`);
+
+          if (!response.ok || !result.success) {
+            alert(`⚠️ Η πληρωμή απέτυχε: ${result.error || 'Άγνωστο σφάλμα'}`);
             return;
           }
+
           alert("✅ Η είσπραξη των 10€ ολοκληρώθηκε!");
         }
       }
@@ -78,7 +88,10 @@ const AdminDashboard = () => {
       const requestRef = ref(db, `premium_requests/${pin}`);
       await update(requestRef, newData);
       alert('Ενημερώθηκε!');
-    } catch (err) { alert('Σφάλμα!'); }
+    } catch (err) {
+      console.error(err);
+      alert(`Σφάλμα: ${err.message || 'Η ενέργεια δεν ολοκληρώθηκε.'}`);
+    }
   };
 
   const handleDelete = async (pin) => {
