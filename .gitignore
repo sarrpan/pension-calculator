@@ -1,4 +1,10 @@
-node_modules/
+﻿node_modules/
 *.local
 .env
 .env.*
+dist/
+test-results/
+backups/
+website_structure_dump_*.txt
+next_pension_context_dump_*.txt
+install_*.ps1
