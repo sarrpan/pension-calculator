@@ -32,7 +32,7 @@ function App() {
         <Route path="/free-guide" element={<FreeGuidePage />} />
         <Route path="/report-guide" element={<ReportGuidePage />} />
 
-        <Route path="/calculator" element={<PensionFormPage />} />
+        <Route path="/calculator" element={<PensionFormPage calculatorEdition="free" />} />
 
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/terms" element={<TermsPage />} />

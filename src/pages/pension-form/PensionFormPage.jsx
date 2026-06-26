@@ -30,7 +30,7 @@ const PENSION_DEBUG_ENABLED =
     .trim()
     .toLowerCase() === "true";
 const LOCAL_STORAGE_KEY = "geodora_pension_calculator_draft_v1";
-const MAX_INSURANCE_PERIOD_GROUPS = 10;
+const MAX_INSURANCE_PERIOD_GROUPS = 2;
 
 function PensionFormPage({ calculatorEdition = "professional" }) {
   const location = useLocation();
