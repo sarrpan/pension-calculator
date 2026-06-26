@@ -8,6 +8,7 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
   const plasticYears = calculationResponse?.plasticYears || {};
   const etaaExtraBenefits = calculationResponse?.etaaExtraBenefits || {};
   const auxiliaryPension = calculationResponse?.auxiliaryPension || null;
+  const deductions = calculationResponse?.deductions || {};
   const totals = calculationResponse?.totals || {};
 
   const nationalAmount = toNumberOrNull(nationalPension.amount);
@@ -42,6 +43,31 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
     totals.grossAuxiliaryPension ??
       auxiliaryPension?.totals?.grossAuxiliaryPension,
   );
+  const grossGrandTotal = toNumberOrNull(
+    totals.grossGrandTotal ?? deductions.grossGrandTotal,
+  );
+  const mainEasDeduction = toNumberOrNull(deductions.mainEasDeduction);
+  const supplementaryEasDeduction = toNumberOrNull(
+    deductions.supplementaryEasDeduction,
+  );
+  const under60Deduction = toNumberOrNull(deductions.under60Deduction);
+  const mainHealthDeduction = toNumberOrNull(
+    deductions.mainHealthDeduction,
+  );
+  const supplementaryHealthDeduction = toNumberOrNull(
+    deductions.supplementaryHealthDeduction,
+  );
+  const totalDeductionsBeforeTax = toNumberOrNull(
+    totals.totalDeductionsBeforeTax ??
+      deductions.totalDeductionsBeforeTax,
+  );
+  const payableBeforeTax = toNumberOrNull(
+    totals.payableBeforeTax ?? deductions.payableBeforeTax,
+  );
+  const hasDeductionsResult =
+    calculationResponse?.deductions &&
+    typeof calculationResponse.deductions === "object" &&
+    Object.keys(calculationResponse.deductions).length > 0;
   const auxiliaryInsuranceDaysUntil2014 = toNumberOrNull(
     auxiliaryOldPart.auxiliaryInsuranceDays,
   );
@@ -585,6 +611,71 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
         </section>
       )}
 
+      {hasDeductionsResult && (
+        <section style={deductionsResultSectionStyle}>
+          <h2 style={{ marginTop: 0 }}>
+            Κρατήσεις και πληρωτέο ποσό πριν από φόρο
+          </h2>
+
+          <div style={resultCardsGridStyle}>
+            <FinancialResultCard
+              title="Συνολικό μικτό ποσό"
+              value={formatMoney(grossGrandTotal)}
+            />
+            <FinancialResultCard
+              title="Σύνολο κρατήσεων"
+              value={formatDeductionMoney(totalDeductionsBeforeTax)}
+            />
+            <FinancialResultCard
+              title="Πληρωτέο πριν από φόρο"
+              value={formatMoney(payableBeforeTax)}
+              emphasis
+            />
+          </div>
+
+          <div style={deductionsBreakdownStyle}>
+            <DeductionRow
+              title="ΕΑΣ κύριας σύνταξης"
+              value={mainEasDeduction}
+            />
+
+            {(grossAuxiliaryPension > 0 ||
+              supplementaryEasDeduction > 0) && (
+              <DeductionRow
+                title="ΕΑΣ/ΑΚΑΓΕ επικουρικής σύνταξης"
+                value={supplementaryEasDeduction}
+              />
+            )}
+
+            {under60Deduction > 0 && (
+              <DeductionRow
+                title="Πρόσθετη κράτηση κάτω των 60"
+                value={under60Deduction}
+              />
+            )}
+
+            <DeductionRow
+              title="Υγειονομική περίθαλψη κύριας σύνταξης"
+              value={mainHealthDeduction}
+            />
+
+            {(grossAuxiliaryPension > 0 ||
+              supplementaryHealthDeduction > 0) && (
+              <DeductionRow
+                title="Υγειονομική περίθαλψη επικουρικής σύνταξης"
+                value={supplementaryHealthDeduction}
+              />
+            )}
+
+          </div>
+
+          <p style={deductionsNoticeStyle}>
+            Το πληρωτέο ποσό είναι μετά τις παραπάνω κρατήσεις και πριν από
+            τυχόν παρακράτηση φόρου.
+          </p>
+        </section>
+      )}
+
       {Array.isArray(calculationResponse?.warnings) &&
         calculationResponse.warnings.length > 0 && (
           <div
@@ -630,6 +721,29 @@ const auxiliaryResultSectionStyle = {
   borderRadius: "8px",
   padding: "1rem",
   background: "#eff6ff",
+};
+
+const deductionsResultSectionStyle = {
+  marginTop: "1.25rem",
+  marginBottom: "1rem",
+  border: "1px solid #fcd34d",
+  borderRadius: "8px",
+  padding: "1rem",
+  background: "#fffbeb",
+};
+
+const deductionsBreakdownStyle = {
+  border: "1px solid #fde68a",
+  borderRadius: "8px",
+  overflow: "hidden",
+  background: "#ffffff",
+};
+
+const deductionsNoticeStyle = {
+  marginTop: "0.75rem",
+  marginBottom: 0,
+  color: "#78350f",
+  fontSize: "0.92rem",
 };
 
 const ndcBreakdownDetailsStyle = {
@@ -680,6 +794,49 @@ function shouldShowPremiumDetails(article30Increase = {}) {
   return (
     (amount !== null && amount > 0) ||
     ["yes", "no", "unknown", "mixed"].includes(status)
+  );
+}
+
+function FinancialResultCard({ title, value, emphasis = false }) {
+  return (
+    <div
+      style={{
+        border: emphasis ? "2px solid #16a34a" : "1px solid #f59e0b",
+        borderRadius: "8px",
+        padding: "0.75rem",
+        background: emphasis ? "#f0fdf4" : "#ffffff",
+      }}
+    >
+      <div
+        style={{
+          color: emphasis ? "#166534" : "#92400e",
+          fontSize: "0.9rem",
+        }}
+      >
+        {title}
+      </div>
+      <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>{value}</div>
+    </div>
+  );
+}
+
+function DeductionRow({ title, value, strong = false }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        gap: "1rem",
+        padding: "0.65rem 0.75rem",
+        borderBottom: "1px solid #fef3c7",
+        fontWeight: strong ? 700 : 400,
+      }}
+    >
+      <span>{title}</span>
+      <strong style={{ whiteSpace: "nowrap" }}>
+        {formatDeductionMoney(value)}
+      </strong>
+    </div>
   );
 }
 
@@ -775,6 +932,18 @@ function formatYears(value) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 3,
   })} έτη`;
+}
+
+function formatDeductionMoney(value) {
+  if (value === null) {
+    return "—";
+  }
+
+  if (value === 0) {
+    return formatMoney(0);
+  }
+
+  return `−${formatMoney(Math.abs(value))}`;
 }
 
 function formatMoney(value) {
