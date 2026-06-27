@@ -34,10 +34,9 @@ function AuxiliaryContributionInputSection({
       <legend>Στοιχεία επικουρικής ασφάλισης</legend>
 
       <p style={{ marginTop: 0, color: "#475569" }}>
-        Η εφαρμογή αντιστοιχίζει αυτόματα τις γνωστές κατηγορίες. Πρόσθετη
-        επιλογή εμφανίζεται μόνο όταν η γενική κατηγορία εργασίας μπορεί να
-        αντιστοιχεί σε περισσότερα πρώην επικουρικά ταμεία ή όταν δεν είναι
-        ακόμη γνωστό το πρόσθετο ιστορικό ποσοστό εισφοράς.
+        Η εφαρμογή βρίσκει αυτόματα την επικουρική ασφάλιση όταν υπάρχουν
+        αρκετά στοιχεία. Θα εμφανιστεί ερώτηση μόνο όταν χρειάζεται δική σας
+        επιλογή.
       </p>
 
       {periods.map((period) => {
@@ -55,7 +54,7 @@ function AuxiliaryContributionInputSection({
             {period.showFormerFundModeSelect && (
               <div style={fieldBlockStyle}>
                 <label htmlFor={`auxiliary_fund_mode_${period.id}`}>
-                  Επικουρική κάλυψη της περιόδου
+                  Είχατε ειδικό επικουρικό ταμείο;
                 </label>
 
                 <br />
@@ -78,17 +77,16 @@ function AuxiliaryContributionInputSection({
                   style={selectStyle}
                 >
                   <option value="common">
-                    Κοινή επικουρική ΙΚΑ-ΕΤΕΑΜ (προεπιλογή)
+                    Όχι, είχα την κοινή επικουρική ΙΚΑ-ΕΤΕΑΜ
                   </option>
                   <option value="special">
-                    Είχα ειδικό πρώην επικουρικό ταμείο
+                    Ναι, είχα άλλο επικουρικό ταμείο
                   </option>
                 </select>
 
                 <p style={helpTextStyle}>
-                  Για απλή / κοινή ασφάλιση ΙΚΑ δεν χρειάζεται να γνωρίζετε
-                  άλλο ταμείο. Επιλέξτε ειδικό ταμείο μόνο αν ανήκατε σε
-                  συγκεκριμένη επαγγελματική ομάδα.
+                  Επιλέξτε «Ναι» μόνο αν γνωρίζετε ότι είχατε διαφορετικό
+                  επικουρικό ταμείο από το κοινό ΙΚΑ-ΕΤΕΑΜ.
                 </p>
               </div>
             )}
@@ -96,7 +94,7 @@ function AuxiliaryContributionInputSection({
             {period.showFormerFundSelect && (
               <div style={fieldBlockStyle}>
                 <label htmlFor={`auxiliary_fund_${period.id}`}>
-                  Πρώην επικουρικό ταμείο / πραγματική ομάδα εργαζομένων
+                  Σε ποιο επικουρικό ταμείο ανήκατε;
                   {period.requiresFormerAuxiliaryFundChoice ? " *" : ""}
                 </label>
 
@@ -128,9 +126,8 @@ function AuxiliaryContributionInputSection({
                 </select>
 
                 <p style={helpTextStyle}>
-                  Η επιλογή αυτή χρησιμοποιείται για να βρεθεί ο σωστός πρώην
-                  επικουρικός φορέας και η σωστή ομάδα ράντας. Δεν αλλάζει τον
-                  φορέα κύριας ασφάλισης που δηλώθηκε στην περίοδο.
+                  Η επιλογή αφορά μόνο την επικουρική σύνταξη. Δεν αλλάζει τον
+                  φορέα κύριας ασφάλισης που δηλώσατε.
                 </p>
               </div>
             )}
@@ -138,8 +135,7 @@ function AuxiliaryContributionInputSection({
             {period.requiresExtraContributionChoice && (
               <div style={fieldBlockStyle}>
                 <label htmlFor={`auxiliary_extra_${period.id}`}>
-                  Καταβάλατε αυξημένες εισφορές επικουρικής σύνταξης πέρα από
-                  την κανονική εισφορά που ίσχυε εκείνη την περίοδο;
+                  Πληρώνατε επιπλέον εισφορά για την επικουρική σύνταξη;
                 </label>
 
                 <br />
@@ -167,7 +163,7 @@ function AuxiliaryContributionInputSection({
 
             {period.classification?.workerGroupLabel && (
               <p style={resolvedTextStyle}>
-                <strong>Αντιστοίχιση:</strong>{" "}
+                <strong>Επιλεγμένη κατηγορία:</strong>{" "}
                 {period.classification.workerGroupLabel}
                 {period.classification.formerAuxiliaryFundLabel
                   ? ` — ${period.classification.formerAuxiliaryFundLabel}`
@@ -179,11 +175,9 @@ function AuxiliaryContributionInputSection({
       })}
 
       <p style={{ color: "#8a5a00", marginBottom: 0 }}>
-        Όταν δηλώνεται προσεγγιστικό πρόσθετο ποσοστό, εφαρμόζεται σε ολόκληρη
-        τη συγκεκριμένη ασφαλιστική περίοδο και εμφανίζεται σχετική ένδειξη
-        στο αποτέλεσμα. Αν το πραγματικό πρώην ταμείο δεν βρίσκεται στη λίστα,
-        το παλαιό τμήμα μπορεί να υπολογιστεί, αλλά το NDC παλαιού ασφαλισμένου
-        μπορεί να παραμείνει σε εκκρεμότητα μέχρι να προσδιοριστεί η ράντα.
+        Αν επιλέξετε προσεγγιστικό ποσοστό, θα εφαρμοστεί σε ολόκληρη την
+        ασφαλιστική περίοδο. Αν δεν γνωρίζετε το επικουρικό ταμείο, ο
+        υπολογισμός του παλιού χρόνου επικουρικής μπορεί να μείνει εκκρεμής.
       </p>
     </fieldset>
   );

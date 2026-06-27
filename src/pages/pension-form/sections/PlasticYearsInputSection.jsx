@@ -2,7 +2,496 @@ import React from 'react';
 
 import { fieldsetStyle } from '../utils/calculatorStyles';
 
-function PlasticYearsInputSection({
+
+function PlasticYearsInputSection(props) {
+  if (props.calculatorEdition === "free") {
+    return <FreePlasticYearsInputSection {...props} />;
+  }
+
+  return <ProfessionalPlasticYearsInputSection {...props} />;
+}
+
+function FreePlasticYearsInputSection({
+  value,
+  onChange,
+  validationAttempted = false,
+  fieldIssues = [],
+}) {
+  const safeValue = normalizeFreePlasticYearsDraft(value);
+  const entry = safeValue.entries[0] || createEmptyPlasticYearEntry();
+  const choice = safeValue.freeFlowChoice;
+  const isPaidKnown = choice === "paid_known";
+  const sectionIsComplete =
+    FREE_FLOW_CHOICES.includes(choice) && fieldIssues.length === 0;
+  const sectionHasError =
+    validationAttempted && fieldIssues.length > 0;
+
+  const choiceIssue = findFieldIssue(fieldIssues, "plasticYearsChoice");
+  const durationIssue = findFieldIssue(
+    fieldIssues,
+    "plasticYearsDuration",
+  );
+  const applicationYearIssue = findFieldIssue(
+    fieldIssues,
+    "plasticYearsApplicationYear",
+  );
+  const applicationPeriodIssue = findFieldIssue(
+    fieldIssues,
+    "plasticYearsApplicationPeriod",
+  );
+  const buyoutAmountIssue = findFieldIssue(
+    fieldIssues,
+    "plasticYearsBuyoutAmount",
+  );
+
+  function updateChoice(nextChoice) {
+    onChange({
+      ...safeValue,
+      freeFlowChoice: nextChoice,
+      status:
+        nextChoice === "none"
+          ? "no"
+          : nextChoice
+            ? "yes"
+            : "",
+      entries: [
+        {
+          ...entry,
+          recognitionStatus: "recognized",
+          recognitionMode:
+            nextChoice === "paid_known" ? "paid" : "",
+          financialInputMode:
+            nextChoice === "paid_known"
+              ? "buyout_amount_and_rate"
+              : "",
+        },
+      ],
+    });
+  }
+
+  function updateEntry(field, fieldValue) {
+    onChange({
+      ...safeValue,
+      status: "yes",
+      entries: [
+        {
+          ...entry,
+          recognitionStatus: "recognized",
+          recognitionMode: "paid",
+          financialInputMode: "buyout_amount_and_rate",
+          [field]: fieldValue,
+        },
+      ],
+    });
+  }
+
+  const durationIsComplete = isValidPlasticDuration(entry);
+  const applicationYearIsComplete =
+    isValidPlasticApplicationYear(entry.applicationYear);
+  const applicationPeriodIsComplete =
+    entry.applicationYear !== "2016" ||
+    ["until_2016_05_12", "from_2016_05_13"].includes(
+      entry.applicationPeriod2016,
+    );
+  const buyoutAmountIsComplete = isPositiveDecimal(entry.buyoutAmount);
+
+  return (
+    <fieldset
+      id="plasticYearsSection"
+      style={{
+        ...fieldsetStyle,
+        ...(sectionHasError
+          ? sectionErrorStyle
+          : sectionIsComplete
+            ? sectionCompleteStyle
+            : {}),
+      }}
+    >
+      <legend>Γενικά πλασματικά χρόνια</legend>
+
+      <p style={{ marginTop: 0, color: "#475569" }}>
+        Δηλώστε μόνο πλασματικό χρόνο που δεν έχει ήδη συμπεριληφθεί
+        στις ασφαλιστικές περιόδους.
+      </p>
+
+      <QuestionBox
+        id="plasticYearsChoiceField"
+        isComplete={FREE_FLOW_CHOICES.includes(choice)}
+        issue={choiceIssue}
+        validationAttempted={validationAttempted}
+      >
+        <p style={questionTitleStyle}>
+          Ποια από τις παρακάτω περιπτώσεις ισχύει;
+        </p>
+
+        <div style={choiceGridStyle}>
+          {FREE_FLOW_OPTIONS.map((option) => (
+            <label
+              key={option.value}
+              style={{
+                ...choiceCardStyle,
+                ...(choice === option.value
+                  ? selectedChoiceCardStyle
+                  : {}),
+              }}
+            >
+              <input
+                type="radio"
+                name="freePlasticYearsChoice"
+                value={option.value}
+                checked={choice === option.value}
+                onChange={() => updateChoice(option.value)}
+              />
+              <span>{option.label}</span>
+            </label>
+          ))}
+        </div>
+      </QuestionBox>
+
+      {choice === "free" && (
+        <p style={noticeStyle}>
+          Ο πλασματικός χρόνος χωρίς εξαγορά δεν θα προστεθεί στον
+          υπολογισμό της ανταποδοτικής σύνταξης.
+        </p>
+      )}
+
+      {choice === "paid_unknown" && (
+        <p style={noticeStyle}>
+          Ο υπολογισμός θα συνεχιστεί χωρίς τον πλασματικό χρόνο.
+          Επιστρέψτε στη φόρμα όταν γνωρίζετε τον χρόνο, το έτος της
+          αίτησης και το συνολικό ποσό εξαγοράς.
+        </p>
+      )}
+
+      {isPaidKnown && (
+        <div style={{ marginTop: "1rem" }}>
+          <QuestionBox
+            id="plasticYearsDurationField"
+            isComplete={durationIsComplete}
+            issue={durationIssue}
+            validationAttempted={validationAttempted}
+          >
+            <p style={questionTitleStyle}>
+              Πόσος πλασματικός χρόνος εξαγοράστηκε ή θα
+              εξαγοραστεί;
+            </p>
+
+            <div style={gridStyle}>
+              <FreeTextInput
+                id="plasticYearsYears"
+                label="Έτη"
+                value={entry.years}
+                onChange={(fieldValue) =>
+                  updateEntry("years", fieldValue)
+                }
+                placeholder="π.χ. 3"
+              />
+
+              <FreeTextInput
+                id="plasticYearsMonths"
+                label="Μήνες"
+                value={entry.months}
+                onChange={(fieldValue) =>
+                  updateEntry("months", fieldValue)
+                }
+                placeholder="0 έως 11"
+              />
+
+              <FreeTextInput
+                id="plasticYearsDays"
+                label="Ημέρες"
+                value={entry.days}
+                onChange={(fieldValue) =>
+                  updateEntry("days", fieldValue)
+                }
+                placeholder="0 έως 24"
+              />
+            </div>
+          </QuestionBox>
+
+          <QuestionBox
+            id="plasticYearsApplicationYearField"
+            isComplete={applicationYearIsComplete}
+            issue={applicationYearIssue}
+            validationAttempted={validationAttempted}
+          >
+            <FreeTextInput
+              id="plasticYearsApplicationYear"
+              label="Πότε υποβάλατε ή σκοπεύετε να υποβάλετε την αίτηση εξαγοράς;"
+              value={entry.applicationYear}
+              onChange={(fieldValue) =>
+                updateEntry("applicationYear", fieldValue)
+              }
+              placeholder="Έτος, π.χ. 2025"
+            />
+
+            <p style={helpTextStyle}>
+              Χρειάζεται μόνο το έτος υποβολής της αίτησης.
+            </p>
+          </QuestionBox>
+
+          {entry.applicationYear === "2016" && (
+            <QuestionBox
+              id="plasticYearsApplicationPeriodField"
+              isComplete={applicationPeriodIsComplete}
+              issue={applicationPeriodIssue}
+              validationAttempted={validationAttempted}
+            >
+              <p style={questionTitleStyle}>
+                Πότε υποβλήθηκε ή θα υποβληθεί η αίτηση μέσα στο
+                2016;
+              </p>
+
+              <div style={choiceGridStyle}>
+                {APPLICATION_PERIOD_2016_OPTIONS.map((option) => (
+                  <label
+                    key={option.value}
+                    style={{
+                      ...choiceCardStyle,
+                      ...(entry.applicationPeriod2016 === option.value
+                        ? selectedChoiceCardStyle
+                        : {}),
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="plasticYearsApplicationPeriod2016"
+                      value={option.value}
+                      checked={
+                        entry.applicationPeriod2016 === option.value
+                      }
+                      onChange={() =>
+                        updateEntry(
+                          "applicationPeriod2016",
+                          option.value,
+                        )
+                      }
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </QuestionBox>
+          )}
+
+          <QuestionBox
+            id="plasticYearsBuyoutAmountField"
+            isComplete={buyoutAmountIsComplete}
+            issue={buyoutAmountIssue}
+            validationAttempted={validationAttempted}
+          >
+            <FreeTextInput
+              id="plasticYearsBuyoutAmount"
+              label="Ποιο είναι το συνολικό ποσό εξαγοράς που πληρώσατε ή υπολογίζετε ότι θα πληρώσετε;"
+              value={entry.buyoutAmount}
+              onChange={(fieldValue) =>
+                updateEntry("buyoutAmount", fieldValue)
+              }
+              placeholder="π.χ. 7200"
+            />
+
+            <p style={helpTextStyle}>
+              Γράψτε το συνολικό ποσό και όχι μόνο τις δόσεις που
+              έχουν ήδη πληρωθεί.
+            </p>
+          </QuestionBox>
+
+          <p style={calculationRuleStyle}>
+            Η δωρεάν έκδοση εφαρμόζει ποσοστό 6,67% για αιτήσεις έως
+            12/05/2016 και 20% για αιτήσεις από 13/05/2016 και μετά.
+          </p>
+        </div>
+      )}
+
+      {sectionIsComplete && (
+        <p style={sectionCompleteMessageStyle}>
+          ✓ Τα στοιχεία πλασματικού χρόνου έχουν συμπληρωθεί.
+        </p>
+      )}
+    </fieldset>
+  );
+}
+
+function QuestionBox({
+  id,
+  isComplete,
+  issue,
+  validationAttempted,
+  children,
+}) {
+  const hasError = validationAttempted && Boolean(issue);
+
+  return (
+    <div
+      id={id}
+      style={{
+        ...questionBoxStyle,
+        ...(hasError
+          ? questionErrorStyle
+          : isComplete
+            ? questionCompleteStyle
+            : {}),
+      }}
+    >
+      {children}
+
+      {hasError && (
+        <p role="alert" style={fieldErrorTextStyle}>
+          {issue.message}
+        </p>
+      )}
+
+      {!hasError && isComplete && (
+        <p style={fieldCompleteTextStyle}>✓ Συμπληρώθηκε</p>
+      )}
+    </div>
+  );
+}
+
+function FreeTextInput({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+}) {
+  return (
+    <div style={{ marginBottom: "0.5rem" }}>
+      <label htmlFor={id}>{label}</label>
+      <br />
+      <input
+        id={id}
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        style={inputStyle}
+      />
+    </div>
+  );
+}
+
+function normalizeFreePlasticYearsDraft(value) {
+  const freeFlowChoice = inferFreeFlowChoice(value);
+  const sourceEntry = Array.isArray(value?.entries)
+    ? value.entries[0]
+    : null;
+  const entry = {
+    ...createEmptyPlasticYearEntry(),
+    ...(sourceEntry || {}),
+    id: sourceEntry?.id || createEmptyPlasticYearEntry().id,
+  };
+
+  return {
+    ...(value && typeof value === "object" ? value : {}),
+    freeFlowChoice,
+    status:
+      freeFlowChoice === "none"
+        ? "no"
+        : freeFlowChoice
+          ? "yes"
+          : "",
+    entries: [entry],
+  };
+}
+
+function inferFreeFlowChoice(value) {
+  const explicitChoice = String(
+    value?.freeFlowChoice || "",
+  ).trim();
+
+  if (FREE_FLOW_CHOICES.includes(explicitChoice)) {
+    return explicitChoice;
+  }
+
+  if (!value || typeof value !== "object") {
+    return "";
+  }
+
+  if (value.status === "no") {
+    return "none";
+  }
+
+  if (value.status !== "yes") {
+    return "";
+  }
+
+  const entry = Array.isArray(value.entries)
+    ? value.entries[0] || {}
+    : {};
+
+  if (entry.recognitionMode === "free") {
+    return "free";
+  }
+
+  if (
+    entry.recognitionMode === "paid" &&
+    isPositiveDecimal(entry.buyoutAmount)
+  ) {
+    return "paid_known";
+  }
+
+  return "paid_unknown";
+}
+
+function findFieldIssue(fieldIssues, key) {
+  return (
+    (Array.isArray(fieldIssues) ? fieldIssues : []).find(
+      (issue) => issue.key === key,
+    ) || null
+  );
+}
+
+function isValidPlasticDuration(entry = {}) {
+  const years = parseNonNegativeWholeNumber(entry.years);
+  const months = parseNonNegativeWholeNumber(entry.months);
+  const days = parseNonNegativeWholeNumber(entry.days);
+
+  if (years === null || months === null || days === null) {
+    return false;
+  }
+
+  if (months > 11 || days > 24) {
+    return false;
+  }
+
+  return years * 300 + months * 25 + days > 0;
+}
+
+function isValidPlasticApplicationYear(value) {
+  const text = String(value || "").trim();
+
+  if (!/^\d{4}$/.test(text)) {
+    return false;
+  }
+
+  const year = Number(text);
+  return year >= 1900 && year <= 2100;
+}
+
+function parseNonNegativeWholeNumber(value) {
+  const text = String(value || "0").trim();
+
+  if (!text) {
+    return 0;
+  }
+
+  return /^\d+$/.test(text) ? Number(text) : null;
+}
+
+function isPositiveDecimal(value) {
+  const normalized = String(value || "")
+    .trim()
+    .replace(",", ".");
+
+  return (
+    /^\d+(\.\d+)?$/.test(normalized) &&
+    Number(normalized) > 0
+  );
+}
+
+function ProfessionalPlasticYearsInputSection({
   calculatorEdition = 'professional',
   value,
   onChange,
@@ -346,6 +835,8 @@ function createEmptyPlasticYearEntry() {
     monthlyPensionableBase: '',
     buyoutAmount: '',
     contributionRatePercent: '',
+    applicationYear: '',
+    applicationPeriod2016: '',
   };
 }
 
@@ -504,6 +995,126 @@ const removeButtonStyle = {
   background: '#ffffff',
   color: '#b91c1c',
   cursor: 'pointer',
+};
+
+
+const FREE_FLOW_CHOICES = [
+  "none",
+  "free",
+  "paid_known",
+  "paid_unknown",
+];
+
+const FREE_FLOW_OPTIONS = [
+  {
+    value: "none",
+    label: "Δεν έχω πλασματικό χρόνο",
+  },
+  {
+    value: "free",
+    label: "Έχω πλασματικό χρόνο χωρίς εξαγορά",
+  },
+  {
+    value: "paid_known",
+    label:
+      "Έχω ή θα έχω εξαγορά και γνωρίζω τα απαραίτητα στοιχεία",
+  },
+  {
+    value: "paid_unknown",
+    label:
+      "Σκοπεύω να κάνω εξαγορά, αλλά δεν γνωρίζω ακόμη τα στοιχεία",
+  },
+];
+
+const APPLICATION_PERIOD_2016_OPTIONS = [
+  {
+    value: "until_2016_05_12",
+    label: "Έως 12 Μαΐου 2016",
+  },
+  {
+    value: "from_2016_05_13",
+    label: "Από 13 Μαΐου 2016 και μετά",
+  },
+];
+
+const choiceGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gap: "0.65rem",
+};
+
+const choiceCardStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "0.55rem",
+  padding: "0.75rem",
+  border: "1px solid #cbd5e1",
+  borderRadius: "8px",
+  background: "#ffffff",
+  cursor: "pointer",
+};
+
+const selectedChoiceCardStyle = {
+  border: "2px solid #2563eb",
+  background: "#eff6ff",
+};
+
+const questionBoxStyle = {
+  marginBottom: "0.9rem",
+  padding: "0.85rem",
+  border: "1px solid #cbd5e1",
+  borderRadius: "8px",
+  background: "#ffffff",
+};
+
+const questionCompleteStyle = {
+  border: "1px solid #16a34a",
+  background: "#f0fdf4",
+};
+
+const questionErrorStyle = {
+  border: "1px solid #dc2626",
+  background: "#fff7f7",
+};
+
+const sectionCompleteStyle = {
+  border: "2px solid #16a34a",
+};
+
+const sectionErrorStyle = {
+  border: "2px solid #dc2626",
+};
+
+const questionTitleStyle = {
+  margin: "0 0 0.7rem",
+  fontWeight: 700,
+};
+
+const fieldCompleteTextStyle = {
+  margin: "0.6rem 0 0",
+  color: "#166534",
+  fontWeight: 700,
+};
+
+const fieldErrorTextStyle = {
+  margin: "0.6rem 0 0",
+  color: "#b91c1c",
+  fontWeight: 700,
+};
+
+const sectionCompleteMessageStyle = {
+  margin: "0.8rem 0 0",
+  color: "#166534",
+  fontWeight: 700,
+};
+
+const calculationRuleStyle = {
+  margin: "0.75rem 0 0",
+  padding: "0.75rem",
+  border: "1px solid #bfdbfe",
+  borderRadius: "6px",
+  background: "#eff6ff",
+  color: "#1e3a8a",
 };
 
 export default PlasticYearsInputSection;

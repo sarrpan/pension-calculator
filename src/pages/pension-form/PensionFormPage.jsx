@@ -46,6 +46,9 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
   const [birthDateInput, setBirthDateInput] = useState(
     savedDraft.birthDateInput || "",
   );
+  const [firstInsuranceYearInput, setFirstInsuranceYearInput] = useState(
+    savedDraft.firstInsuranceYearInput || "",
+  );
   const [pensionStartDateInput, setPensionStartDateInput] = useState(
     savedDraft.pensionStartDateInput || "",
   );
@@ -182,6 +185,79 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
   const [calculationResponse, setCalculationResponse] = useState(null);
   const [pensionInputExportError, setPensionInputExportError] = useState("");
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
+  const [mainValidationAttempted, setMainValidationAttempted] =
+    useState(false);
+
+  const derivedInsuredTypeInput =
+    getInsuredTypeFromFirstInsuranceYear(
+      firstInsuranceYearInput,
+    );
+
+  useEffect(() => {
+    if (
+      calculatorEdition !== "free" ||
+      !derivedInsuredTypeInput
+    ) {
+      return;
+    }
+
+    setSimpleInsuredTypeInput(
+      getInsuredTypeForFund({
+        fund: simpleFundInput,
+        derivedInsuredType: derivedInsuredTypeInput,
+      }),
+    );
+
+    setSimpleEmploymentCategoryInput((currentValue) => {
+      if (
+        derivedInsuredTypeInput === "new" &&
+        currentValue === "ota_ika_yvae"
+      ) {
+        return "";
+      }
+
+      return currentValue;
+    });
+
+    setInsurancePeriodGroups((currentGroups) => {
+      let hasChanges = false;
+
+      const nextGroups = currentGroups.map((group) => {
+        const nextInsuredType = getInsuredTypeForFund({
+          fund: group.fund,
+          derivedInsuredType: derivedInsuredTypeInput,
+        });
+        const nextEmploymentCategory =
+          derivedInsuredTypeInput === "new" &&
+          group.employmentCategory === "ota_ika_yvae"
+            ? ""
+            : group.employmentCategory;
+
+        if (
+          group.insuredType === nextInsuredType &&
+          group.employmentCategory === nextEmploymentCategory
+        ) {
+          return group;
+        }
+
+        hasChanges = true;
+
+        return {
+          ...group,
+          insuredType: nextInsuredType,
+          employmentCategory: nextEmploymentCategory,
+        };
+      });
+
+      return hasChanges ? nextGroups : currentGroups;
+    });
+
+    clearBackendResult();
+  }, [
+    calculatorEdition,
+    derivedInsuredTypeInput,
+    simpleFundInput,
+  ]);
 
   useEffect(() => {
     if (!shouldOpenMainStep(location.search)) {
@@ -213,6 +289,7 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
       currentFormStep,
       calculatorEdition,
       birthDateInput,
+      firstInsuranceYearInput,
       pensionStartDateInput,
       pensionTypeInput,
       oldAgeCategoryInput,
@@ -268,6 +345,7 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
     currentFormStep,
     calculatorEdition,
     birthDateInput,
+    firstInsuranceYearInput,
     pensionStartDateInput,
     pensionTypeInput,
     oldAgeCategoryInput,
@@ -305,10 +383,86 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
     yearlyEarningsRows,
   ]);
 
+  const nationalFieldIssues = useMemo(() => {
+    return getNationalFieldIssues({
+      calculatorEdition,
+      birthDateInput,
+      firstInsuranceYearInput,
+      pensionStartDateInput,
+      pensionTypeInput,
+      oldAgeCategoryInput,
+      pensionModeInput,
+      earlyReductionMonthsInput,
+      disabilityCategoryInput,
+      residenceYearsInput,
+      insurancePeriodsInputMode,
+      simpleFromDateInput,
+      insurancePeriodGroups,
+    });
+  }, [
+    calculatorEdition,
+    birthDateInput,
+    firstInsuranceYearInput,
+    pensionStartDateInput,
+    pensionTypeInput,
+    oldAgeCategoryInput,
+    pensionModeInput,
+    earlyReductionMonthsInput,
+    disabilityCategoryInput,
+    residenceYearsInput,
+    insurancePeriodsInputMode,
+    simpleFromDateInput,
+    insurancePeriodGroups,
+  ]);
+
+  const contributoryFieldIssues = useMemo(() => {
+    return getContributoryFieldIssues({
+      requiresExplicitMethod: !hasContributionBasedPeriodInput({
+        insurancePeriodsInputMode,
+        simpleFundInput,
+        insurancePeriodGroups,
+      }),
+      requiresYearlyEarningsForPaidPlasticYears:
+        calculatorEdition === "free" &&
+        resolveFreePlasticYearsChoice(plasticYearsDraft) ===
+          "paid_known",
+      contributoryEarningsInputMethod,
+      averageMonthlyPensionableEarningsInput,
+    });
+  }, [
+    calculatorEdition,
+    insurancePeriodsInputMode,
+    simpleFundInput,
+    insurancePeriodGroups,
+    plasticYearsDraft,
+    contributoryEarningsInputMethod,
+    averageMonthlyPensionableEarningsInput,
+  ]);
+
+  const plasticYearsFieldIssues = useMemo(() => {
+    return getPlasticYearsFieldIssues({
+      calculatorEdition,
+      plasticYearsDraft,
+    });
+  }, [calculatorEdition, plasticYearsDraft]);
+
+  const mainFieldIssues = useMemo(() => {
+    return [
+      ...nationalFieldIssues,
+      ...contributoryFieldIssues,
+      ...plasticYearsFieldIssues,
+    ];
+  }, [
+    nationalFieldIssues,
+    contributoryFieldIssues,
+    plasticYearsFieldIssues,
+  ]);
+
   useEffect(() => {
     saveDraft({
       currentFormStep,
       birthDateInput,
+      firstInsuranceYearInput,
       pensionStartDateInput,
       pensionTypeInput,
       oldAgeCategoryInput,
@@ -348,6 +502,7 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
   }, [
     currentFormStep,
     birthDateInput,
+    firstInsuranceYearInput,
     pensionStartDateInput,
     pensionTypeInput,
     oldAgeCategoryInput,
@@ -410,30 +565,31 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
     setAuxiliaryContributionDraft({});
   }
 
-  function handlePensionTypeChange(value) {
-    setPensionTypeInput(value);
+  function handlePensionScenarioChange(value) {
     clearBackendResult();
 
-    if (value === "old_age") {
+    if (value === "old_age_standard") {
+      setPensionTypeInput("old_age");
+      setOldAgeCategoryInput("standard");
+      setDisabilityCategoryInput("");
+      return;
+    }
+
+    if (value === "old_age_special_disease") {
+      setPensionTypeInput("old_age");
+      setOldAgeCategoryInput("special_disease");
+      setPensionModeInput("");
+      setEarlyReductionMonthsInput("");
       setDisabilityCategoryInput("");
       return;
     }
 
     if (value === "disability") {
+      setPensionTypeInput("disability");
+      setOldAgeCategoryInput("standard");
       setPensionModeInput("");
       setEarlyReductionMonthsInput("");
       setResidenceYearsInput("");
-      setOldAgeCategoryInput("standard");
-    }
-  }
-
-  function handleOldAgeCategoryChange(value) {
-    setOldAgeCategoryInput(value);
-    clearBackendResult();
-
-    if (value === "special_disease") {
-      setPensionModeInput("");
-      setEarlyReductionMonthsInput("");
     }
   }
 
@@ -528,7 +684,13 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
           return {
             ...group,
             fund: value,
-            insuredType: "",
+            insuredType:
+              calculatorEdition === "free"
+                ? getInsuredTypeForFund({
+                    fund: value,
+                    derivedInsuredType: derivedInsuredTypeInput,
+                  })
+                : "",
             employmentCategory: "",
             nonSalariedEarningsInputMode: "",
           };
@@ -634,6 +796,21 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
   function handleOpenParallelInsuranceStep() {
     setCurrentFormStep("parallel_insurance");
     clearBackendResult();
+  }
+
+  function handleMainFormSubmit() {
+    if (currentFormStep === "main") {
+      setMainValidationAttempted(true);
+
+      if (mainFieldIssues.length > 0) {
+        setBackendError("");
+        setCalculationResponse(null);
+        scrollToFormField(mainFieldIssues[0].targetId);
+        return;
+      }
+    }
+
+    handleCalculateFromInputPackage();
   }
 
   async function handleCalculateFromInputPackage() {
@@ -794,13 +971,14 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          handleCalculateFromInputPackage();
+          handleMainFormSubmit();
         }}
       >
         {currentFormStep === "main" && (
           <>
             <NationalPensionInputSection
               birthDateInput={birthDateInput}
+              firstInsuranceYearInput={firstInsuranceYearInput}
               pensionStartDateInput={pensionStartDateInput}
               pensionTypeInput={pensionTypeInput}
               oldAgeCategoryInput={oldAgeCategoryInput}
@@ -808,16 +986,21 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
               earlyReductionMonthsInput={earlyReductionMonthsInput}
               disabilityCategoryInput={disabilityCategoryInput}
               residenceYearsInput={residenceYearsInput}
+              validationAttempted={mainValidationAttempted}
+              fieldIssues={nationalFieldIssues}
               onBirthDateChange={(value) => {
                 setBirthDateInput(value);
+                clearBackendResult();
+              }}
+              onFirstInsuranceYearChange={(value) => {
+                setFirstInsuranceYearInput(value);
                 clearBackendResult();
               }}
               onPensionStartDateChange={(value) => {
                 setPensionStartDateInput(value);
                 clearBackendResult();
               }}
-              onPensionTypeChange={handlePensionTypeChange}
-              onOldAgeCategoryChange={handleOldAgeCategoryChange}
+              onPensionScenarioChange={handlePensionScenarioChange}
               onPensionModeChange={handlePensionModeChange}
               onEarlyReductionMonthsChange={(value) => {
                 setEarlyReductionMonthsInput(value);
@@ -853,6 +1036,7 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
               simpleInsuranceExtraDaysInput={simpleInsuranceExtraDaysInput}
               simpleUniformedSpecialTimeDraft={simpleUniformedSpecialTimeDraft}
               calculatorEdition={calculatorEdition}
+              globalInsuredTypeInput={derivedInsuredTypeInput}
               article30SpecialRegimeUsageInput={
                 article30SpecialRegimeUsageInput
               }
@@ -974,6 +1158,8 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
             <PlasticYearsInputSection
               calculatorEdition={calculatorEdition}
               value={plasticYearsDraft}
+              validationAttempted={mainValidationAttempted}
+              fieldIssues={plasticYearsFieldIssues}
               onChange={(value) => {
                 setPlasticYearsDraft(normalizeSavedPlasticYearsDraft(value));
                 clearBackendResult();
@@ -1047,6 +1233,8 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
           insurancePeriodGroups={insurancePeriodGroups}
           parallelInsuranceSegments={analysis.parallelInsuranceSegments || []}
           parallelInsuranceDraft={parallelInsuranceDraft}
+          validationAttempted={mainValidationAttempted}
+          fieldIssues={contributoryFieldIssues}
           onContributoryEarningsInputMethodChange={
             handleContributoryEarningsInputMethodChange
           }
@@ -1059,22 +1247,48 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
         />
         )}
 
+        {currentFormStep === "main" &&
+          mainValidationAttempted &&
+          mainFieldIssues.length > 0 && (
+            <section
+              role="alert"
+              style={requiredFieldsSummaryStyle}
+            >
+              <strong>
+                Συμπληρώστε τα παρακάτω υποχρεωτικά πεδία:
+              </strong>
+
+              <ul style={requiredFieldsListStyle}>
+                {mainFieldIssues.map((issue) => (
+                  <li key={issue.key}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        scrollToFormField(issue.targetId)
+                      }
+                      style={requiredFieldLinkStyle}
+                    >
+                      {issue.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
         {currentFormStep !== "parallel_insurance" && (
           <button
-          type="submit"
-          disabled={
-            !analysis.isReady || Boolean(analysis.error) || isSendingToBackend
-          }
-          style={{
-            padding: "0.6rem 1rem",
-            cursor:
-              !analysis.isReady || analysis.error || isSendingToBackend
+            type="submit"
+            disabled={isSendingToBackend}
+            style={{
+              padding: "0.6rem 1rem",
+              cursor: isSendingToBackend
                 ? "not-allowed"
                 : "pointer",
-          }}
-        >
-          {submitButtonText}
-        </button>
+            }}
+          >
+            {submitButtonText}
+          </button>
         )}
       </form>
 
@@ -1184,6 +1398,680 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
     </main>
   );
 }
+
+function getContributoryFieldIssues({
+  requiresExplicitMethod,
+  requiresYearlyEarningsForPaidPlasticYears = false,
+  contributoryEarningsInputMethod,
+  averageMonthlyPensionableEarningsInput,
+}) {
+  if (!requiresExplicitMethod) {
+    return [];
+  }
+
+  const issues = [];
+  const method = String(
+    contributoryEarningsInputMethod || "",
+  ).trim();
+
+  if (!method) {
+    issues.push({
+      key: "contributoryEarningsInputMethod",
+      targetId: "contributoryEarningsMethodField",
+      label: "Τρόπος εισαγωγής συντάξιμων αποδοχών",
+      message:
+        "Επιλέξτε πώς θέλετε να εισαγάγετε τις συντάξιμες αποδοχές.",
+    });
+
+    return issues;
+  }
+
+  if (!["average_monthly", "yearly_earnings"].includes(method)) {
+    issues.push({
+      key: "contributoryEarningsInputMethod",
+      targetId: "contributoryEarningsMethodField",
+      label: "Τρόπος εισαγωγής συντάξιμων αποδοχών",
+      message:
+        "Η επιλογή τρόπου εισαγωγής συντάξιμων αποδοχών δεν είναι έγκυρη.",
+    });
+
+    return issues;
+  }
+
+  if (
+    requiresYearlyEarningsForPaidPlasticYears &&
+    method !== "yearly_earnings"
+  ) {
+    issues.push({
+      key: "contributoryEarningsInputMethod",
+      targetId: "contributoryEarningsMethodField",
+      label:
+        "Αποδοχές και ένσημα ανά έτος για τον πλασματικό χρόνο",
+      message:
+        "Για να ενσωματωθεί εξαγορά πλασματικού χρόνου, επιλέξτε αποδοχές και ένσημα ανά έτος.",
+    });
+
+    return issues;
+  }
+
+  if (method !== "average_monthly") {
+    return issues;
+  }
+
+  const normalizedAmount = String(
+    averageMonthlyPensionableEarningsInput || "",
+  )
+    .trim()
+    .replace(",", ".");
+
+  if (!normalizedAmount) {
+    issues.push({
+      key: "averageMonthlyPensionableEarnings",
+      targetId: "averageMonthlyPensionableEarningsField",
+      label: "Μέσος μηνιαίος συντάξιμος μισθός",
+      message:
+        "Συμπληρώστε τον μέσο μηνιαίο συντάξιμο μισθό.",
+    });
+
+    return issues;
+  }
+
+  if (
+    !/^\d+(\.\d+)?$/.test(normalizedAmount) ||
+    Number(normalizedAmount) <= 0
+  ) {
+    issues.push({
+      key: "averageMonthlyPensionableEarnings",
+      targetId: "averageMonthlyPensionableEarningsField",
+      label: "Μέσος μηνιαίος συντάξιμος μισθός",
+      message:
+        "Ο μέσος μηνιαίος συντάξιμος μισθός πρέπει να είναι αριθμός μεγαλύτερος από 0.",
+    });
+  }
+
+  return issues;
+}
+
+function getPlasticYearsFieldIssues({
+  calculatorEdition,
+  plasticYearsDraft,
+}) {
+  if (calculatorEdition !== "free") {
+    return [];
+  }
+
+  const issues = [];
+  const choice = resolveFreePlasticYearsChoice(
+    plasticYearsDraft,
+  );
+
+  function addIssue(key, targetId, label, message) {
+    issues.push({
+      key,
+      targetId,
+      label,
+      message,
+    });
+  }
+
+  if (
+    ![
+      "none",
+      "free",
+      "paid_known",
+      "paid_unknown",
+    ].includes(choice)
+  ) {
+    addIssue(
+      "plasticYearsChoice",
+      "plasticYearsChoiceField",
+      "Πλασματικός χρόνος",
+      "Επιλέξτε ποια περίπτωση πλασματικού χρόνου ισχύει.",
+    );
+
+    return issues;
+  }
+
+  if (choice !== "paid_known") {
+    return issues;
+  }
+
+  const entry = Array.isArray(plasticYearsDraft?.entries)
+    ? plasticYearsDraft.entries[0] || {}
+    : {};
+
+  if (!isValidPlasticYearsDurationInput(entry)) {
+    addIssue(
+      "plasticYearsDuration",
+      "plasticYearsDurationField",
+      "Χρόνος εξαγοράς πλασματικών ετών",
+      "Συμπληρώστε έγκυρο χρόνο εξαγοράς μεγαλύτερο από 0.",
+    );
+  }
+
+  if (!isValidPlasticYearsApplicationYear(entry.applicationYear)) {
+    addIssue(
+      "plasticYearsApplicationYear",
+      "plasticYearsApplicationYearField",
+      "Έτος αίτησης εξαγοράς",
+      "Συμπληρώστε έγκυρο τετραψήφιο έτος αίτησης εξαγοράς.",
+    );
+  }
+
+  if (
+    String(entry.applicationYear || "").trim() === "2016" &&
+    ![
+      "until_2016_05_12",
+      "from_2016_05_13",
+    ].includes(entry.applicationPeriod2016)
+  ) {
+    addIssue(
+      "plasticYearsApplicationPeriod",
+      "plasticYearsApplicationPeriodField",
+      "Χρονική περίοδος αίτησης μέσα στο 2016",
+      "Επιλέξτε αν η αίτηση έγινε έως 12/05/2016 ή από 13/05/2016 και μετά.",
+    );
+  }
+
+  if (!isPositiveDecimalText(entry.buyoutAmount)) {
+    addIssue(
+      "plasticYearsBuyoutAmount",
+      "plasticYearsBuyoutAmountField",
+      "Συνολικό ποσό εξαγοράς",
+      "Συμπληρώστε συνολικό ποσό εξαγοράς μεγαλύτερο από 0.",
+    );
+  }
+
+  return issues;
+}
+
+function isValidPlasticYearsDurationInput(entry = {}) {
+  const years = parseOptionalWholeNumber(entry.years);
+  const months = parseOptionalWholeNumber(entry.months);
+  const days = parseOptionalWholeNumber(entry.days);
+
+  if (years === null || months === null || days === null) {
+    return false;
+  }
+
+  if (months > 11 || days > 24) {
+    return false;
+  }
+
+  return years * 300 + months * 25 + days > 0;
+}
+
+function isValidPlasticYearsApplicationYear(value) {
+  const text = String(value || "").trim();
+
+  if (!/^\d{4}$/.test(text)) {
+    return false;
+  }
+
+  const year = Number(text);
+  return year >= 1900 && year <= 2100;
+}
+
+function parseOptionalWholeNumber(value) {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    return 0;
+  }
+
+  return /^\d+$/.test(text) ? Number(text) : null;
+}
+
+function isPositiveDecimalText(value) {
+  const normalizedText = String(value || "")
+    .trim()
+    .replace(",", ".");
+
+  return (
+    /^\d+(\.\d+)?$/.test(normalizedText) &&
+    Number(normalizedText) > 0
+  );
+}
+
+function getNationalFieldIssues({
+  calculatorEdition,
+  birthDateInput,
+  firstInsuranceYearInput,
+  pensionStartDateInput,
+  pensionTypeInput,
+  oldAgeCategoryInput,
+  pensionModeInput,
+  earlyReductionMonthsInput,
+  disabilityCategoryInput,
+  residenceYearsInput,
+  insurancePeriodsInputMode,
+  simpleFromDateInput,
+  insurancePeriodGroups,
+}) {
+  const issues = [];
+
+  function addIssue(key, targetId, label, message) {
+    issues.push({
+      key,
+      targetId,
+      label,
+      message,
+    });
+  }
+
+  if (!hasTextValue(birthDateInput)) {
+    addIssue(
+      "birthDate",
+      "birthDateField",
+      "Ημερομηνία γέννησης",
+      "Συμπληρώστε την ημερομηνία γέννησης.",
+    );
+  } else if (!isValidBirthDateInput(birthDateInput)) {
+    addIssue(
+      "birthDate",
+      "birthDateField",
+      "Ημερομηνία γέννησης",
+      "Συμπληρώστε έγκυρη ημερομηνία γέννησης, π.χ. 31/12/1967.",
+    );
+  }
+
+  const firstInsuranceYear =
+    parseFirstInsuranceYearInput(firstInsuranceYearInput);
+
+  if (calculatorEdition === "free") {
+    if (!hasTextValue(firstInsuranceYearInput)) {
+      addIssue(
+        "firstInsuranceYear",
+        "firstInsuranceYearField",
+        "Έτος πρώτης ασφάλισης",
+        "Συμπληρώστε το έτος της πρώτης σας ασφάλισης.",
+      );
+    } else if (firstInsuranceYear === null) {
+      addIssue(
+        "firstInsuranceYear",
+        "firstInsuranceYearField",
+        "Έτος πρώτης ασφάλισης",
+        "Το έτος πρώτης ασφάλισης πρέπει να είναι τετραψήφιο έτος.",
+      );
+    } else {
+      const parsedBirthDate = parseRequiredDateInput(
+        birthDateInput,
+        { allowTwoDigitYear: false },
+      );
+      const parsedPensionDate = parseRequiredDateInput(
+        pensionStartDateInput,
+        { allowTwoDigitYear: true },
+      );
+      const earliestDeclaredStartYear =
+        getEarliestDeclaredInsuranceStartYear({
+          insurancePeriodsInputMode,
+          simpleFromDateInput,
+          insurancePeriodGroups,
+        });
+
+      if (
+        parsedBirthDate &&
+        firstInsuranceYear < parsedBirthDate.getUTCFullYear()
+      ) {
+        addIssue(
+          "firstInsuranceYear",
+          "firstInsuranceYearField",
+          "Έτος πρώτης ασφάλισης",
+          "Το έτος πρώτης ασφάλισης δεν μπορεί να είναι πριν από το έτος γέννησης.",
+        );
+      } else if (
+        parsedPensionDate &&
+        firstInsuranceYear > parsedPensionDate.getUTCFullYear()
+      ) {
+        addIssue(
+          "firstInsuranceYear",
+          "firstInsuranceYearField",
+          "Έτος πρώτης ασφάλισης",
+          "Το έτος πρώτης ασφάλισης δεν μπορεί να είναι μετά την έναρξη της σύνταξης.",
+        );
+      } else if (
+        earliestDeclaredStartYear !== null &&
+        earliestDeclaredStartYear < firstInsuranceYear
+      ) {
+        addIssue(
+          "firstInsuranceYear",
+          "firstInsuranceYearField",
+          "Έτος πρώτης ασφάλισης",
+          `Έχετε δηλώσει ασφαλιστική περίοδο που ξεκινά το ${earliestDeclaredStartYear}, πριν από το έτος πρώτης ασφάλισης ${firstInsuranceYear}. Ελέγξτε το έτος.`,
+        );
+      }
+    }
+  }
+
+  if (!hasTextValue(pensionStartDateInput)) {
+    addIssue(
+      "pensionStartDate",
+      "pensionStartDateField",
+      "Ημερομηνία έναρξης σύνταξης",
+      "Συμπληρώστε την ημερομηνία έναρξης σύνταξης.",
+    );
+  } else if (!isValidPensionDateInput(pensionStartDateInput)) {
+    addIssue(
+      "pensionStartDate",
+      "pensionStartDateField",
+      "Ημερομηνία έναρξης σύνταξης",
+      "Συμπληρώστε έγκυρη ημερομηνία έναρξης σύνταξης.",
+    );
+  }
+
+  const pensionScenarioInput = resolvePensionScenarioInput({
+    pensionTypeInput,
+    oldAgeCategoryInput,
+  });
+
+  if (!pensionScenarioInput) {
+    addIssue(
+      "pensionScenario",
+      "pensionTypeField",
+      "Είδος σύνταξης",
+      "Επιλέξτε το είδος της σύνταξης.",
+    );
+  }
+
+  if (
+    pensionScenarioInput === "old_age_standard" &&
+    !hasTextValue(pensionModeInput)
+  ) {
+    addIssue(
+      "pensionMode",
+      "pensionModeField",
+      "Πλήρης ή μειωμένη σύνταξη",
+      "Επιλέξτε αν η σύνταξη είναι πλήρης ή μειωμένη.",
+    );
+  }
+
+  if (
+    pensionScenarioInput === "old_age_standard" &&
+    pensionModeInput === "reduced"
+  ) {
+    if (!hasTextValue(earlyReductionMonthsInput)) {
+      addIssue(
+        "earlyReductionMonths",
+        "earlyReductionMonthsField",
+        "Μήνες πρόωρης μείωσης",
+        "Συμπληρώστε τους μήνες πρόωρης μείωσης.",
+      );
+    } else if (
+      !isValidEarlyReductionMonths(
+        earlyReductionMonthsInput,
+      )
+    ) {
+      addIssue(
+        "earlyReductionMonths",
+        "earlyReductionMonthsField",
+        "Μήνες πρόωρης μείωσης",
+        "Οι μήνες πρόωρης μείωσης πρέπει να είναι ακέραιος αριθμός από 0 έως 60.",
+      );
+    }
+  }
+
+  if (
+    pensionScenarioInput === "old_age_standard" ||
+    pensionScenarioInput === "old_age_special_disease"
+  ) {
+    if (!hasTextValue(residenceYearsInput)) {
+      addIssue(
+        "residenceYears",
+        "residenceYearsField",
+        "Έτη νόμιμης διαμονής",
+        "Συμπληρώστε τα έτη νόμιμης διαμονής στην Ελλάδα.",
+      );
+    } else if (!isValidNonNegativeDecimal(residenceYearsInput)) {
+      addIssue(
+        "residenceYears",
+        "residenceYearsField",
+        "Έτη νόμιμης διαμονής",
+        "Τα έτη νόμιμης διαμονής πρέπει να είναι μη αρνητικός αριθμός.",
+      );
+    }
+  }
+
+  if (
+    pensionScenarioInput === "disability" &&
+    !hasTextValue(disabilityCategoryInput)
+  ) {
+    addIssue(
+      "disabilityCategory",
+      "disabilityCategoryField",
+      "Κατηγορία ποσοστού αναπηρίας",
+      "Επιλέξτε την κατηγορία ποσοστού αναπηρίας.",
+    );
+  }
+
+  return issues;
+}
+
+function resolvePensionScenarioInput({
+  pensionTypeInput,
+  oldAgeCategoryInput,
+}) {
+  if (pensionTypeInput === "disability") {
+    return "disability";
+  }
+
+  if (
+    pensionTypeInput === "old_age" &&
+    oldAgeCategoryInput === "standard"
+  ) {
+    return "old_age_standard";
+  }
+
+  if (
+    pensionTypeInput === "old_age" &&
+    oldAgeCategoryInput === "special_disease"
+  ) {
+    return "old_age_special_disease";
+  }
+
+  return "";
+}
+
+function parseFirstInsuranceYearInput(value) {
+  const text = String(value || "").trim();
+
+  if (!/^\d{4}$/.test(text)) {
+    return null;
+  }
+
+  const year = Number(text);
+
+  return year >= 1900 && year <= 2100 ? year : null;
+}
+
+function getInsuredTypeFromFirstInsuranceYear(value) {
+  const year = parseFirstInsuranceYearInput(value);
+
+  if (year === null) {
+    return "";
+  }
+
+  return year <= 1992 ? "old" : "new";
+}
+
+function getInsuredTypeForFund({
+  fund,
+  derivedInsuredType,
+}) {
+  if (!fund) {
+    return "";
+  }
+
+  if (
+    ["oaee", "etaa", "tsmede", "tsay", "oga"].includes(
+      fund,
+    )
+  ) {
+    return "not_applicable";
+  }
+
+  return derivedInsuredType || "";
+}
+
+function getEarliestDeclaredInsuranceStartYear({
+  insurancePeriodsInputMode,
+  simpleFromDateInput,
+  insurancePeriodGroups,
+}) {
+  const dateValues =
+    insurancePeriodsInputMode === "simple"
+      ? [simpleFromDateInput]
+      : (Array.isArray(insurancePeriodGroups)
+          ? insurancePeriodGroups
+          : []
+        ).map((group) => group?.fromDate);
+
+  const years = dateValues
+    .map((value) =>
+      parseRequiredDateInput(value, {
+        allowTwoDigitYear: true,
+      }),
+    )
+    .filter(Boolean)
+    .map((date) => date.getUTCFullYear());
+
+  return years.length > 0 ? Math.min(...years) : null;
+}
+
+function isValidBirthDateInput(value) {
+  const parsed = parseRequiredDateInput(value, {
+    allowTwoDigitYear: false,
+  });
+
+  return parsed !== null;
+}
+
+function isValidPensionDateInput(value) {
+  const parsed = parseRequiredDateInput(value, {
+    allowTwoDigitYear: true,
+  });
+
+  return parsed !== null;
+}
+
+function parseRequiredDateInput(value, { allowTwoDigitYear }) {
+  const normalizedValue = String(value || "").trim();
+  const yearPattern = allowTwoDigitYear
+    ? "(\\d{2}|\\d{4})"
+    : "(\\d{4})";
+  const separatedPattern = new RegExp(
+    `^(\\d{1,2})[\\/\\-. ](\\d{1,2})[\\/\\-. ]${yearPattern}$`,
+  );
+  const separatedMatch = normalizedValue.match(separatedPattern);
+  const digitsOnly = normalizedValue.replace(/\D/g, "");
+
+  let day;
+  let month;
+  let yearText;
+
+  if (separatedMatch) {
+    day = Number(separatedMatch[1]);
+    month = Number(separatedMatch[2]);
+    yearText = separatedMatch[3];
+  } else if (digitsOnly.length === 8) {
+    day = Number(digitsOnly.slice(0, 2));
+    month = Number(digitsOnly.slice(2, 4));
+    yearText = digitsOnly.slice(4, 8);
+  } else if (allowTwoDigitYear && digitsOnly.length === 6) {
+    day = Number(digitsOnly.slice(0, 2));
+    month = Number(digitsOnly.slice(2, 4));
+    yearText = digitsOnly.slice(4, 6);
+  } else {
+    return null;
+  }
+
+  const year =
+    yearText.length === 2
+      ? normalizeRequiredTwoDigitYear(yearText)
+      : Number(yearText);
+  const parsedDate = new Date(Date.UTC(year, month - 1, day));
+
+  const isRealDate =
+    parsedDate.getUTCFullYear() === year &&
+    parsedDate.getUTCMonth() === month - 1 &&
+    parsedDate.getUTCDate() === day;
+
+  return isRealDate ? parsedDate : null;
+}
+
+function normalizeRequiredTwoDigitYear(value) {
+  const year = Number(value);
+  return year <= 69 ? 2000 + year : 1900 + year;
+}
+
+function isValidEarlyReductionMonths(value) {
+  const text = String(value || "").trim();
+
+  if (!/^\d+$/.test(text)) {
+    return false;
+  }
+
+  const months = Number(text);
+  return months >= 0 && months <= 60;
+}
+
+function isValidNonNegativeDecimal(value) {
+  const normalizedText = String(value || "")
+    .trim()
+    .replace(",", ".");
+
+  return /^\d+(\.\d+)?$/.test(normalizedText);
+}
+
+function scrollToFormField(targetId) {
+  window.requestAnimationFrame(() => {
+    const target = document.getElementById(targetId);
+
+    if (!target) {
+      return;
+    }
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+
+    const focusableElement = target.querySelector(
+      "input, select, textarea, button",
+    );
+
+    focusableElement?.focus({
+      preventScroll: true,
+    });
+  });
+}
+
+function hasTextValue(value) {
+  return String(value || "").trim() !== "";
+}
+
+const requiredFieldsSummaryStyle = {
+  marginBottom: "1rem",
+  padding: "0.85rem 1rem",
+  border: "1px solid #dc2626",
+  borderRadius: "8px",
+  background: "#fff7f7",
+  color: "#991b1b",
+};
+
+const requiredFieldsListStyle = {
+  margin: "0.6rem 0 0",
+  paddingLeft: "1.25rem",
+};
+
+const requiredFieldLinkStyle = {
+  padding: 0,
+  border: 0,
+  background: "transparent",
+  color: "#b91c1c",
+  textDecoration: "underline",
+  cursor: "pointer",
+  font: "inherit",
+};
 
 const diagnosticDetailsStyle = {
   marginTop: "0.75rem",
@@ -1596,11 +2484,22 @@ function createEmptyPlasticYearEntry() {
     monthlyPensionableBase: "",
     buyoutAmount: "",
     contributionRatePercent: "",
+    applicationYear: "",
+    applicationPeriod2016: "",
   };
 }
 
 function normalizeSavedPlasticYearsDraft(value) {
-  const status = value?.status === "yes" ? "yes" : "no";
+  const freeFlowChoice = resolveFreePlasticYearsChoice(value);
+  const explicitStatus = String(value?.status || "").trim();
+  const status =
+    freeFlowChoice === "none"
+      ? "no"
+      : freeFlowChoice
+        ? "yes"
+        : explicitStatus === "yes" || explicitStatus === "no"
+          ? explicitStatus
+          : "";
   const entries = Array.isArray(value?.entries)
     ? value.entries.slice(0, 10).map((entry) => ({
         ...createEmptyPlasticYearEntry(),
@@ -1610,12 +2509,60 @@ function normalizeSavedPlasticYearsDraft(value) {
     : [];
 
   return {
+    ...(value && typeof value === "object" ? value : {}),
     status,
+    freeFlowChoice,
     entries:
-      status === "yes" && entries.length === 0
-        ? [createEmptyPlasticYearEntry()]
-        : entries,
+      entries.length > 0
+        ? entries
+        : [createEmptyPlasticYearEntry()],
   };
+}
+
+function resolveFreePlasticYearsChoice(value) {
+  const explicitChoice = String(
+    value?.freeFlowChoice || "",
+  ).trim();
+
+  if (
+    [
+      "none",
+      "free",
+      "paid_known",
+      "paid_unknown",
+    ].includes(explicitChoice)
+  ) {
+    return explicitChoice;
+  }
+
+  if (!value || typeof value !== "object") {
+    return "";
+  }
+
+  if (value.status === "no") {
+    return "none";
+  }
+
+  if (value.status !== "yes") {
+    return "";
+  }
+
+  const entry = Array.isArray(value.entries)
+    ? value.entries[0] || {}
+    : {};
+
+  if (entry.recognitionMode === "free") {
+    return "free";
+  }
+
+  if (
+    entry.recognitionMode === "paid" &&
+    isPositiveDecimalText(entry.buyoutAmount)
+  ) {
+    return "paid_known";
+  }
+
+  return "paid_unknown";
 }
 
 function normalizeSavedEtaaExtraBenefitDraft(value) {

@@ -34,6 +34,8 @@ function ContributoryPensionInputSection({
   insurancePeriodGroups,
   parallelInsuranceSegments,
   parallelInsuranceDraft,
+  validationAttempted = false,
+  fieldIssues = [],
   onContributoryEarningsInputMethodChange,
   onAverageMonthlyPensionableEarningsChange,
   onYearlyEarningsRowChange,
@@ -54,6 +56,28 @@ function ContributoryPensionInputSection({
     latestDeclaredEmploymentYear:
       yearlyInputContext.latestDeclaredEmploymentYear,
   });
+
+  const earningsMethodIssue = findFieldIssue(
+    fieldIssues,
+    "contributoryEarningsInputMethod",
+  );
+  const averageMonthlyIssue = findFieldIssue(
+    fieldIssues,
+    "averageMonthlyPensionableEarnings",
+  );
+  const hasSelectedEarningsMethod = [
+    "average_monthly",
+    "yearly_earnings",
+  ].includes(contributoryEarningsInputMethod);
+  const hasValidAverageMonthlyAmount =
+    contributoryEarningsInputMethod !== "average_monthly" ||
+    Boolean(
+      !averageMonthlyIssue &&
+      String(averageMonthlyPensionableEarningsInput || "").trim(),
+    );
+  const hasCompletedContributoryInput =
+    hasSelectedEarningsMethod &&
+    hasValidAverageMonthlyAmount;
 
   if (currentFormStep === "contributory_yearly") {
     return (
@@ -191,8 +215,28 @@ function ContributoryPensionInputSection({
   }
 
   return (
-    <fieldset style={fieldsetStyle}>
-      <legend>Στοιχεία ανταποδοτικής σύνταξης</legend>
+    <fieldset
+      id="contributoryEarningsMethodField"
+      aria-invalid={
+        validationAttempted && earningsMethodIssue ? "true" : "false"
+      }
+      style={{
+        ...fieldsetStyle,
+        ...getValidationContainerStyle({
+          validationAttempted,
+          issue: earningsMethodIssue,
+          completed: hasCompletedContributoryInput,
+        }),
+      }}
+    >
+      <legend>
+        Στοιχεία ανταποδοτικής σύνταξης
+        <ValidationStatus
+          validationAttempted={validationAttempted}
+          issue={earningsMethodIssue}
+          completed={hasCompletedContributoryInput}
+        />
+      </legend>
 
       <p style={{ marginTop: 0 }}>
         Πώς θέλετε να εισάγετε τις συντάξιμες αποδοχές;
@@ -216,16 +260,49 @@ function ContributoryPensionInputSection({
         label="Θέλω να εισάγω αποδοχές και ένσημα ανά έτος"
       />
 
+      {validationAttempted && earningsMethodIssue && (
+        <ValidationMessage message={earningsMethodIssue.message} />
+      )}
+
       {contributoryEarningsInputMethod === "average_monthly" && (
-        <div style={{ marginTop: "1rem" }}>
+        <div
+          id="averageMonthlyPensionableEarningsField"
+          aria-invalid={
+            validationAttempted && averageMonthlyIssue
+              ? "true"
+              : "false"
+          }
+          style={{
+            ...averageMonthlyFieldStyle,
+            ...getValidationContainerStyle({
+              validationAttempted,
+              issue: averageMonthlyIssue,
+              completed: Boolean(hasValidAverageMonthlyAmount),
+            }),
+          }}
+        >
+          <div style={averageMonthlyHeadingStyle}>
+            <strong>Μέσος μηνιαίος συντάξιμος μισθός</strong>
+
+            <ValidationStatus
+              validationAttempted={validationAttempted}
+              issue={averageMonthlyIssue}
+              completed={Boolean(hasValidAverageMonthlyAmount)}
+            />
+          </div>
+
           <InputWithLabel
             id="averageMonthlyPensionableEarnings"
-            label="Μέσος μηνιαίος συντάξιμος μισθός"
+            label="Ποσό"
             value={averageMonthlyPensionableEarningsInput}
             onChange={onAverageMonthlyPensionableEarningsChange}
             placeholder="π.χ. 1450,75"
             width="180px"
           />
+
+          {validationAttempted && averageMonthlyIssue && (
+            <ValidationMessage message={averageMonthlyIssue.message} />
+          )}
         </div>
       )}
 
@@ -236,6 +313,58 @@ function ContributoryPensionInputSection({
         </p>
       )}
     </fieldset>
+  );
+}
+
+function findFieldIssue(fieldIssues, key) {
+  return (Array.isArray(fieldIssues) ? fieldIssues : []).find(
+    (issue) => issue?.key === key,
+  );
+}
+
+function getValidationContainerStyle({
+  validationAttempted,
+  issue,
+  completed,
+}) {
+  if (validationAttempted && issue) {
+    return {
+      border: "2px solid #dc2626",
+      background: "#fff7f7",
+    };
+  }
+
+  if (completed && !issue) {
+    return {
+      border: "1px solid #22c55e",
+      background: "#f0fdf4",
+    };
+  }
+
+  return {};
+}
+
+function ValidationStatus({
+  validationAttempted,
+  issue,
+  completed,
+}) {
+  if (validationAttempted && issue) {
+    return <span style={requiredStatusStyle}>Απαιτείται</span>;
+  }
+
+  if (completed && !issue) {
+    return <span style={completedStatusStyle}>✓ Συμπληρώθηκε</span>;
+  }
+
+  return <span style={neutralRequiredStyle}>Απαιτείται</span>;
+}
+
+function ValidationMessage({ message }) {
+  return (
+    <p role="alert" style={validationMessageStyle}>
+      {message}
+    </p>
   );
 }
 
@@ -461,6 +590,49 @@ function parseDisplayOrIsoYear(value) {
 
   return null;
 }
+
+const requiredStatusStyle = {
+  marginLeft: "0.6rem",
+  color: "#b91c1c",
+  fontSize: "0.8rem",
+  fontWeight: 700,
+};
+
+const completedStatusStyle = {
+  marginLeft: "0.6rem",
+  color: "#15803d",
+  fontSize: "0.8rem",
+  fontWeight: 700,
+};
+
+const neutralRequiredStyle = {
+  marginLeft: "0.6rem",
+  color: "#64748b",
+  fontSize: "0.8rem",
+  fontWeight: 600,
+};
+
+const validationMessageStyle = {
+  margin: "0.55rem 0 0",
+  color: "#b91c1c",
+  fontWeight: 600,
+};
+
+const averageMonthlyFieldStyle = {
+  marginTop: "1rem",
+  padding: "0.75rem",
+  border: "1px solid #cbd5e1",
+  borderRadius: "8px",
+};
+
+const averageMonthlyHeadingStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "0.75rem",
+  marginBottom: "0.6rem",
+  flexWrap: "wrap",
+};
 
 const tableHeaderStyle = {
   textAlign: "left",

@@ -1,15 +1,15 @@
 const AUXILIARY_EXTRA_CONTRIBUTION_OPTIONS = [
   { value: "", label: "Επιλέξτε" },
-  { value: "no_extra", label: "Όχι, μόνο η κανονική επικουρική εισφορά" },
-  { value: "extra_1_2", label: "Ναι, περίπου +1,2%" },
-  { value: "extra_2", label: "Ναι, περίπου +2%" },
-  { value: "extra_2_5", label: "Ναι, περίπου +2,5%" },
-  { value: "extra_3", label: "Ναι, περίπου +3%" },
-  { value: "extra_5", label: "Ναι, περίπου +5%" },
-  { value: "extra_6", label: "Ναι, περίπου +6%" },
-  { value: "extra_6_5", label: "Ναι, περίπου +6,5%" },
-  { value: "extra_8_75", label: "Ναι, περίπου +8,75%" },
-  { value: "extra_10", label: "Ναι, περίπου +10%" },
+  { value: "no_extra", label: "Όχι, μόνο την κανονική εισφορά" },
+  { value: "extra_1_2", label: "Ναι, περίπου 1,2% επιπλέον" },
+  { value: "extra_2", label: "Ναι, περίπου 2% επιπλέον" },
+  { value: "extra_2_5", label: "Ναι, περίπου 2,5% επιπλέον" },
+  { value: "extra_3", label: "Ναι, περίπου 3% επιπλέον" },
+  { value: "extra_5", label: "Ναι, περίπου 5% επιπλέον" },
+  { value: "extra_6", label: "Ναι, περίπου 6% επιπλέον" },
+  { value: "extra_6_5", label: "Ναι, περίπου 6,5% επιπλέον" },
+  { value: "extra_8_75", label: "Ναι, περίπου 8,75% επιπλέον" },
+  { value: "extra_10", label: "Ναι, περίπου 10% επιπλέον" },
   { value: "unknown", label: "Δεν γνωρίζω" },
 ];
 
@@ -342,7 +342,7 @@ function getFormerAuxiliaryFundOptionsForFund(fund) {
   return [
     {
       value: "",
-      label: "Επιλέξτε πρώην επικουρικό ταμείο",
+      label: "Επιλέξτε επικουρικό ταμείο",
     },
     ...metadataEntries.map((metadata) => ({
       value: metadata.code,
@@ -350,7 +350,7 @@ function getFormerAuxiliaryFundOptionsForFund(fund) {
     })),
     {
       value: FORMER_AUXILIARY_FUND_OTHER_UNMAPPED,
-      label: "Δεν βρίσκεται στη λίστα / δεν γνωρίζω το πρώην επικουρικό ταμείο",
+      label: "Δεν βρίσκεται στη λίστα / δεν γνωρίζω",
     },
   ];
 }
@@ -412,8 +412,7 @@ function resolveAuxiliaryFormClassification({
   ) {
     return createClassification({
       code: "former_auxiliary_fund_required",
-      label:
-        "Χρειάζεται επιλογή της πραγματικής ομάδας εργαζομένων / του πρώην επικουρικού ταμείου",
+      label: "Χρειάζεται να επιλέξετε το επικουρικό ταμείο",
       hasAuxiliary: true,
       requiresFormerAuxiliaryFundChoice: true,
     });
@@ -433,7 +432,7 @@ function resolveAuxiliaryFormClassification({
       formerAuxiliaryFundLabel: "Άγνωστο / μη καταγεγραμμένο ταμείο",
       warning: combineWarnings(
         baseClassification.warning,
-        "Δεν προσδιορίστηκε ακριβής πρώην επικουρικός φορέας. Για παλαιό ασφαλισμένο το NDC μπορεί να παραμείνει σε εκκρεμότητα επειδή δεν επιλέγεται με ασφάλεια ράντα.",
+        "Δεν επιλέχθηκε συγκεκριμένο επικουρικό ταμείο. Ο υπολογισμός του παλιού χρόνου επικουρικής μπορεί να μείνει εκκρεμής.",
       ),
     };
   }
@@ -589,7 +588,7 @@ function resolveBaseClassification({
     if (!normalizedChoice) {
       return createClassification({
         code: "manual_extra_required",
-        label: "Απαιτείται μία επιλογή για την πρόσθετη επικουρική εισφορά",
+        label: "Απαντήστε αν πληρώνατε επιπλέον επικουρική εισφορά",
         hasAuxiliary: true,
         requiresUserChoice: true,
       });
@@ -616,14 +615,14 @@ function createManualChoiceClassification({
       code: "manual_extra_unknown",
       label: labelPrefix
         ? `${labelPrefix} — άγνωστη πρόσθετη εισφορά`
-        : "Άγνωστη πρόσθετη εισφορά — υπολογισμός χωρίς προσαύξηση",
+        : "Δεν είναι γνωστή η επιπλέον εισφορά — υπολογισμός χωρίς προσαύξηση",
       hasAuxiliary: true,
       requiresUserChoice: true,
       userChoice: normalizedChoice,
       extraContributionRatePercent: 0,
       isProvisional: true,
       warning:
-        "Δεν δηλώθηκε γνωστό πρόσθετο ποσοστό επικουρικής. Η περίοδος θα υπολογιστεί χωρίς πρόσθετη προσαύξηση.",
+        "Δεν είναι γνωστό το επιπλέον ποσοστό επικουρικής. Η περίοδος θα υπολογιστεί χωρίς πρόσθετη προσαύξηση.",
       formerAuxiliaryFundSelection,
       formerAuxiliaryFund,
       formerAuxiliaryFundLabel,
@@ -642,7 +641,7 @@ function createManualChoiceClassification({
       normalizedChoice === "no_extra"
         ? labelPrefix
           ? `${labelPrefix} — δηλώθηκε χωρίς πρόσθετη εισφορά`
-          : "Ο χρήστης δήλωσε ότι δεν υπήρχε πρόσθετη επικουρική εισφορά"
+          : "Δηλώθηκε ότι δεν υπήρχε επιπλέον επικουρική εισφορά"
         : labelPrefix
           ? `${labelPrefix} — πρόσθετη εισφορά περίπου +${formatRate(rate)}%`
           : `Πρόσθετη επικουρική εισφορά περίπου +${formatRate(rate)}%`,

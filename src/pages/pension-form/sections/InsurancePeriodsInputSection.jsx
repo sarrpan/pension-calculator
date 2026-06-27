@@ -1,8 +1,11 @@
-
-
-
 import React from 'react';
 
+import FreeInsuranceCategoryWizard from '../components/FreeInsuranceCategoryWizard';
+import {
+  getDefaultEmploymentCategoryForFund,
+  getEmploymentCategoryLabel,
+  getEmploymentCategoryOptionsForFund,
+} from '../data/insuranceFundWorkTypeRules';
 import { fieldsetStyle } from '../utils/calculatorStyles';
 
 function InsurancePeriodsInputSection({
@@ -21,6 +24,7 @@ function InsurancePeriodsInputSection({
   simpleInsuranceExtraDaysInput,
   simpleUniformedSpecialTimeDraft,
   calculatorEdition = 'professional',
+  globalInsuredTypeInput = '',
   article30SpecialRegimeUsageInput,
   insurancePeriodGroups,
   maxInsurancePeriodGroups = 10,
@@ -95,25 +99,10 @@ function InsurancePeriodsInputSection({
       return;
     }
 
-    if (isUniformedFund(value)) {
-      onSimpleInsuredTypeChange('');
-      onSimpleEmploymentCategoryChange('common');
-      onSimpleUniformedSpecialTimeDraftChange(createEmptyUniformedSpecialTimeDraft());
-      return;
-    }
-
-    if (
-      isArticle30MainContributionFund(value) ||
-      isSalariedTsayFund(value)
-    ) {
-      onSimpleInsuredTypeChange('');
-      onSimpleEmploymentCategoryChange('common');
-      onSimpleUniformedSpecialTimeDraftChange(createEmptyUniformedSpecialTimeDraft());
-      return;
-    }
-
     onSimpleInsuredTypeChange('');
-    onSimpleEmploymentCategoryChange('');
+    onSimpleEmploymentCategoryChange(
+      getDefaultEmploymentCategoryForFund(value)
+    );
     onSimpleUniformedSpecialTimeDraftChange(createEmptyUniformedSpecialTimeDraft());
   }
 
@@ -127,140 +116,868 @@ function InsurancePeriodsInputSection({
         Ο συνολικός χρόνος θα προκύψει αυτόματα από το άθροισμα των περιόδων.
       </p>
 
-      <div style={{ marginTop: '1rem' }}>
-        {safeInsurancePeriodGroups.map((group, index) => (
-          <InsurancePeriodGroupFields
-            key={group.id}
-            groupNumber={index + 1}
-            title={`Ασφαλιστική περίοδος ${index + 1}`}
-            group={group}
-            canRemove={safeInsurancePeriodGroups.length > 1}
-            onGroupChange={(field, value) => {
-              onInsurancePeriodGroupChange(group.id, field, value);
-            }}
-            onRemove={() => {
-              onRemoveInsurancePeriodGroup(group.id);
-            }}
-          />
-        ))}
+      {calculatorEdition === 'free' ? (
+        <FreeInsurancePeriodsFlow
+          insurancePeriodGroups={safeInsurancePeriodGroups}
+          maxInsurancePeriodGroups={maxInsurancePeriodGroups}
+          globalInsuredTypeInput={globalInsuredTypeInput}
+          specialRegimeUsageInput={
+            normalizedSpecialRegimeUsageInput
+          }
+          onSpecialRegimeUsageChange={
+            onArticle30SpecialRegimeUsageChange
+          }
+          onInsurancePeriodGroupChange={
+            onInsurancePeriodGroupChange
+          }
+          onAddInsurancePeriodGroup={onAddInsurancePeriodGroup}
+          onRemoveInsurancePeriodGroup={
+            onRemoveInsurancePeriodGroup
+          }
+        />
+      ) : (
+        <div style={{ marginTop: '1rem' }}>
+          {safeInsurancePeriodGroups.map((group, index) => (
+            <InsurancePeriodGroupFields
+              key={group.id}
+              groupNumber={index + 1}
+              title={`Ασφαλιστική περίοδος ${index + 1}`}
+              group={group}
+              canRemove={safeInsurancePeriodGroups.length > 1}
+              onGroupChange={(field, value) => {
+                onInsurancePeriodGroupChange(
+                  group.id,
+                  field,
+                  value
+                );
+              }}
+              onRemove={() => {
+                onRemoveInsurancePeriodGroup(group.id);
+              }}
+            />
+          ))}
 
-        <button
-          type="button"
-          onClick={onAddInsurancePeriodGroup}
-          disabled={safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups}
-          style={{
-            ...secondaryButtonStyle,
-            cursor:
-              safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups
-                ? 'not-allowed'
-                : 'pointer',
-          }}
-        >
-          + Προσθήκη ασφαλιστικής περιόδου
-        </button>
+          <button
+            type="button"
+            onClick={onAddInsurancePeriodGroup}
+            disabled={
+              safeInsurancePeriodGroups.length >=
+              maxInsurancePeriodGroups
+            }
+            style={{
+              ...secondaryButtonStyle,
+              cursor:
+                safeInsurancePeriodGroups.length >=
+                maxInsurancePeriodGroups
+                  ? 'not-allowed'
+                  : 'pointer',
+            }}
+          >
+            + Προσθήκη ασφαλιστικής περιόδου
+          </button>
 
-        {safeInsurancePeriodGroups.length >= maxInsurancePeriodGroups && (
-          <p style={{ color: '#8a5a00', marginBottom: 0 }}>
-            Έχει συμπληρωθεί το μέγιστο όριο των {maxInsurancePeriodGroups}{' '}
-            περιόδων.
-          </p>
-        )}
-      </div>
+          {safeInsurancePeriodGroups.length >=
+            maxInsurancePeriodGroups && (
+            <p style={{ color: '#8a5a00', marginBottom: 0 }}>
+              Έχει συμπληρωθεί το μέγιστο όριο των{' '}
+              {maxInsurancePeriodGroups} περιόδων.
+            </p>
+          )}
+        </div>
+      )}
 
       {calculatorEdition !== 'free' &&
         conditionalPremiumPresence.hasAny && (
-          <div style={specialRegimeBoxStyle}>
-            <h3 style={{ marginTop: 0 }}>
-              Ειδικές διατάξεις και επασφάλιστρο
-            </h3>
-
-            {conditionalPremiumPresence.vae && (
-              <SelectWithLabel
-                id="article30SpecialRegimeUsageVae"
-                label="Η συνταξιοδότηση γίνεται με ειδικές διατάξεις ΒΑΕ;"
-                value={normalizedSpecialRegimeUsageInput.vae}
-                onChange={(value) =>
-                  onArticle30SpecialRegimeUsageChange('vae', value)
-                }
-                options={SPECIAL_REGIME_USAGE_OPTIONS}
-              />
-            )}
-
-            {conditionalPremiumPresence.yvae && (
-              <SelectWithLabel
-                id="article30SpecialRegimeUsageYvae"
-                label="Η συνταξιοδότηση γίνεται με ειδικές διατάξεις ΥΒΑΕ;"
-                value={normalizedSpecialRegimeUsageInput.yvae}
-                onChange={(value) =>
-                  onArticle30SpecialRegimeUsageChange('yvae', value)
-                }
-                options={SPECIAL_REGIME_USAGE_OPTIONS}
-              />
-            )}
-
-            {conditionalPremiumPresence.ota_ika_vae && (
-              <SelectWithLabel
-                id="article30SpecialRegimeUsageOtaIkaVae"
-                label="Η συνταξιοδότηση γίνεται με τις ειδικές διατάξεις ΒΑΕ ΟΤΑ του πρώην ΙΚΑ;"
-                value={normalizedSpecialRegimeUsageInput.ota_ika_vae}
-                onChange={(value) =>
-                  onArticle30SpecialRegimeUsageChange(
-                    'ota_ika_vae',
-                    value
-                  )
-                }
-                options={SPECIAL_REGIME_USAGE_OPTIONS}
-              />
-            )}
-
-            {conditionalPremiumPresence.ota_public_vae && (
-              <SelectWithLabel
-                id="article30SpecialRegimeUsageOtaPublicVae"
-                label="Η συνταξιοδότηση γίνεται με τις ειδικές διατάξεις ΒΑΕ ΟΤΑ του καθεστώτος Δημοσίου;"
-                value={normalizedSpecialRegimeUsageInput.ota_public_vae}
-                onChange={(value) =>
-                  onArticle30SpecialRegimeUsageChange(
-                    'ota_public_vae',
-                    value
-                  )
-                }
-                options={SPECIAL_REGIME_USAGE_OPTIONS}
-              />
-            )}
-
-            {conditionalPremiumPresence.ota_ika_yvae && (
-              <SelectWithLabel
-                id="article30SpecialRegimeUsageOtaIkaYvae"
-                label="Η συνταξιοδότηση γίνεται με τις ειδικές διατάξεις ΥΒΑΕ καθαριότητας / αποκομιδής ΟΤΑ;"
-                value={normalizedSpecialRegimeUsageInput.ota_ika_yvae}
-                onChange={(value) =>
-                  onArticle30SpecialRegimeUsageChange(
-                    'ota_ika_yvae',
-                    value
-                  )
-                }
-                options={SPECIAL_REGIME_USAGE_OPTIONS}
-              />
-            )}
-
-            <p style={{ color: '#475569', marginBottom: 0 }}>
-              Για κάθε ειδική κατηγορία δηλώνεται ξεχωριστά αν
-              χρησιμοποιείται η αντίστοιχη ειδική διάταξη εξόδου. Με «Ναι»
-              δεν υπολογίζεται ξανά η ίδια πρόσθετη εισφορά. Με «Δεν
-              γνωρίζω» το συγκεκριμένο επασφάλιστρο δεν προστίθεται και
-              εμφανίζεται προειδοποίηση.
-            </p>
-          </div>
+          <Article30SpecialRegimeFields
+            presence={conditionalPremiumPresence}
+            usageInput={normalizedSpecialRegimeUsageInput}
+            onUsageChange={
+              onArticle30SpecialRegimeUsageChange
+            }
+          />
         )}
 
     </fieldset>
   );
 }
 
+
+function FreeInsurancePeriodsFlow({
+  insurancePeriodGroups,
+  maxInsurancePeriodGroups,
+  globalInsuredTypeInput,
+  specialRegimeUsageInput,
+  onSpecialRegimeUsageChange,
+  onInsurancePeriodGroupChange,
+  onAddInsurancePeriodGroup,
+  onRemoveInsurancePeriodGroup,
+}) {
+  const groups = Array.isArray(insurancePeriodGroups)
+    ? insurancePeriodGroups
+    : [];
+
+  const initialCompletedPeriodIds = groups
+    .filter((group) => {
+      const presence = getConditionalPremiumPresence({
+        insurancePeriodsInputMode: 'multiple',
+        simpleEmploymentCategoryInput: '',
+        insurancePeriodGroups: [group],
+      });
+
+      return !getFreePeriodCompletionIssue({
+        group,
+        specialRegimePresence: presence,
+        specialRegimeUsageInput,
+        globalInsuredTypeInput,
+      });
+    })
+    .map((group) => group.id);
+
+  const initialOpenGroup = groups.find(
+    (group) => !initialCompletedPeriodIds.includes(group.id)
+  );
+
+  const [completedPeriodIds, setCompletedPeriodIds] =
+    React.useState(initialCompletedPeriodIds);
+  const [editingPeriodId, setEditingPeriodId] = React.useState(
+    initialOpenGroup?.id || ''
+  );
+  const [selectingFundPeriodId, setSelectingFundPeriodId] =
+    React.useState(
+      initialOpenGroup && !initialOpenGroup.fund
+        ? initialOpenGroup.id
+        : ''
+    );
+  const [completionErrors, setCompletionErrors] = React.useState({});
+  const previousPeriodIdsRef = React.useRef(
+    groups.map((group) => group.id)
+  );
+
+  const periodIdsKey = groups.map((group) => group.id).join('|');
+
+  React.useEffect(() => {
+    const currentIds = groups.map((group) => group.id);
+    const previousIds = previousPeriodIdsRef.current;
+    const addedGroup = groups.find(
+      (group) => !previousIds.includes(group.id)
+    );
+
+    setCompletedPeriodIds((current) =>
+      current.filter((periodId) => currentIds.includes(periodId))
+    );
+    setCompletionErrors((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([periodId]) =>
+          currentIds.includes(periodId)
+        )
+      )
+    );
+
+    if (addedGroup) {
+      const presence = getConditionalPremiumPresence({
+        insurancePeriodsInputMode: 'multiple',
+        simpleEmploymentCategoryInput: '',
+        insurancePeriodGroups: [addedGroup],
+      });
+      const issue = getFreePeriodCompletionIssue({
+        group: addedGroup,
+        specialRegimePresence: presence,
+        specialRegimeUsageInput,
+        globalInsuredTypeInput,
+      });
+
+      if (issue) {
+        setEditingPeriodId(addedGroup.id);
+        setSelectingFundPeriodId(
+          addedGroup.fund ? '' : addedGroup.id
+        );
+      } else {
+        setCompletedPeriodIds((current) => [
+          ...new Set([...current, addedGroup.id]),
+        ]);
+      }
+    } else {
+      setEditingPeriodId((current) =>
+        current && currentIds.includes(current) ? current : ''
+      );
+      setSelectingFundPeriodId((current) =>
+        current && currentIds.includes(current) ? current : ''
+      );
+    }
+
+    previousPeriodIdsRef.current = currentIds;
+  }, [periodIdsKey]);
+
+  const completedPeriodIdSet = new Set(completedPeriodIds);
+  const specialRegimeUsageKey = [
+    'vae',
+    'yvae',
+    'ota_ika_vae',
+    'ota_public_vae',
+    'ota_ika_yvae',
+  ]
+    .map((premiumType) =>
+      specialRegimeUsageInput[premiumType] || ''
+    )
+    .join('|');
+  const completionRelevantKey = groups
+    .map((group) =>
+      [
+        group.id,
+        group.fund,
+        group.insuredType,
+        group.employmentCategory,
+        group.fromDate,
+        group.toDate,
+        group.timeInputMethod,
+        group.insuranceDays,
+        group.insuranceYears,
+        group.insuranceMonths,
+        group.insuranceExtraDays,
+        group.nonSalariedEarningsInputMode,
+        group.tsaySinglePensionerStatus,
+      ].join('~')
+    )
+    .join('|');
+
+  React.useEffect(() => {
+    setCompletedPeriodIds((current) =>
+      current.filter((periodId) => {
+        const group = groups.find(
+          (candidate) => candidate.id === periodId
+        );
+
+        if (!group) {
+          return false;
+        }
+
+        const presence = getConditionalPremiumPresence({
+          insurancePeriodsInputMode: 'multiple',
+          simpleEmploymentCategoryInput: '',
+          insurancePeriodGroups: [group],
+        });
+
+        return !getFreePeriodCompletionIssue({
+          group,
+          specialRegimePresence: presence,
+          specialRegimeUsageInput,
+          globalInsuredTypeInput,
+        });
+      })
+    );
+  }, [
+    completionRelevantKey,
+    globalInsuredTypeInput,
+    specialRegimeUsageKey,
+  ]);
+
+  function clearCompletionError(periodId) {
+    setCompletionErrors((current) => {
+      if (!current[periodId]) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[periodId];
+      return next;
+    });
+  }
+
+  function markPeriodAsEditing(periodId, selectFund = false) {
+    setCompletedPeriodIds((current) =>
+      current.filter((currentId) => currentId !== periodId)
+    );
+    setEditingPeriodId(periodId);
+    setSelectingFundPeriodId(selectFund ? periodId : '');
+    clearCompletionError(periodId);
+  }
+
+  function handleGroupChange(groupId, field, value) {
+    onInsurancePeriodGroupChange(groupId, field, value);
+    setCompletedPeriodIds((current) =>
+      current.filter((currentId) => currentId !== groupId)
+    );
+    clearCompletionError(groupId);
+  }
+
+  function handleFundSelected(groupId) {
+    setEditingPeriodId(groupId);
+    setSelectingFundPeriodId('');
+    clearCompletionError(groupId);
+  }
+
+  function handleCompletePeriod(group, groupIndex) {
+    const specialRegimePresence = getConditionalPremiumPresence({
+      insurancePeriodsInputMode: 'multiple',
+      simpleEmploymentCategoryInput: '',
+      insurancePeriodGroups: [group],
+    });
+    const issue = getFreePeriodCompletionIssue({
+      group,
+      specialRegimePresence,
+      specialRegimeUsageInput,
+      globalInsuredTypeInput,
+    });
+
+    if (issue) {
+      setCompletionErrors((current) => ({
+        ...current,
+        [group.id]: issue,
+      }));
+      return;
+    }
+
+    setCompletedPeriodIds((current) => [
+      ...new Set([...current, group.id]),
+    ]);
+    clearCompletionError(group.id);
+
+    const nextGroup = groups
+      .slice(groupIndex + 1)
+      .find(
+        (candidate) =>
+          !completedPeriodIdSet.has(candidate.id)
+      );
+
+    if (nextGroup) {
+      setEditingPeriodId(nextGroup.id);
+      setSelectingFundPeriodId(
+        nextGroup.fund ? '' : nextGroup.id
+      );
+      return;
+    }
+
+    setEditingPeriodId('');
+    setSelectingFundPeriodId('');
+  }
+
+  function handleAddPeriod() {
+    onAddInsurancePeriodGroup();
+  }
+
+  function handleRemovePeriod(groupId) {
+    onRemoveInsurancePeriodGroup(groupId);
+    setCompletedPeriodIds((current) =>
+      current.filter((currentId) => currentId !== groupId)
+    );
+    setEditingPeriodId((current) =>
+      current === groupId ? '' : current
+    );
+    setSelectingFundPeriodId((current) =>
+      current === groupId ? '' : current
+    );
+    clearCompletionError(groupId);
+  }
+
+  const firstPeriodCompleted = Boolean(
+    groups[0] && completedPeriodIdSet.has(groups[0].id)
+  );
+  const hasUnfinishedPeriod = groups.some(
+    (group) => !completedPeriodIdSet.has(group.id)
+  );
+  const canAddSecondPeriod =
+    groups.length < maxInsurancePeriodGroups &&
+    firstPeriodCompleted &&
+    !hasUnfinishedPeriod;
+
+  return (
+    <div style={freeFlowStyle}>
+      {groups.map((group, index) => {
+        const isCompleted = completedPeriodIdSet.has(group.id);
+        const isEditing = editingPeriodId === group.id;
+        const isSelectingFund =
+          selectingFundPeriodId === group.id || !group.fund;
+        const periodTitle =
+          index === 0
+            ? 'Πρώτη ασφαλιστική περίοδος'
+            : 'Δεύτερη ασφαλιστική περίοδος';
+
+        if (!isEditing) {
+          return (
+            <FreeInsurancePeriodSummary
+              key={group.id}
+              group={group}
+              title={periodTitle}
+              isCompleted={isCompleted}
+              canRemove={index > 0}
+              onEditDetails={() =>
+                markPeriodAsEditing(group.id, false)
+              }
+              onEditFund={() =>
+                markPeriodAsEditing(group.id, true)
+              }
+              onRemove={() => handleRemovePeriod(group.id)}
+            />
+          );
+        }
+
+        if (isSelectingFund) {
+          return (
+            <div key={group.id} style={freeActiveCardStyle}>
+              <FreeFlowHeading
+                step="Βήμα 1"
+                title={periodTitle}
+                description="Επιλέξτε πρώτα τη γενική κατηγορία και μετά τον συγκεκριμένο ασφαλιστικό φορέα."
+              />
+
+              <FreeInsuranceCategoryWizard
+                group={group}
+                groupNumber={index + 1}
+                canRemove={index > 0}
+                onInsurancePeriodGroupChange={(
+                  groupId,
+                  field,
+                  value
+                ) => {
+                  const resolvedValue =
+                    field === 'insuredType' &&
+                    value === '' &&
+                    globalInsuredTypeInput
+                      ? globalInsuredTypeInput
+                      : value;
+
+                  onInsurancePeriodGroupChange(
+                    groupId,
+                    field,
+                    resolvedValue
+                  );
+                }}
+                onFundSelected={() =>
+                  handleFundSelected(group.id)
+                }
+                onRemove={() => handleRemovePeriod(group.id)}
+              />
+            </div>
+          );
+        }
+
+        const specialRegimePresence =
+          getConditionalPremiumPresence({
+            insurancePeriodsInputMode: 'multiple',
+            simpleEmploymentCategoryInput: '',
+            insurancePeriodGroups: [group],
+          });
+
+        return (
+          <div key={group.id} style={freeActiveCardStyle}>
+            <FreeFlowHeading
+              step="Βήμα 2"
+              title={`Στοιχεία ${periodTitle.toLowerCase()}`}
+              description="Συμπληρώστε τα στοιχεία και ολοκληρώστε την περίοδο. Μετά θα εμφανίζεται μόνο η σύνοψή της."
+            />
+
+            <div style={selectedFundBarStyle}>
+              <div>
+                <span style={selectedFundCaptionStyle}>
+                  Επιλεγμένος φορέας
+                </span>
+                <strong>{getFundOptionLabel(group.fund)}</strong>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  markPeriodAsEditing(group.id, true)
+                }
+                style={compactActionButtonStyle}
+              >
+                Αλλαγή φορέα
+              </button>
+            </div>
+
+            <InsurancePeriodGroupFields
+              groupNumber={index + 1}
+              title={periodTitle}
+              group={group}
+              hideFundSelection
+              hideInsuredTypeSelection
+              hideSingleEmploymentCategory
+              useEmploymentCategoryRadios
+              canRemove={false}
+              onGroupChange={(field, value) =>
+                handleGroupChange(group.id, field, value)
+              }
+              onRemove={() => {}}
+            />
+
+            {specialRegimePresence.hasAny && (
+              <Article30SpecialRegimeFields
+                presence={specialRegimePresence}
+                usageInput={specialRegimeUsageInput}
+                onUsageChange={(premiumType, value) => {
+                  onSpecialRegimeUsageChange(
+                    premiumType,
+                    value
+                  );
+                  clearCompletionError(group.id);
+                }}
+              />
+            )}
+
+            {completionErrors[group.id] && (
+              <div style={freeCompletionErrorStyle}>
+                {completionErrors[group.id]}
+              </div>
+            )}
+
+            <div style={freeEditorActionsStyle}>
+              {index > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemovePeriod(group.id)}
+                  style={freeRemoveButtonStyle}
+                >
+                  Αφαίρεση περιόδου
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => handleCompletePeriod(group, index)}
+                style={freeCompleteButtonStyle}
+              >
+                Ολοκλήρωση ασφαλιστικής περιόδου
+              </button>
+            </div>
+          </div>
+        );
+      })}
+
+      {canAddSecondPeriod && (
+        <button
+          type="button"
+          onClick={handleAddPeriod}
+          style={freeAddPeriodButtonStyle}
+        >
+          + Προσθήκη δεύτερης ασφαλιστικής περιόδου
+        </button>
+      )}
+
+      {groups.length === maxInsurancePeriodGroups &&
+        groups.every((group) =>
+          completedPeriodIdSet.has(group.id)
+        ) && (
+          <div style={freeAllCompleteStyle}>
+            Οι ασφαλιστικές περίοδοι ολοκληρώθηκαν. Μπορείτε να
+            συνεχίσετε στα επόμενα στοιχεία της σύνταξης.
+          </div>
+        )}
+    </div>
+  );
+}
+
+function FreeFlowHeading({ step, title, description }) {
+  return (
+    <div style={freeFlowHeadingStyle}>
+      <span style={freeFlowStepStyle}>{step}</span>
+      <div>
+        <h2 style={freeFlowTitleStyle}>{title}</h2>
+        <p style={freeFlowDescriptionStyle}>{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function FreeInsurancePeriodSummary({
+  group,
+  title,
+  isCompleted,
+  canRemove,
+  onEditDetails,
+  onEditFund,
+  onRemove,
+}) {
+  return (
+    <div
+      style={{
+        ...freeSummaryCardStyle,
+        ...(isCompleted
+          ? freeCompletedSummaryCardStyle
+          : freePendingSummaryCardStyle),
+      }}
+    >
+      <div style={freeSummaryHeaderStyle}>
+        <div>
+          <strong>{title}</strong>
+          <span style={freeSummaryStatusStyle}>
+            {isCompleted
+              ? 'Ολοκληρωμένη'
+              : 'Δεν έχει ολοκληρωθεί'}
+          </span>
+        </div>
+
+        <div style={freeSummaryActionsStyle}>
+          {group.fund && (
+            <button
+              type="button"
+              onClick={onEditFund}
+              style={compactActionButtonStyle}
+            >
+              Αλλαγή φορέα
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onEditDetails}
+            style={compactActionButtonStyle}
+          >
+            {isCompleted ? 'Αλλαγή στοιχείων' : 'Συνέχεια'}
+          </button>
+          {canRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              style={freeCompactRemoveButtonStyle}
+            >
+              Αφαίρεση
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div style={freeSummaryDetailsStyle}>
+        <strong>
+          {group.fund
+            ? getFundOptionLabel(group.fund)
+            : 'Δεν έχει επιλεγεί φορέας'}
+        </strong>
+        {group.employmentCategory && (
+          <span>
+            {getEmploymentCategoryOptionLabel(
+              group.employmentCategory
+            )}
+          </span>
+        )}
+        {(group.fromDate || group.toDate) && (
+          <span>
+            {group.fromDate || '—'} έως {group.toDate || '—'}
+          </span>
+        )}
+        {getFreeInsuranceTimeSummary(group) && (
+          <span>{getFreeInsuranceTimeSummary(group)}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Article30SpecialRegimeFields({
+  presence,
+  usageInput,
+  onUsageChange,
+}) {
+  return (
+    <div style={specialRegimeBoxStyle}>
+      <h3 style={{ marginTop: 0 }}>
+        Ειδικές διατάξεις και επασφάλιστρο
+      </h3>
+
+      {presence.vae && (
+        <SelectWithLabel
+          id="article30SpecialRegimeUsageVae"
+          label="Η συνταξιοδότηση γίνεται με ειδικές διατάξεις ΒΑΕ;"
+          value={usageInput.vae}
+          onChange={(value) => onUsageChange('vae', value)}
+          options={SPECIAL_REGIME_USAGE_OPTIONS}
+        />
+      )}
+
+      {presence.yvae && (
+        <SelectWithLabel
+          id="article30SpecialRegimeUsageYvae"
+          label="Η συνταξιοδότηση γίνεται με ειδικές διατάξεις ΥΒΑΕ;"
+          value={usageInput.yvae}
+          onChange={(value) => onUsageChange('yvae', value)}
+          options={SPECIAL_REGIME_USAGE_OPTIONS}
+        />
+      )}
+
+      {presence.ota_ika_vae && (
+        <SelectWithLabel
+          id="article30SpecialRegimeUsageOtaIkaVae"
+          label="Η συνταξιοδότηση γίνεται με τις ειδικές διατάξεις ΒΑΕ ΟΤΑ του πρώην ΙΚΑ;"
+          value={usageInput.ota_ika_vae}
+          onChange={(value) =>
+            onUsageChange('ota_ika_vae', value)
+          }
+          options={SPECIAL_REGIME_USAGE_OPTIONS}
+        />
+      )}
+
+      {presence.ota_public_vae && (
+        <SelectWithLabel
+          id="article30SpecialRegimeUsageOtaPublicVae"
+          label="Η συνταξιοδότηση γίνεται με τις ειδικές διατάξεις ΒΑΕ ΟΤΑ του καθεστώτος Δημοσίου;"
+          value={usageInput.ota_public_vae}
+          onChange={(value) =>
+            onUsageChange('ota_public_vae', value)
+          }
+          options={SPECIAL_REGIME_USAGE_OPTIONS}
+        />
+      )}
+
+      {presence.ota_ika_yvae && (
+        <SelectWithLabel
+          id="article30SpecialRegimeUsageOtaIkaYvae"
+          label="Η συνταξιοδότηση γίνεται με τις ειδικές διατάξεις ΥΒΑΕ καθαριότητας / αποκομιδής ΟΤΑ;"
+          value={usageInput.ota_ika_yvae}
+          onChange={(value) =>
+            onUsageChange('ota_ika_yvae', value)
+          }
+          options={SPECIAL_REGIME_USAGE_OPTIONS}
+        />
+      )}
+
+      <p style={{ color: '#475569', marginBottom: 0 }}>
+        Με «Ναι» ή «Δεν γνωρίζω» το συγκεκριμένο
+        επασφάλιστρο δεν προστίθεται. Με «Δεν γνωρίζω»
+        εμφανίζεται επιπλέον σχετική προειδοποίηση.
+      </p>
+    </div>
+  );
+}
+
+function getFreePeriodCompletionIssue({
+  group,
+  specialRegimePresence,
+  specialRegimeUsageInput,
+  globalInsuredTypeInput,
+}) {
+  if (!group?.fund) {
+    return 'Επιλέξτε ασφαλιστικό φορέα.';
+  }
+
+  if (!globalInsuredTypeInput) {
+    return 'Συμπληρώστε πρώτα το έτος πρώτης ασφάλισης στα βασικά στοιχεία.';
+  }
+
+  if (!group.insuredType) {
+    return 'Ο χαρακτηρισμός παλαιού ή νέου ασφαλισμένου δεν μπόρεσε να υπολογιστεί.';
+  }
+
+  if (!group.employmentCategory) {
+    return 'Επιλέξτε την κατηγορία εργασίας ή εισφορών.';
+  }
+
+  if (!String(group.fromDate || '').trim()) {
+    return 'Συμπληρώστε την ημερομηνία έναρξης.';
+  }
+
+  if (!String(group.toDate || '').trim()) {
+    return 'Συμπληρώστε την ημερομηνία λήξης.';
+  }
+
+  if (!group.timeInputMethod) {
+    return 'Επιλέξτε τον τρόπο εισαγωγής του χρόνου ασφάλισης.';
+  }
+
+  if (group.timeInputMethod === 'insurance_days') {
+    const days = Number(group.insuranceDays);
+
+    if (!Number.isFinite(days) || days <= 0) {
+      return 'Συμπληρώστε τις ημέρες ή τα ένσημα ασφάλισης.';
+    }
+  }
+
+  if (group.timeInputMethod === 'years_months_days') {
+    const totalDeclaredTime =
+      Number(group.insuranceYears || 0) +
+      Number(group.insuranceMonths || 0) +
+      Number(group.insuranceExtraDays || 0);
+
+    if (!Number.isFinite(totalDeclaredTime) || totalDeclaredTime <= 0) {
+      return 'Συμπληρώστε έτη, μήνες ή ημέρες ασφάλισης.';
+    }
+  }
+
+  if (
+    isContributionBasedFund(group.fund) &&
+    !group.nonSalariedEarningsInputMode
+  ) {
+    return 'Επιλέξτε αν γνωρίζετε το ετήσιο εισόδημα ή τις ετήσιες εισφορές κύριας σύνταξης.';
+  }
+
+  if (
+    isTsayFund(group.fund) &&
+    !['yes', 'no'].includes(group.tsaySinglePensionerStatus)
+  ) {
+    return 'Απαντήστε για τον Κλάδο Μονοσυνταξιούχων ΤΣΑΥ.';
+  }
+
+  if (
+    isUniformedFund(group.fund) &&
+    !group.uniformedSpecialTimeDraft?.insuranceRegime
+  ) {
+    return 'Επιλέξτε το καθεστώς κατάταξης του ενστόλου.';
+  }
+
+  for (const premiumType of [
+    'vae',
+    'yvae',
+    'ota_ika_vae',
+    'ota_public_vae',
+    'ota_ika_yvae',
+  ]) {
+    if (
+      specialRegimePresence[premiumType] &&
+      !specialRegimeUsageInput[premiumType]
+    ) {
+      return 'Απαντήστε στην ερώτηση για τις ειδικές διατάξεις και το επασφάλιστρο.';
+    }
+  }
+
+  return '';
+}
+
+function getFreeInsuranceTimeSummary(group) {
+  if (group.timeInputMethod === 'insurance_days') {
+    return group.insuranceDays
+      ? `${group.insuranceDays} ημέρες ασφάλισης`
+      : '';
+  }
+
+  if (group.timeInputMethod === 'years_months_days') {
+    const years = group.insuranceYears || '0';
+    const months = group.insuranceMonths || '0';
+    const days = group.insuranceExtraDays || '0';
+
+    return `${years} έτη, ${months} μήνες, ${days} ημέρες`;
+  }
+
+  return '';
+}
+
+function getFundOptionLabel(value) {
+  return (
+    FUND_OPTIONS.find((option) => option.value === value)?.label ||
+    value ||
+    ''
+  );
+}
+
+function getInsuredTypeOptionLabel(value) {
+  if (value === 'not_applicable') {
+    return 'Δεν απαιτείται για αυτή την κατηγορία';
+  }
+
+  const option = OLD_NEW_INSURED_OPTIONS.find(
+    (candidate) => candidate.value === value
+  );
+
+  return option?.label || value || '—';
+}
+
+function getEmploymentCategoryOptionLabel(value) {
+  return getEmploymentCategoryLabel(value);
+}
+
 function InsurancePeriodGroupFields({
   groupNumber,
   title,
   group,
+  hideFundSelection = false,
+  hideInsuredTypeSelection = false,
+  hideSingleEmploymentCategory = false,
+  useEmploymentCategoryRadios = false,
   canRemove,
   onGroupChange,
   onRemove,
@@ -270,11 +987,31 @@ function InsurancePeriodGroupFields({
     group.fund,
     group.insuredType
   );
+  const selectableEmploymentCategoryOptions =
+    employmentCategoryOptions.filter((option) => option.value);
+  const singleEmploymentCategoryOption =
+    selectableEmploymentCategoryOptions.length === 1
+      ? selectableEmploymentCategoryOptions[0]
+      : null;
   const isCurrentUniformedFund = isUniformedFund(group.fund);
   const isCurrentContributionBasedFund = isContributionBasedFund(group.fund);
   const isCurrentTsayFund = isTsayFund(group.fund);
   const isCurrentArticle30MainContributionFund =
     isArticle30MainContributionFund(group.fund);
+  const hasAutomaticEmploymentCategory =
+    Boolean(group.employmentCategory) &&
+    (
+      (
+        singleEmploymentCategoryOption &&
+        group.employmentCategory === singleEmploymentCategoryOption.value
+      ) ||
+      isCurrentUniformedFund ||
+      isCurrentContributionBasedFund ||
+      isCurrentArticle30MainContributionFund
+    );
+  const shouldShowAutomaticEmploymentCategory =
+    hideSingleEmploymentCategory &&
+    hasAutomaticEmploymentCategory;
 
   function handleFundChange(value) {
     onGroupChange('fund', value);
@@ -288,25 +1025,11 @@ function InsurancePeriodGroupFields({
       return;
     }
 
-    if (isUniformedFund(value)) {
-      onGroupChange('insuredType', '');
-      onGroupChange('employmentCategory', 'common');
-      onGroupChange('uniformedSpecialTimeDraft', createEmptyUniformedSpecialTimeDraft());
-      return;
-    }
-
-    if (
-      isArticle30MainContributionFund(value) ||
-      isSalariedTsayFund(value)
-    ) {
-      onGroupChange('insuredType', '');
-      onGroupChange('employmentCategory', 'common');
-      onGroupChange('uniformedSpecialTimeDraft', createEmptyUniformedSpecialTimeDraft());
-      return;
-    }
-
     onGroupChange('insuredType', '');
-    onGroupChange('employmentCategory', '');
+    onGroupChange(
+      'employmentCategory',
+      getDefaultEmploymentCategoryForFund(value)
+    );
     onGroupChange('uniformedSpecialTimeDraft', createEmptyUniformedSpecialTimeDraft());
   }
 
@@ -327,15 +1050,18 @@ function InsurancePeriodGroupFields({
       </div>
 
       <div style={gridStyle}>
-        <SelectWithLabel
-          id={`multiPeriod${groupNumber}Fund`}
-          label="Φορέας / κατηγορία ασφάλισης"
-          value={group.fund}
-          onChange={handleFundChange}
-          options={FUND_OPTIONS}
-        />
+        {!hideFundSelection && (
+          <SelectWithLabel
+            id={`multiPeriod${groupNumber}Fund`}
+            label="Φορέας / κατηγορία ασφάλισης"
+            value={group.fund}
+            onChange={handleFundChange}
+            options={FUND_OPTIONS}
+          />
+        )}
 
-        {!isCurrentContributionBasedFund && (
+        {!hideInsuredTypeSelection &&
+          !isCurrentContributionBasedFund && (
           <SelectWithLabel
             id={`multiPeriod${groupNumber}InsuredType`}
             label="Ασφαλισμένος"
@@ -356,9 +1082,33 @@ function InsurancePeriodGroupFields({
           />
         )}
 
-        {!isCurrentUniformedFund &&
+        {useEmploymentCategoryRadios &&
+          !isCurrentContributionBasedFund && (
+          <RadioGroupWithLabel
+            id={`multiPeriod${groupNumber}EmploymentCategory`}
+            label="Κατηγορία ενσήμων"
+            value={group.employmentCategory}
+            onChange={(value) => onGroupChange('employmentCategory', value)}
+            options={selectableEmploymentCategoryOptions}
+            disabled={!group.fund}
+          />
+        )}
+
+        {!useEmploymentCategoryRadios &&
+          shouldShowAutomaticEmploymentCategory && (
+          <ConfirmedValueWithLabel
+            label="Κατηγορία εργασίας / εισφορών"
+            value={getEmploymentCategoryOptionLabel(
+              group.employmentCategory
+            )}
+          />
+        )}
+
+        {!useEmploymentCategoryRadios &&
+          !isCurrentUniformedFund &&
           !isCurrentContributionBasedFund &&
-          !isCurrentArticle30MainContributionFund && (
+          !isCurrentArticle30MainContributionFund &&
+          !shouldShowAutomaticEmploymentCategory && (
           <SelectWithLabel
             id={`multiPeriod${groupNumber}EmploymentCategory`}
             label="Κατηγορία εργασίας / εισφορών"
@@ -372,7 +1122,7 @@ function InsurancePeriodGroupFields({
         {isCurrentContributionBasedFund && (
           <SelectWithLabel
             id={`multiPeriod${groupNumber}NonSalariedEarningsInputMode`}
-            label="Πώς θα δηλωθούν οι εισφορές ή οι συντάξιμες αποδοχές αυτής της περιόδου;"
+            label="Τι στοιχεία γνωρίζετε για κάθε έτος;"
             value={group.nonSalariedEarningsInputMode || ''}
             onChange={(value) =>
               onGroupChange('nonSalariedEarningsInputMode', value)
@@ -1021,6 +1771,51 @@ function parseNonNegativeIntegerOrEmpty(value) {
   };
 }
 
+function ConfirmedValueWithLabel({ label, value }) {
+  return (
+    <div style={confirmedValueFieldStyle}>
+      <span style={confirmedValueLabelStyle}>{label}</span>
+      <strong>{value}</strong>
+      <span style={confirmedValueStatusStyle}>✓ Επιλέχθηκε αυτόματα</span>
+    </div>
+  );
+}
+
+function RadioGroupWithLabel({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+  disabled = false,
+}) {
+  return (
+    <fieldset style={radioGroupFieldsetStyle} disabled={disabled}>
+      <legend style={radioGroupLegendStyle}>{label}</legend>
+      <div style={radioOptionsStyle}>
+        {options.map((option) => {
+          const optionId = `${id}-${option.value}`;
+
+          return (
+            <label key={option.value} htmlFor={optionId} style={radioOptionStyle}>
+              <input
+                id={optionId}
+                type="radio"
+                name={id}
+                value={option.value}
+                checked={value === option.value}
+                onChange={(event) => onChange(event.target.value)}
+                disabled={disabled}
+              />
+              <span>{option.label}</span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 function SelectWithLabel({
   id,
   label,
@@ -1217,11 +2012,11 @@ const NON_SALARIED_EARNINGS_INPUT_MODE_OPTIONS = [
   { value: '', label: 'Επιλέξτε' },
   {
     value: 'annual_pensionable_earnings',
-    label: 'Γνωρίζω το ετήσιο ασφαλιστέο / συντάξιμο εισόδημα',
+    label: 'Το ετήσιο εισόδημά μου',
   },
   {
     value: 'annual_pension_contribution',
-    label: 'Γνωρίζω την ετήσια εισφορά κύριας σύνταξης',
+    label: 'Οι ετήσιες εισφορές κύριας σύνταξής μου',
   },
 ];
 
@@ -1322,29 +2117,6 @@ const OLD_NEW_INSURED_OPTIONS = [
   { value: 'new', label: 'Νέος' },
 ];
 
-const SIMPLE_VAE_YVAE_OPTIONS = [
-  SELECT_OPTION,
-  { value: 'common', label: 'Απλή / κοινή ασφάλιση' },
-  { value: 'vae', label: 'ΒΑΕ' },
-  {
-    value: 'yvae',
-    label: 'ΥΒΑΕ / υπόγειες στοές / υποθαλάσσιες εργασίες',
-  },
-];
-
-const OTA_EMPLOYMENT_OPTIONS = [
-  SELECT_OPTION,
-  { value: 'common', label: 'Απλά' },
-  { value: 'ota_ika_vae', label: 'ΒΑΕ με καθεστώς ΟΤΑ' },
-  { value: 'ota_public_vae', label: 'ΒΑΕ με καθεστώς Δημοσίου' },
-  { value: 'ota_ika_yvae', label: 'ΥΒΑΕ μόνο για παλαιούς' },
-];
-
-const COMMON_ONLY_EMPLOYMENT_OPTIONS = [
-  SELECT_OPTION,
-  { value: 'common', label: 'Απλή / διοικητική ασφάλιση' },
-];
-
 const ARTICLE30_MAIN_CONTRIBUTION_FUNDS = [
   'ika_tsp_hsap',
   'ika_tsp_ete',
@@ -1402,32 +2174,11 @@ function getEmploymentCategoryOptions(fund, insuredType) {
     return [DEFAULT_EMPTY_OPTION];
   }
 
-  if (fund === 'ika' || fund === 'tap_dei') {
-    return SIMPLE_VAE_YVAE_OPTIONS;
-  }
+  const options = getEmploymentCategoryOptionsForFund(fund, {
+    insuredType,
+  });
 
-  if (fund === 'ota') {
-    if (insuredType === 'new') {
-      return OTA_EMPLOYMENT_OPTIONS.filter((option) => {
-        return option.value !== 'ota_ika_yvae';
-      });
-    }
-
-    return OTA_EMPLOYMENT_OPTIONS;
-  }
-
-  if (
-    fund === 'public_sector' ||
-    fund === 'deko' ||
-    fund === 'nat' ||
-    fund === 'banking_funds' ||
-    isArticle30MainContributionFund(fund) ||
-    isSalariedTsayFund(fund)
-  ) {
-    return COMMON_ONLY_EMPLOYMENT_OPTIONS;
-  }
-
-  return [SELECT_OPTION];
+  return options.length > 0 ? [SELECT_OPTION, ...options] : [SELECT_OPTION];
 }
 
 function getConditionalPremiumPresence({
@@ -1565,6 +2316,35 @@ const gridStyle = {
   gap: '0.75rem',
 };
 
+const radioGroupFieldsetStyle = {
+  margin: 0,
+  marginBottom: '0.75rem',
+  padding: 0,
+  border: 0,
+  minWidth: 0,
+};
+
+const radioGroupLegendStyle = {
+  marginBottom: '0.5rem',
+};
+
+const radioOptionsStyle = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '0.55rem',
+};
+
+const radioOptionStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.4rem',
+  padding: '0.55rem 0.75rem',
+  border: '1px solid #cbd5e1',
+  borderRadius: '8px',
+  background: '#ffffff',
+  cursor: 'pointer',
+};
+
 const selectStyle = {
   marginTop: '0.5rem',
   padding: '0.5rem',
@@ -1583,6 +2363,29 @@ const specialRegimeBoxStyle = {
   border: '1px solid #f59e0b',
   borderRadius: '8px',
   background: '#fffbeb',
+};
+
+const confirmedValueFieldStyle = {
+  marginBottom: '0.75rem',
+  padding: '0.65rem 0.75rem',
+  border: '1px solid #86efac',
+  borderRadius: '6px',
+  background: '#f0fdf4',
+  color: '#065f46',
+};
+
+const confirmedValueLabelStyle = {
+  display: 'block',
+  marginBottom: '0.25rem',
+  color: '#047857',
+  fontSize: '0.82rem',
+};
+
+const confirmedValueStatusStyle = {
+  display: 'block',
+  marginTop: '0.3rem',
+  color: '#15803d',
+  fontSize: '0.8rem',
 };
 
 const periodBoxStyle = {
@@ -1612,6 +2415,213 @@ const uniformedSubBoxStyle = {
   marginTop: '0.75rem',
   borderTop: '1px solid #e2e8f0',
   paddingTop: '0.75rem',
+};
+
+
+const freeFlowStyle = {
+  marginTop: '1rem',
+};
+
+const freeActiveCardStyle = {
+  marginBottom: '1rem',
+  padding: '1rem',
+  border: '1px solid #cbd5e1',
+  borderRadius: '12px',
+  background: '#f8fafc',
+};
+
+const freeFlowHeadingStyle = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: '0.75rem',
+  marginBottom: '1rem',
+};
+
+const freeFlowStepStyle = {
+  minWidth: '72px',
+  padding: '0.35rem 0.55rem',
+  borderRadius: '999px',
+  background: '#1d4ed8',
+  color: '#fff',
+  fontWeight: 700,
+  textAlign: 'center',
+};
+
+const freeFlowTitleStyle = {
+  margin: 0,
+  fontSize: '1.15rem',
+};
+
+const freeFlowDescriptionStyle = {
+  margin: '0.3rem 0 0',
+  color: '#475569',
+};
+
+const selectedFundBarStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: '0.75rem',
+  marginBottom: '1rem',
+  padding: '0.75rem',
+  border: '1px solid #86efac',
+  borderRadius: '8px',
+  background: '#ecfdf5',
+  color: '#065f46',
+};
+
+const selectedFundCaptionStyle = {
+  display: 'block',
+  marginBottom: '0.2rem',
+  color: '#047857',
+  fontSize: '0.8rem',
+};
+
+const compactActionButtonStyle = {
+  padding: '0.4rem 0.6rem',
+  border: '1px solid #93c5fd',
+  borderRadius: '6px',
+  background: '#fff',
+  color: '#1d4ed8',
+  cursor: 'pointer',
+};
+
+const freeEditorActionsStyle = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  flexWrap: 'wrap',
+  gap: '0.65rem',
+  marginTop: '1rem',
+};
+
+const freeCompleteButtonStyle = {
+  padding: '0.7rem 0.95rem',
+  border: '1px solid #15803d',
+  borderRadius: '8px',
+  background: '#15803d',
+  color: '#fff',
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
+const freeRemoveButtonStyle = {
+  padding: '0.7rem 0.95rem',
+  border: '1px solid #fecaca',
+  borderRadius: '8px',
+  background: '#fff',
+  color: '#b91c1c',
+  cursor: 'pointer',
+};
+
+const freeCompletionErrorStyle = {
+  marginTop: '0.75rem',
+  padding: '0.75rem',
+  border: '1px solid #fca5a5',
+  borderRadius: '8px',
+  background: '#fef2f2',
+  color: '#991b1b',
+};
+
+const freeSummaryCardStyle = {
+  marginBottom: '0.8rem',
+  padding: '0.9rem',
+  borderRadius: '10px',
+};
+
+const freeCompletedSummaryCardStyle = {
+  border: '1px solid #86efac',
+  background: '#f0fdf4',
+};
+
+const freePendingSummaryCardStyle = {
+  border: '1px solid #fcd34d',
+  background: '#fffbeb',
+};
+
+const freeSummaryHeaderStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  gap: '0.75rem',
+};
+
+const freeSummaryStatusStyle = {
+  display: 'block',
+  marginTop: '0.25rem',
+  color: '#475569',
+  fontSize: '0.82rem',
+};
+
+const freeSummaryActionsStyle = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  flexWrap: 'wrap',
+  gap: '0.45rem',
+};
+
+const freeCompactRemoveButtonStyle = {
+  padding: '0.4rem 0.6rem',
+  border: '1px solid #fecaca',
+  borderRadius: '6px',
+  background: '#fff',
+  color: '#b91c1c',
+  cursor: 'pointer',
+};
+
+const freeSummaryDetailsStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.25rem',
+  marginTop: '0.75rem',
+  color: '#334155',
+};
+
+const freeAddPeriodButtonStyle = {
+  marginTop: '0.25rem',
+  padding: '0.7rem 0.9rem',
+  border: '1px solid #2563eb',
+  borderRadius: '8px',
+  background: '#fff',
+  color: '#1d4ed8',
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
+const freeAllCompleteStyle = {
+  marginTop: '0.8rem',
+  padding: '0.75rem',
+  border: '1px solid #86efac',
+  borderRadius: '8px',
+  background: '#f0fdf4',
+  color: '#166534',
+  fontWeight: 600,
+};
+
+const freeDetailsHeadingStyle = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: '0.75rem',
+  marginBottom: '1rem',
+};
+
+const freeDetailsStepStyle = {
+  minWidth: '72px',
+  padding: '0.35rem 0.55rem',
+  borderRadius: '999px',
+  background: '#0f766e',
+  color: '#fff',
+  fontWeight: 700,
+  textAlign: 'center',
+};
+
+const freeDetailsTitleStyle = {
+  margin: 0,
+  fontSize: '1.25rem',
+};
+
+const freeDetailsDescriptionStyle = {
+  margin: '0.35rem 0 0',
+  color: '#475569',
 };
 
 const secondaryButtonStyle = {
