@@ -20,6 +20,11 @@ import {
 } from "./utils/pensionInputPackage";
 import { normalizeParallelInsuranceDraft } from "./utils/parallelInsuranceFormUtils";
 import { normalizeAuxiliaryContributionDraft } from "./utils/auxiliaryContributionFormUtils";
+import {
+  deriveUniformedInsuranceRegimeFromDate,
+  normalizeArticle36ACategoryForUniformedBody,
+  normalizeUniformedBody,
+} from "./utils/uniformedBodyOptions";
 
 const PENSION_ENGINE_URL = String(
   import.meta.env.VITE_PENSION_ENGINE_URL || "",
@@ -422,10 +427,6 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
         simpleFundInput,
         insurancePeriodGroups,
       }),
-      requiresYearlyEarningsForPaidPlasticYears:
-        calculatorEdition === "free" &&
-        resolveFreePlasticYearsChoice(plasticYearsDraft) ===
-          "paid_known",
       contributoryEarningsInputMethod,
       averageMonthlyPensionableEarningsInput,
     });
@@ -434,7 +435,6 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
     insurancePeriodsInputMode,
     simpleFundInput,
     insurancePeriodGroups,
-    plasticYearsDraft,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
   ]);
@@ -684,6 +684,7 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
           return {
             ...group,
             fund: value,
+            uniformedBody: "",
             insuredType:
               calculatorEdition === "free"
                 ? getInsuredTypeForFund({
@@ -693,6 +694,57 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
                 : "",
             employmentCategory: "",
             nonSalariedEarningsInputMode: "",
+            uniformedSpecialTimeDraft:
+              createEmptyUniformedSpecialTimeDraft(),
+          };
+        }
+
+        if (field === "uniformedBody") {
+          const uniformedBody =
+            normalizeUniformedBody(value);
+
+          return {
+            ...group,
+            uniformedBody,
+            uniformedSpecialTimeDraft:
+              normalizeSavedUniformedSpecialTimeDraft(
+                group.uniformedSpecialTimeDraft,
+                {
+                  fromDate: group.fromDate,
+                  uniformedBody,
+                },
+              ),
+          };
+        }
+
+        if (field === "fromDate") {
+          return {
+            ...group,
+            fromDate: value,
+            uniformedSpecialTimeDraft:
+              group.fund === "uniformed"
+                ? normalizeSavedUniformedSpecialTimeDraft(
+                    group.uniformedSpecialTimeDraft,
+                    {
+                      fromDate: value,
+                      uniformedBody: group.uniformedBody,
+                    },
+                  )
+                : group.uniformedSpecialTimeDraft,
+          };
+        }
+
+        if (field === "uniformedSpecialTimeDraft") {
+          return {
+            ...group,
+            uniformedSpecialTimeDraft:
+              normalizeSavedUniformedSpecialTimeDraft(
+                value,
+                {
+                  fromDate: group.fromDate,
+                  uniformedBody: group.uniformedBody,
+                },
+              ),
           };
         }
 
@@ -703,7 +755,11 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
       });
     });
 
-    if (field === "fund" || field === "employmentCategory") {
+    if (
+      field === "fund" ||
+      field === "employmentCategory" ||
+      field === "uniformedBody"
+    ) {
       clearAuxiliaryContributionForPeriod(groupId);
     }
 
@@ -819,9 +875,11 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
     setCalculationResponse(null);
 
     if (!analysis.isReady || analysis.error) {
-      setBackendError(
-        "Συμπληρώστε σωστά τα πεδία της φόρμας πριν τον υπολογισμό.",
-      );
+      const validationMessage = analysis.error
+        ? `Ελέγξτε τα στοιχεία της φόρμας: ${analysis.error}`
+        : "Συμπληρώστε τα υποχρεωτικά πεδία της φόρμας πριν τον υπολογισμό.";
+
+      setBackendError(`FORM_VALIDATION::${validationMessage}`);
       return;
     }
 
@@ -859,9 +917,16 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
       const data = await response.json();
 
       if (!response.ok || data.ok === false) {
-        throw new Error(
+        const responseError =
           data.error ||
-            "Αποτυχία αποστολής ή υπολογισμού από το Pension Engine.",
+          "Αποτυχία αποστολής ή υπολογισμού από το Pension Engine.";
+        const isInputValidationError =
+          response.status === 400 || response.status === 422;
+
+        throw new Error(
+          isInputValidationError
+            ? `FORM_VALIDATION::${responseError}`
+            : responseError,
         );
       }
 
@@ -1401,7 +1466,6 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
 
 function getContributoryFieldIssues({
   requiresExplicitMethod,
-  requiresYearlyEarningsForPaidPlasticYears = false,
   contributoryEarningsInputMethod,
   averageMonthlyPensionableEarningsInput,
 }) {
@@ -1433,22 +1497,6 @@ function getContributoryFieldIssues({
       label: "Τρόπος εισαγωγής συντάξιμων αποδοχών",
       message:
         "Η επιλογή τρόπου εισαγωγής συντάξιμων αποδοχών δεν είναι έγκυρη.",
-    });
-
-    return issues;
-  }
-
-  if (
-    requiresYearlyEarningsForPaidPlasticYears &&
-    method !== "yearly_earnings"
-  ) {
-    issues.push({
-      key: "contributoryEarningsInputMethod",
-      targetId: "contributoryEarningsMethodField",
-      label:
-        "Αποδοχές και ένσημα ανά έτος για τον πλασματικό χρόνο",
-      message:
-        "Για να ενσωματωθεί εξαγορά πλασματικού χρόνου, επιλέξτε αποδοχές και ένσημα ανά έτος.",
     });
 
     return issues;
@@ -1532,7 +1580,7 @@ function getPlasticYearsFieldIssues({
     return issues;
   }
 
-  if (choice !== "paid_known") {
+  if (!["free", "paid_known"].includes(choice)) {
     return issues;
   }
 
@@ -1544,9 +1592,17 @@ function getPlasticYearsFieldIssues({
     addIssue(
       "plasticYearsDuration",
       "plasticYearsDurationField",
-      "Χρόνος εξαγοράς πλασματικών ετών",
-      "Συμπληρώστε έγκυρο χρόνο εξαγοράς μεγαλύτερο από 0.",
+      choice === "free"
+        ? "Πλασματικός χρόνος χωρίς εξαγορά"
+        : "Χρόνος εξαγοράς πλασματικών ετών",
+      choice === "free"
+        ? "Συμπληρώστε τον πλασματικό χρόνο χωρίς εξαγορά με έτη, μήνες και ημέρες."
+        : "Συμπληρώστε έγκυρο χρόνο εξαγοράς μεγαλύτερο από 0.",
     );
+  }
+
+  if (choice === "free") {
+    return issues;
   }
 
   if (!isValidPlasticYearsApplicationYear(entry.applicationYear)) {
@@ -2098,9 +2154,10 @@ const diagnosticPreStyle = {
 
 function getUserFacingBackendError(errorMessage) {
   const normalizedMessage = String(errorMessage || "").trim();
+  const formValidationPrefix = "FORM_VALIDATION::";
 
-  if (normalizedMessage.includes("Συμπληρώστε σωστά τα πεδία")) {
-    return normalizedMessage;
+  if (normalizedMessage.startsWith(formValidationPrefix)) {
+    return normalizedMessage.slice(formValidationPrefix.length);
   }
 
   return (
@@ -2199,6 +2256,7 @@ function createEmptyInsurancePeriodGroup() {
     insuranceMonths: "",
     insuranceExtraDays: "",
     fund: "",
+    uniformedBody: "",
     insuredType: "",
     employmentCategory: "",
     nonSalariedEarningsInputMode: "",
@@ -2220,6 +2278,11 @@ function normalizeSavedInsurancePeriodGroups(savedDraft = {}) {
     const normalizedGroups = savedDraft.insurancePeriodGroups
       .slice(0, MAX_INSURANCE_PERIOD_GROUPS)
       .map((group) => {
+        const uniformedBody =
+          group.fund === "uniformed"
+            ? normalizeUniformedBody(group.uniformedBody)
+            : "";
+
         return {
           id: group.id || createInsurancePeriodGroupId(),
           fromDate: group.fromDate || "",
@@ -2230,6 +2293,7 @@ function normalizeSavedInsurancePeriodGroups(savedDraft = {}) {
           insuranceMonths: group.insuranceMonths || "",
           insuranceExtraDays: group.insuranceExtraDays || "",
           fund: group.fund || "",
+          uniformedBody,
           insuredType: group.insuredType || "",
           employmentCategory: normalizeSavedEmploymentCategory({
             fund: group.fund,
@@ -2243,9 +2307,14 @@ function normalizeSavedInsurancePeriodGroups(savedDraft = {}) {
           tsaySinglePensionerStatus: normalizeSavedYesNoValue(
             group.tsaySinglePensionerStatus,
           ),
-          uniformedSpecialTimeDraft: normalizeSavedUniformedSpecialTimeDraft(
-            group.uniformedSpecialTimeDraft,
-          ),
+          uniformedSpecialTimeDraft:
+            normalizeSavedUniformedSpecialTimeDraft(
+              group.uniformedSpecialTimeDraft,
+              {
+                fromDate: group.fromDate,
+                uniformedBody,
+              },
+            ),
         };
       });
 
@@ -2286,6 +2355,13 @@ function normalizeSavedInsurancePeriodGroups(savedDraft = {}) {
 }
 
 function createInsurancePeriodGroupFromSimpleDraft(savedDraft = {}) {
+  const uniformedBody =
+    savedDraft.simpleFundInput === "uniformed"
+      ? normalizeUniformedBody(
+          savedDraft.simpleUniformedBodyInput,
+        )
+      : "";
+
   return {
     id: "period_1",
     fromDate: savedDraft.simpleFromDateInput || "",
@@ -2296,6 +2372,7 @@ function createInsurancePeriodGroupFromSimpleDraft(savedDraft = {}) {
     insuranceMonths: savedDraft.simpleInsuranceMonthsInput || "",
     insuranceExtraDays: savedDraft.simpleInsuranceExtraDaysInput || "",
     fund: savedDraft.simpleFundInput || "",
+    uniformedBody,
     insuredType: savedDraft.simpleInsuredTypeInput || "",
     employmentCategory: normalizeSavedEmploymentCategory({
       fund: savedDraft.simpleFundInput,
@@ -2309,9 +2386,14 @@ function createInsurancePeriodGroupFromSimpleDraft(savedDraft = {}) {
     tsaySinglePensionerStatus: normalizeSavedYesNoValue(
       savedDraft.simpleTsaySinglePensionerStatus,
     ),
-    uniformedSpecialTimeDraft: normalizeSavedUniformedSpecialTimeDraft(
-      savedDraft.simpleUniformedSpecialTimeDraft,
-    ),
+    uniformedSpecialTimeDraft:
+      normalizeSavedUniformedSpecialTimeDraft(
+        savedDraft.simpleUniformedSpecialTimeDraft,
+        {
+          fromDate: savedDraft.simpleFromDateInput,
+          uniformedBody,
+        },
+      ),
   };
 }
 
@@ -2350,6 +2432,7 @@ function createLegacyInsurancePeriodGroup({
     insuranceMonths: insuranceMonths || "",
     insuranceExtraDays: insuranceExtraDays || "",
     fund: fund || "",
+    uniformedBody: "",
     insuredType: insuredType || "",
     employmentCategory: employmentCategory || "",
     nonSalariedEarningsInputMode: "",
@@ -2391,23 +2474,37 @@ function createEmptyUniformedSpecialTimeDraft() {
   };
 }
 
-function normalizeSavedUniformedSpecialTimeDraft(value) {
+function normalizeSavedUniformedSpecialTimeDraft(
+  value,
+  {
+    fromDate = "",
+    uniformedBody = "",
+  } = {},
+) {
   const defaultValue = createEmptyUniformedSpecialTimeDraft();
-
-  if (!value || typeof value !== "object") {
-    return defaultValue;
-  }
-
+  const normalizedValue =
+    value && typeof value === "object"
+      ? value
+      : {};
+  const derivedInsuranceRegime =
+    deriveUniformedInsuranceRegimeFromDate(fromDate);
   return {
-    insuranceRegime: value.insuranceRegime || "",
-    article36ACategory: value.article36ACategory || "",
+    insuranceRegime:
+      derivedInsuranceRegime ||
+      normalizedValue.insuranceRegime ||
+      "",
+    article36ACategory:
+      normalizeArticle36ACategoryForUniformedBody(
+        normalizedValue.article36ACategory,
+        uniformedBody,
+      ),
     combatFiveYearService: {
       ...defaultValue.combatFiveYearService,
-      ...(value.combatFiveYearService || {}),
+      ...(normalizedValue.combatFiveYearService || {}),
     },
     specialSemesters: {
       ...defaultValue.specialSemesters,
-      ...(value.specialSemesters || {}),
+      ...(normalizedValue.specialSemesters || {}),
     },
   };
 }
@@ -2707,6 +2804,3 @@ function saveDraft(draft) {
 }
 
 export default PensionFormPage;
-
-
-

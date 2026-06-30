@@ -7,6 +7,11 @@ import {
   getEmploymentCategoryOptionsForFund,
 } from '../data/insuranceFundWorkTypeRules';
 import { fieldsetStyle } from '../utils/calculatorStyles';
+import {
+  deriveUniformedInsuranceRegimeFromDate,
+  getUniformedBodyLabel,
+  getUniformedInsuranceRegimeLabel,
+} from '../utils/uniformedBodyOptions';
 
 function InsurancePeriodsInputSection({
   insurancePeriodsInputMode,
@@ -325,6 +330,7 @@ function FreeInsurancePeriodsFlow({
       [
         group.id,
         group.fund,
+        group.uniformedBody,
         group.insuredType,
         group.employmentCategory,
         group.fromDate,
@@ -571,7 +577,7 @@ function FreeInsurancePeriodsFlow({
                 <span style={selectedFundCaptionStyle}>
                   Επιλεγμένος φορέας
                 </span>
-                <strong>{getFundOptionLabel(group.fund)}</strong>
+                <strong>{getPeriodFundLabel(group)}</strong>
               </div>
               <button
                 type="button"
@@ -737,15 +743,11 @@ function FreeInsurancePeriodSummary({
       <div style={freeSummaryDetailsStyle}>
         <strong>
           {group.fund
-            ? getFundOptionLabel(group.fund)
+            ? getPeriodFundLabel(group)
             : 'Δεν έχει επιλεγεί φορέας'}
         </strong>
         {group.employmentCategory && (
-          <span>
-            {getEmploymentCategoryOptionLabel(
-              group.employmentCategory
-            )}
-          </span>
+          <span>{getPeriodEmploymentCategoryLabel(group)}</span>
         )}
         {(group.fromDate || group.toDate) && (
           <span>
@@ -905,6 +907,13 @@ function getFreePeriodCompletionIssue({
 
   if (
     isUniformedFund(group.fund) &&
+    !getUniformedBodyLabel(group.uniformedBody)
+  ) {
+    return 'Επιλέξτε αν ανήκετε στις Ένοπλες Δυνάμεις ή στα Σώματα Ασφαλείας και το συγκεκριμένο σώμα.';
+  }
+
+  if (
+    isUniformedFund(group.fund) &&
     !group.uniformedSpecialTimeDraft?.insuranceRegime
   ) {
     return 'Επιλέξτε το καθεστώς κατάταξης του ενστόλου.';
@@ -954,6 +963,17 @@ function getFundOptionLabel(value) {
   );
 }
 
+function getPeriodFundLabel(group = {}) {
+  const fundLabel = getFundOptionLabel(group.fund);
+  const uniformedBodyLabel = getUniformedBodyLabel(group.uniformedBody);
+
+  if (group.fund === 'uniformed' && uniformedBodyLabel) {
+    return `${fundLabel} — ${uniformedBodyLabel}`;
+  }
+
+  return fundLabel;
+}
+
 function getInsuredTypeOptionLabel(value) {
   if (value === 'not_applicable') {
     return 'Δεν απαιτείται για αυτή την κατηγορία';
@@ -968,6 +988,14 @@ function getInsuredTypeOptionLabel(value) {
 
 function getEmploymentCategoryOptionLabel(value) {
   return getEmploymentCategoryLabel(value);
+}
+
+function getPeriodEmploymentCategoryLabel(group = {}) {
+  if (group.fund === 'uniformed') {
+    return 'Κανονική υπηρεσία ενστόλου';
+  }
+
+  return getEmploymentCategoryOptionLabel(group.employmentCategory);
 }
 
 function InsurancePeriodGroupFields({
@@ -1083,7 +1111,8 @@ function InsurancePeriodGroupFields({
         )}
 
         {useEmploymentCategoryRadios &&
-          !isCurrentContributionBasedFund && (
+          !isCurrentContributionBasedFund &&
+          !isCurrentUniformedFund && (
           <RadioGroupWithLabel
             id={`multiPeriod${groupNumber}EmploymentCategory`}
             label="Κατηγορία ενσήμων"
@@ -1091,6 +1120,13 @@ function InsurancePeriodGroupFields({
             onChange={(value) => onGroupChange('employmentCategory', value)}
             options={selectableEmploymentCategoryOptions}
             disabled={!group.fund}
+          />
+        )}
+
+        {isCurrentUniformedFund && (
+          <ConfirmedValueWithLabel
+            label="Κατηγορία ασφάλισης"
+            value="Κανονική υπηρεσία ενστόλου"
           />
         )}
 
@@ -1140,6 +1176,13 @@ function InsurancePeriodGroupFields({
               onGroupChange('tsaySinglePensionerStatus', value)
             }
             options={YES_NO_OPTIONS}
+          />
+        )}
+
+        {isCurrentUniformedFund && group.uniformedBody && (
+          <ConfirmedValueWithLabel
+            label="Κλάδος / σώμα"
+            value={getUniformedBodyLabel(group.uniformedBody)}
           />
         )}
 
@@ -1210,6 +1253,8 @@ function InsurancePeriodGroupFields({
         <UniformedSpecialTimeFields
           idPrefix={`multiPeriod${groupNumber}Uniformed`}
           value={group.uniformedSpecialTimeDraft}
+          uniformedBody={group.uniformedBody}
+          fromDate={group.fromDate}
           onChange={(nextValue) => {
             onGroupChange('uniformedSpecialTimeDraft', nextValue);
           }}
@@ -1222,78 +1267,131 @@ function InsurancePeriodGroupFields({
 function UniformedSpecialTimeFields({
   idPrefix,
   value,
+  uniformedBody,
+  fromDate,
   onChange,
 }) {
-  const safeValue = normalizeUniformedSpecialTimeDraft(value);
+  const normalizedValue =
+    normalizeUniformedSpecialTimeDraft(value);
+  const derivedInsuranceRegime =
+    deriveUniformedInsuranceRegimeFromDate(fromDate);
+  const safeValue = {
+    ...normalizedValue,
+    insuranceRegime:
+      derivedInsuranceRegime || "",
+    article36ACategory: "",
+  };
 
-  function updateUniformedField(field, fieldValue) {
-    onChange({
-      ...safeValue,
-      [field]: fieldValue,
-    });
-  }
-
-  function updateCombatFiveYearService(field, fieldValue) {
+  function updateCombatFiveYearService(
+    field,
+    fieldValue,
+  ) {
     const nextCombatFiveYearService = {
       ...safeValue.combatFiveYearService,
       [field]: fieldValue,
     };
 
-    if (field === 'recognitionPeriod' && fieldValue === 'before_2002') {
-      nextCombatFiveYearService.paidAmount = '0';
+    if (
+      field === 'status' &&
+      fieldValue === 'none'
+    ) {
+      nextCombatFiveYearService.years = '';
+      nextCombatFiveYearService.months = '';
+      nextCombatFiveYearService.days = '';
+      nextCombatFiveYearService.serviceYears = '';
+      nextCombatFiveYearService.contributionPaymentMode = '';
+      nextCombatFiveYearService.applicationYear = '';
+      nextCombatFiveYearService.recognitionPeriod = '';
+      nextCombatFiveYearService.paidAmount = '';
       nextCombatFiveYearService.contributionRatePercent = '';
       nextCombatFiveYearService.explicitPensionableEarningsBase = '';
       nextCombatFiveYearService.earningsReferenceYear = '';
     }
 
+    if (
+      field === 'contributionPaymentMode' &&
+      fieldValue !== 'legacy_opt_out_later_recognition'
+    ) {
+      nextCombatFiveYearService.applicationYear = '';
+    }
+
     onChange({
       ...safeValue,
-      combatFiveYearService: nextCombatFiveYearService,
+      combatFiveYearService:
+        nextCombatFiveYearService,
     });
   }
 
-  function updateSpecialSemesters(field, fieldValue) {
+  function updateSpecialSemesters(
+    field,
+    fieldValue,
+  ) {
     const nextSpecialSemesters = {
       ...safeValue.specialSemesters,
       [field]: fieldValue,
     };
 
-    if (field === 'status' && fieldValue === 'none') {
-      nextSpecialSemesters.specialSemestersType = '';
-      nextSpecialSemesters.semestersCount = '';
+    if (field === 'status' && fieldValue === 'yes') {
+      nextSpecialSemesters.specialSemestersType =
+        FREE_RECOGNIZED_ARTICLE_41_SEMESTERS_TYPE;
+      nextSpecialSemesters.recognizedArticle41Time = true;
       nextSpecialSemesters.milestoneCompletionYear = '';
-      nextSpecialSemesters.recognitionPeriod = '';
-      nextSpecialSemesters.paidAmount = '';
     }
 
-    if (field === 'recognitionPeriod' && fieldValue === 'before_2002') {
-      nextSpecialSemesters.paidAmount = '0';
+    if (
+      field === 'status' &&
+      fieldValue === 'none'
+    ) {
+      nextSpecialSemesters.specialSemestersType = '';
+      nextSpecialSemesters.recognizedArticle41Time = false;
+      nextSpecialSemesters.semestersCount = '';
+      nextSpecialSemesters.milestoneCompletionYear = '';
+      nextSpecialSemesters.serviceYears = '';
+      nextSpecialSemesters.contributionPaymentMode = '';
+      nextSpecialSemesters.applicationYear = '';
+      nextSpecialSemesters.recognitionPeriod = '';
+      nextSpecialSemesters.paidAmount = '';
       nextSpecialSemesters.contributionRatePercent = '';
       nextSpecialSemesters.explicitPensionableEarningsBase = '';
       nextSpecialSemesters.earningsReferenceYear = '';
     }
 
+    if (
+      field === 'contributionPaymentMode' &&
+      fieldValue !== 'legacy_opt_out_later_recognition'
+    ) {
+      nextSpecialSemesters.applicationYear = '';
+    }
+
     onChange({
       ...safeValue,
-      specialSemesters: nextSpecialSemesters,
+      specialSemesters:
+        nextSpecialSemesters,
     });
   }
 
-  const insuranceRegime = safeValue.insuranceRegime;
-  const article36ACategory = safeValue.article36ACategory;
-  const combatStatus = safeValue.combatFiveYearService.status;
-  const semestersStatus = safeValue.specialSemesters.status;
-  const hasCombatFiveYearService = combatStatus !== 'none';
-  const hasSpecialSemesters = semestersStatus === 'yes';
-  const shouldAskCombatPaidAmount =
-    hasCombatFiveYearService &&
-    safeValue.combatFiveYearService.recognitionPeriod &&
-    safeValue.combatFiveYearService.recognitionPeriod !== 'before_2002';
-  const shouldAskSemestersPaidAmount =
-    hasSpecialSemesters &&
-    safeValue.specialSemesters.recognitionPeriod &&
-    safeValue.specialSemesters.recognitionPeriod !== 'before_2002';
-  const validationError = getUniformedSpecialTimeValidationError(safeValue);
+  const insuranceRegime =
+    safeValue.insuranceRegime;
+  const insuranceRegimeLabel =
+    getUniformedInsuranceRegimeLabel(
+      insuranceRegime
+    );
+  const combatStatus =
+    safeValue.combatFiveYearService.status;
+  const semestersStatus =
+    safeValue.specialSemesters.status;
+  const hasCombatFiveYearService =
+    combatStatus !== 'none';
+  const hasSpecialSemesters =
+    semestersStatus === 'yes';
+  const validationError =
+    getUniformedSpecialTimeValidationError(
+      safeValue,
+      {
+        uniformedBody,
+        fromDate,
+      }
+    );
 
   return (
     <div style={uniformedBoxStyle}>
@@ -1301,27 +1399,41 @@ function UniformedSpecialTimeFields({
         Ειδικοί χρόνοι ενστόλων
       </h4>
 
+      <p style={{ color: '#475569' }}>
+        Με αναλυτικές ετήσιες αποδοχές, οι επιλέξιμοι
+        ειδικοί χρόνοι τοποθετούνται στα πραγματικά έτη
+        υπηρεσίας. Η μάχιμη πενταετία ΕΛ.ΑΣ.,
+        Πυροσβεστικής και Λιμενικού, καθώς και χρόνος
+        χωρίς υποχρέωση εισφορών, αυξάνουν μόνο τον
+        συντάξιμο χρόνο. Με έτοιμο μέσο μηνιαίο μισθό,
+        χρησιμοποιείται ο ίδιος μέσος ως απλοποιητική
+        βάση όπου ο ειδικός χρόνος επηρεάζει αποδοχές.
+      </p>
+
       <div style={gridStyle}>
-        <SelectWithLabel
-          id={`${idPrefix}InsuranceRegime`}
+        <ConfirmedValueWithLabel
           label="Καθεστώς κατάταξης"
-          value={insuranceRegime}
-          onChange={(fieldValue) => updateUniformedField('insuranceRegime', fieldValue)}
-          options={UNIFORMED_INSURANCE_REGIME_OPTIONS}
-          required
+          value={
+            insuranceRegimeLabel ||
+            'Θα προκύψει από την ημερομηνία έναρξης'
+          }
+          statusText={
+            insuranceRegimeLabel
+              ? '✓ Προέκυψε αυτόματα από την ημερομηνία έναρξης'
+              : 'Συμπληρώστε έγκυρη ημερομηνία έναρξης'
+          }
+          pending={!insuranceRegimeLabel}
         />
 
-        <SelectWithLabel
-          id={`${idPrefix}Article36ACategory`}
-          label="Κατηγορία άρθρου 36Α (+1,5% μετά το 45ο έτος)"
-          value={article36ACategory}
-          onChange={(fieldValue) => updateUniformedField('article36ACategory', fieldValue)}
-          options={ARTICLE_36A_CATEGORY_OPTIONS}
-        />
       </div>
 
       {validationError && (
-        <p style={{ color: 'crimson', marginTop: 0 }}>
+        <p
+          style={{
+            color: 'crimson',
+            marginTop: 0,
+          }}
+        >
           {validationError}
         </p>
       )}
@@ -1336,8 +1448,15 @@ function UniformedSpecialTimeFields({
             id={`${idPrefix}CombatFiveYearServiceStatus`}
             label="Υπάρχει μάχιμη πενταετία;"
             value={combatStatus}
-            onChange={(fieldValue) => updateCombatFiveYearService('status', fieldValue)}
-            options={COMBAT_FIVE_YEAR_STATUS_OPTIONS}
+            onChange={(fieldValue) =>
+              updateCombatFiveYearService(
+                'status',
+                fieldValue
+              )
+            }
+            options={
+              COMBAT_FIVE_YEAR_STATUS_OPTIONS
+            }
           />
 
           {combatStatus === 'partial' && (
@@ -1345,8 +1464,16 @@ function UniformedSpecialTimeFields({
               <TextInputWithLabel
                 id={`${idPrefix}CombatFiveYearServiceYears`}
                 label="Έτη"
-                value={safeValue.combatFiveYearService.years}
-                onChange={(fieldValue) => updateCombatFiveYearService('years', fieldValue)}
+                value={
+                  safeValue
+                    .combatFiveYearService.years
+                }
+                onChange={(fieldValue) =>
+                  updateCombatFiveYearService(
+                    'years',
+                    fieldValue
+                  )
+                }
                 placeholder="0 έως 5"
                 required
               />
@@ -1354,16 +1481,32 @@ function UniformedSpecialTimeFields({
               <TextInputWithLabel
                 id={`${idPrefix}CombatFiveYearServiceMonths`}
                 label="Μήνες"
-                value={safeValue.combatFiveYearService.months}
-                onChange={(fieldValue) => updateCombatFiveYearService('months', fieldValue)}
+                value={
+                  safeValue
+                    .combatFiveYearService.months
+                }
+                onChange={(fieldValue) =>
+                  updateCombatFiveYearService(
+                    'months',
+                    fieldValue
+                  )
+                }
                 placeholder="0 έως 11"
               />
 
               <TextInputWithLabel
                 id={`${idPrefix}CombatFiveYearServiceDays`}
                 label="Ημέρες"
-                value={safeValue.combatFiveYearService.days}
-                onChange={(fieldValue) => updateCombatFiveYearService('days', fieldValue)}
+                value={
+                  safeValue
+                    .combatFiveYearService.days
+                }
+                onChange={(fieldValue) =>
+                  updateCombatFiveYearService(
+                    'days',
+                    fieldValue
+                  )
+                }
                 placeholder="0 έως 24"
               />
             </>
@@ -1371,244 +1514,466 @@ function UniformedSpecialTimeFields({
 
           {hasCombatFiveYearService && (
             <>
-              <SelectWithLabel
-                id={`${idPrefix}CombatFiveYearServiceRecognitionPeriod`}
-                label="Πότε αναγνωρίστηκε / εξαγοράστηκε;"
-                value={safeValue.combatFiveYearService.recognitionPeriod}
-                onChange={(fieldValue) => updateCombatFiveYearService('recognitionPeriod', fieldValue)}
-                options={RECOGNITION_PERIOD_OPTIONS}
+              <TextInputWithLabel
+                id={`${idPrefix}CombatFiveYearServiceServiceYears`}
+                label="Έτη στα οποία πραγματοποιήθηκε η ειδική υπηρεσία"
+                value={
+                  safeValue
+                    .combatFiveYearService
+                    .serviceYears
+                }
+                onChange={(fieldValue) =>
+                  updateCombatFiveYearService(
+                    'serviceYears',
+                    fieldValue
+                  )
+                }
+                placeholder="π.χ. 2004, 2005, 2006, 2007, 2008"
                 required
               />
 
-              {shouldAskCombatPaidAmount && (
+              <SelectWithLabel
+                id={`${idPrefix}CombatFiveYearServiceContributionPaymentMode`}
+                label="Πώς καταβλήθηκαν οι πρόσθετες εισφορές;"
+                value={
+                  safeValue
+                    .combatFiveYearService
+                    .contributionPaymentMode
+                }
+                onChange={(fieldValue) =>
+                  updateCombatFiveYearService(
+                    'contributionPaymentMode',
+                    fieldValue
+                  )
+                }
+                options={
+                  UNIFORMED_CONTRIBUTION_PAYMENT_MODE_OPTIONS
+                }
+                required
+              />
+
+              {safeValue
+                .combatFiveYearService
+                .contributionPaymentMode ===
+                'legacy_opt_out_later_recognition' && (
                 <TextInputWithLabel
-                  id={`${idPrefix}CombatFiveYearServicePaidAmount`}
-                  label="Ποσό που πληρώθηκε"
-                  value={safeValue.combatFiveYearService.paidAmount}
-                  onChange={(fieldValue) => updateCombatFiveYearService('paidAmount', fieldValue)}
-                  placeholder="π.χ. 3000"
+                  id={`${idPrefix}CombatFiveYearServiceApplicationYear`}
+                  label="Έτος αίτησης μετά από παλιά δήλωση μη παρακράτησης"
+                  value={
+                    safeValue
+                      .combatFiveYearService
+                      .applicationYear
+                  }
+                  onChange={(fieldValue) =>
+                    updateCombatFiveYearService(
+                      'applicationYear',
+                      fieldValue
+                    )
+                  }
+                  placeholder="π.χ. 2024"
                   required
                 />
-              )}
-
-              {shouldAskCombatPaidAmount && (
-                <>
-                  <TextInputWithLabel
-                    id={`${idPrefix}CombatFiveYearServiceContributionRatePercent`}
-                    label="Πραγματικό ποσοστό εισφοράς της πράξης (%)"
-                    value={safeValue.combatFiveYearService.contributionRatePercent}
-                    onChange={(fieldValue) => updateCombatFiveYearService('contributionRatePercent', fieldValue)}
-                    placeholder="π.χ. 6,67 ή 20"
-                  />
-                  <TextInputWithLabel
-                    id={`${idPrefix}CombatFiveYearServiceExplicitPensionableEarningsBase`}
-                    label="Ασφαλιστέα / συντάξιμη βάση πράξης (αν αναγράφεται)"
-                    value={safeValue.combatFiveYearService.explicitPensionableEarningsBase}
-                    onChange={(fieldValue) => updateCombatFiveYearService('explicitPensionableEarningsBase', fieldValue)}
-                    placeholder="π.χ. 20000"
-                  />
-                  <TextInputWithLabel
-                    id={`${idPrefix}CombatFiveYearServiceEarningsReferenceYear`}
-                    label="Έτος αναφοράς της βάσης / αίτησης"
-                    value={safeValue.combatFiveYearService.earningsReferenceYear}
-                    onChange={(fieldValue) => updateCombatFiveYearService('earningsReferenceYear', fieldValue)}
-                    placeholder="π.χ. 2015"
-                    required
-                  />
-                </>
               )}
             </>
           )}
         </div>
+
+        {hasCombatFiveYearService && (
+          <p
+            style={{
+              color: '#475569',
+              marginBottom: 0,
+            }}
+          >
+            Δηλώστε τα πραγματικά έτη υπηρεσίας,
+            χωρισμένα με κόμμα. Η εφαρμογή κατανέμει
+            έως 300 ημέρες αναγνωρισμένου χρόνου σε
+            κάθε δηλωμένο έτος.
+          </p>
+        )}
       </div>
 
       <div style={uniformedSubBoxStyle}>
         <h5 style={{ marginTop: 0 }}>
-          Εξάμηνα
+          Αναγνωρισμένα ειδικά εξάμηνα άρθρου 41
         </h5>
 
         <div style={gridStyle}>
           <SelectWithLabel
             id={`${idPrefix}SpecialSemestersStatus`}
-            label="Υπάρχουν εξάμηνα;"
+            label="Έχετε αναγνωρισμένο χρόνο από ειδικά εξάμηνα άρθρου 41;"
             value={semestersStatus}
-            onChange={(fieldValue) => updateSpecialSemesters('status', fieldValue)}
-            options={SPECIAL_SEMESTERS_STATUS_OPTIONS}
+            onChange={(fieldValue) =>
+              updateSpecialSemesters(
+                'status',
+                fieldValue
+              )
+            }
+            options={
+              SPECIAL_SEMESTERS_STATUS_OPTIONS
+            }
           />
+
+          <p
+            style={{
+              gridColumn: '1 / -1',
+              color: '#475569',
+              margin: 0,
+            }}
+          >
+            Η πρόσθετη προσαύξηση 1,5% υπολογίζεται αυτόματα μόνο
+            για τον αναγνωρισμένο χρόνο αυτών των εξαμήνων που
+            βρίσκεται πάνω από τα 45 συνολικά συντάξιμα έτη.
+          </p>
 
           {hasSpecialSemesters && (
             <>
               <TextInputWithLabel
                 id={`${idPrefix}SpecialSemestersCount`}
                 label="Πλήθος εξαμήνων"
-                value={safeValue.specialSemesters.semestersCount}
-                onChange={(fieldValue) => updateSpecialSemesters('semestersCount', fieldValue)}
-                placeholder={insuranceRegime === 'new_ika' ? 'π.χ. 4, έως 14' : 'π.χ. 20'}
-                required
-              />
-
-              <SelectWithLabel
-                id={`${idPrefix}SpecialSemestersType`}
-                label="Τύπος εξαμήνων"
-                value={safeValue.specialSemesters.specialSemestersType}
-                onChange={(fieldValue) => updateSpecialSemesters('specialSemestersType', fieldValue)}
-                options={SPECIAL_SEMESTERS_TYPE_OPTIONS}
+                value={
+                  safeValue.specialSemesters
+                    .semestersCount
+                }
+                onChange={(fieldValue) =>
+                  updateSpecialSemesters(
+                    'semestersCount',
+                    fieldValue
+                  )
+                }
+                placeholder={
+                  insuranceRegime === 'new_ika'
+                    ? 'π.χ. 4'
+                    : 'π.χ. 20'
+                }
                 required
               />
 
               <TextInputWithLabel
-                id={`${idPrefix}SpecialSemestersMilestoneCompletionYear`}
-                label={
-                  safeValue.specialSemesters.specialSemestersType === 'flight'
-                    ? 'Έτος συμπλήρωσης 18 ετών πραγματικής υπηρεσίας (αν είναι γνωστό)'
-                    : 'Έτος συμπλήρωσης 20 ετών πραγματικής υπηρεσίας (αν είναι γνωστό)'
+                id={`${idPrefix}SpecialSemestersServiceYears`}
+                label="Έτη στα οποία πραγματοποιήθηκαν τα εξάμηνα"
+                value={
+                  safeValue.specialSemesters
+                    .serviceYears
                 }
-                value={safeValue.specialSemesters.milestoneCompletionYear}
-                onChange={(fieldValue) => updateSpecialSemesters('milestoneCompletionYear', fieldValue)}
-                placeholder="π.χ. 2014"
-              />
-
-              <SelectWithLabel
-                id={`${idPrefix}SpecialSemestersRecognitionPeriod`}
-                label="Πότε αναγνωρίστηκαν / εξαγοράστηκαν;"
-                value={safeValue.specialSemesters.recognitionPeriod}
-                onChange={(fieldValue) => updateSpecialSemesters('recognitionPeriod', fieldValue)}
-                options={RECOGNITION_PERIOD_OPTIONS}
+                onChange={(fieldValue) =>
+                  updateSpecialSemesters(
+                    'serviceYears',
+                    fieldValue
+                  )
+                }
+                placeholder="π.χ. 2003, 2004, 2006"
                 required
               />
 
-              {shouldAskSemestersPaidAmount && (
+              <SelectWithLabel
+                id={`${idPrefix}SpecialSemestersContributionPaymentMode`}
+                label="Πώς καταβλήθηκαν οι πρόσθετες εισφορές;"
+                value={
+                  safeValue.specialSemesters
+                    .contributionPaymentMode
+                }
+                onChange={(fieldValue) =>
+                  updateSpecialSemesters(
+                    'contributionPaymentMode',
+                    fieldValue
+                  )
+                }
+                options={
+                  UNIFORMED_CONTRIBUTION_PAYMENT_MODE_OPTIONS
+                }
+                required
+              />
+
+              {safeValue.specialSemesters
+                .contributionPaymentMode ===
+                'legacy_opt_out_later_recognition' && (
                 <TextInputWithLabel
-                  id={`${idPrefix}SpecialSemestersPaidAmount`}
-                  label="Ποσό που πληρώθηκε"
-                  value={safeValue.specialSemesters.paidAmount}
-                  onChange={(fieldValue) => updateSpecialSemesters('paidAmount', fieldValue)}
-                  placeholder="π.χ. 1200"
+                  id={`${idPrefix}SpecialSemestersApplicationYear`}
+                  label="Έτος αίτησης μετά από παλιά δήλωση μη παρακράτησης"
+                  value={
+                    safeValue.specialSemesters
+                      .applicationYear
+                  }
+                  onChange={(fieldValue) =>
+                    updateSpecialSemesters(
+                      'applicationYear',
+                      fieldValue
+                    )
+                  }
+                  placeholder="π.χ. 2024"
                   required
                 />
-              )}
-
-              {shouldAskSemestersPaidAmount && (
-                <>
-                  <TextInputWithLabel
-                    id={`${idPrefix}SpecialSemestersContributionRatePercent`}
-                    label="Πραγματικό ποσοστό εισφοράς της πράξης (%)"
-                    value={safeValue.specialSemesters.contributionRatePercent}
-                    onChange={(fieldValue) => updateSpecialSemesters('contributionRatePercent', fieldValue)}
-                    placeholder="π.χ. 6,67 ή 20"
-                  />
-                  <TextInputWithLabel
-                    id={`${idPrefix}SpecialSemestersExplicitPensionableEarningsBase`}
-                    label="Ασφαλιστέα / συντάξιμη βάση πράξης (αν αναγράφεται)"
-                    value={safeValue.specialSemesters.explicitPensionableEarningsBase}
-                    onChange={(fieldValue) => updateSpecialSemesters('explicitPensionableEarningsBase', fieldValue)}
-                    placeholder="π.χ. 20000"
-                  />
-                  <TextInputWithLabel
-                    id={`${idPrefix}SpecialSemestersEarningsReferenceYear`}
-                    label="Έτος αναφοράς της βάσης / αίτησης"
-                    value={safeValue.specialSemesters.earningsReferenceYear}
-                    onChange={(fieldValue) => updateSpecialSemesters('earningsReferenceYear', fieldValue)}
-                    placeholder="π.χ. 2018"
-                    required
-                  />
-                </>
               )}
             </>
           )}
         </div>
+
+        {hasSpecialSemesters && (
+          <>
+            <p
+              style={{
+                color: '#475569',
+                marginBottom: 0,
+              }}
+            >
+              Δύο εξάμηνα αντιστοιχούν σε ένα
+              ασφαλιστικό έτος. Δηλώστε ακριβώς τόσα
+              διαφορετικά έτη όσα απαιτούνται για το
+              πλήθος των εξαμήνων.
+            </p>
+
+            <p
+              style={{
+                color: '#8a5a00',
+                marginBottom: 0,
+              }}
+            >
+              Η δωρεάν έκδοση δεν επιβεβαιώνει ακόμη
+              αν ο συγκεκριμένος τύπος και το πλήθος
+              εξαμήνων πληρούν όλες τις ειδικές
+              υπηρεσιακές προϋποθέσεις. Ο χρήστης πρέπει
+              να δηλώνει μόνο εξάμηνα που πράγματι
+              δικαιούται. Ελέγχεται πάντως το συνολικό
+              πλαφόν αναγνωριζόμενων χρόνων.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
 
-function getUniformedSpecialTimeValidationError(value) {
-  const normalizedValue = normalizeUniformedSpecialTimeDraft(value);
-  const insuranceRegime = normalizedValue.insuranceRegime;
+function getUniformedSpecialTimeValidationError(
+  value,
+  {
+    uniformedBody = '',
+    fromDate = '',
+  } = {}
+) {
+  const normalizedValue =
+    normalizeUniformedSpecialTimeDraft(value);
+  const expectedInsuranceRegime =
+    deriveUniformedInsuranceRegimeFromDate(fromDate);
+  const insuranceRegime =
+    normalizedValue.insuranceRegime;
 
-  if (!['old_public', 'new_ika'].includes(insuranceRegime)) {
-    return 'Επιλέξτε καθεστώς κατάταξης ενστόλου.';
+  if (!expectedInsuranceRegime) {
+    return 'Συμπληρώστε έγκυρη ημερομηνία έναρξης, ώστε να προκύψει αυτόματα το καθεστώς κατάταξης.';
   }
 
-  const combatFiveYearService = normalizedValue.combatFiveYearService;
-  const specialSemesters = normalizedValue.specialSemesters;
+  if (
+    insuranceRegime !==
+    expectedInsuranceRegime
+  ) {
+    return 'Το καθεστώς κατάταξης δεν συμφωνεί με την ημερομηνία έναρξης της συγκεκριμένης ένστολης περιόδου.';
+  }
 
-  const combatDaysResult = getCombatFiveYearServiceDays(combatFiveYearService);
+  const combatFiveYearService =
+    normalizedValue.combatFiveYearService;
+  const specialSemesters =
+    normalizedValue.specialSemesters;
+
+  const combatDaysResult =
+    getCombatFiveYearServiceDays(
+      combatFiveYearService
+    );
 
   if (combatDaysResult.error) {
     return combatDaysResult.error;
   }
 
-  const combatEarningsError = getUniformedRecognitionEarningsValidationError(
-    combatFiveYearService,
-    'τη μάχιμη πενταετία'
-  );
-  if (combatEarningsError) return combatEarningsError;
+  const combatEarningsError =
+    getUniformedRecognitionEarningsValidationError(
+      combatFiveYearService,
+      'τη μάχιμη πενταετία',
+      combatDaysResult.days
+    );
 
-  const semestersDaysResult = getSpecialSemestersDays(
-    specialSemesters,
-    insuranceRegime
-  );
+  if (combatEarningsError) {
+    return combatEarningsError;
+  }
+
+  const semestersDaysResult =
+    getSpecialSemestersDays(
+      specialSemesters,
+      insuranceRegime
+    );
 
   if (semestersDaysResult.error) {
     return semestersDaysResult.error;
   }
 
-  const semestersEarningsError = getUniformedRecognitionEarningsValidationError(
-    specialSemesters,
-    'τα εξάμηνα'
-  );
-  if (semestersEarningsError) return semestersEarningsError;
+  const semestersEarningsError =
+    getUniformedRecognitionEarningsValidationError(
+      specialSemesters,
+      'τα εξάμηνα',
+      semestersDaysResult.days
+    );
+
+  if (semestersEarningsError) {
+    return semestersEarningsError;
+  }
 
   if (insuranceRegime === 'new_ika') {
     const maxCombinedDays = 7 * 300;
-    const totalSpecialDays = combatDaysResult.days + semestersDaysResult.days;
+    const totalSpecialDays =
+      combatDaysResult.days +
+      semestersDaysResult.days;
 
     if (totalSpecialDays > maxCombinedDays) {
-      return 'Για κατάταξη από 01/01/2011, η μάχιμη πενταετία μαζί με τα εξάμηνα δεν μπορεί να ξεπερνά συνολικά τα 7 έτη.';
+      return 'Για κατάταξη από 01/01/2011, η μάχιμη πενταετία μαζί με τα εξάμηνα δεν μπορεί να ξεπερνά τα 7 έτη. Στον τελικό έλεγχο συνυπολογίζονται και τυχόν λοιποί αναγνωριζόμενοι χρόνοι.';
     }
   }
 
   return null;
 }
 
-function getUniformedRecognitionEarningsValidationError(value = {}, label) {
-  const status = String(value.status || 'none').trim();
-  const recognitionPeriod = String(value.recognitionPeriod || '').trim();
+function getUniformedRecognitionEarningsValidationError(
+  value = {},
+  label,
+  insuranceDays
+) {
+  const status = String(
+    value.status || 'none'
+  ).trim();
 
-  if (status === 'none' || !recognitionPeriod || recognitionPeriod === 'before_2002') {
+  if (status === 'none') {
     return null;
   }
 
-  const paidAmount = parsePositiveDecimal(value.paidAmount);
-  if (!paidAmount.isValid) {
-    return `Για ${label} μετά το 2002, το ποσό που πληρώθηκε πρέπει να είναι μεγαλύτερο από 0.`;
+  const serviceYearsResult =
+    parseUniformedServiceYearsForForm(
+      value.serviceYears
+    );
+
+  if (serviceYearsResult.error) {
+    return `Για ${label}, ${serviceYearsResult.error}`;
   }
 
-  const baseText = String(value.explicitPensionableEarningsBase || '').trim();
-  const rateText = String(value.contributionRatePercent || '').trim();
-  if (!baseText && !rateText) {
-    return `Για ${label} μετά το 2002, δηλώστε είτε την ασφαλιστέα βάση της πράξης είτε το πραγματικό ποσοστό εισφοράς.`;
+  const requiredServiceYearsCount = Math.ceil(
+    Number(insuranceDays || 0) / 300
+  );
+
+  if (
+    serviceYearsResult.years.length !==
+    requiredServiceYearsCount
+  ) {
+    const yearsWord =
+      requiredServiceYearsCount === 1 ? 'έτος' : 'έτη';
+
+    return (
+      `Για ${label}, δηλώστε ακριβώς ${requiredServiceYearsCount} διαφορετικά ${yearsWord} ειδικής υπηρεσίας. ` +
+      `Έχουν δηλωθεί ${serviceYearsResult.years.length}.`
+    );
   }
 
-  if (baseText && !parsePositiveDecimal(baseText).isValid) {
-    return `Η ασφαλιστέα βάση για ${label} πρέπει να είναι μεγαλύτερη από 0.`;
+  const contributionPaymentMode = String(
+    value.contributionPaymentMode || ''
+  ).trim();
+
+  if (
+    ![
+      'withheld_during_service',
+      'later_recognition',
+      'legacy_opt_out_later_recognition',
+      'legal_exemption',
+    ].includes(contributionPaymentMode)
+  ) {
+    return `Για ${label}, επιλέξτε πώς καταβλήθηκαν οι πρόσθετες εισφορές.`;
   }
 
-  if (rateText) {
-    const rate = parsePositiveDecimal(rateText);
-    if (!rate.isValid || rate.value > 100) {
-      return `Το ποσοστό εισφοράς για ${label} πρέπει να είναι μεγαλύτερο από 0 και έως 100.`;
+  if (
+    contributionPaymentMode ===
+    'legacy_opt_out_later_recognition'
+  ) {
+    const applicationYearText = String(
+      value.applicationYear || ''
+    ).trim();
+
+    if (
+      !/^\d{4}$/.test(
+        applicationYearText
+      ) ||
+      Number(applicationYearText) < 1900 ||
+      Number(applicationYearText) > 2100
+    ) {
+      return `Για ${label}, το έτος μεταγενέστερης αναγνώρισης πρέπει να είναι έγκυρο τετραψήφιο έτος.`;
+    }
+
+    const latestServiceYear = Math.max(
+      ...serviceYearsResult.years
+    );
+
+    if (
+      Number(applicationYearText) <
+      latestServiceYear
+    ) {
+      return `Για ${label}, το έτος μεταγενέστερης αναγνώρισης δεν μπορεί να προηγείται του τελευταίου έτους ειδικής υπηρεσίας.`;
     }
   }
 
-  const yearText = String(value.earningsReferenceYear || '').trim();
-  if (!/^\d{4}$/.test(yearText) || Number(yearText) < 2002) {
-    return `Το έτος αναφοράς για ${label} πρέπει να είναι έγκυρο έτος από το 2002 και μετά.`;
+  return null;
+}
+
+function parseUniformedServiceYearsForForm(
+  value
+) {
+  const rawValues = Array.isArray(value)
+    ? value
+    : String(value || '')
+        .split(/[\s,;|]+/)
+        .filter(Boolean);
+
+  if (rawValues.length === 0) {
+    return {
+      years: [],
+      error:
+        'δηλώστε τα έτη στα οποία πραγματοποιήθηκε η ειδική υπηρεσία.',
+    };
   }
 
-  return null;
+  const years = [];
+  const seen = new Set();
+
+  for (const rawValue of rawValues) {
+    const text = String(rawValue).trim();
+
+    if (!/^\d{4}$/.test(text)) {
+      return {
+        years: [],
+        error:
+          'τα έτη ειδικής υπηρεσίας πρέπει να είναι τετραψήφια και χωρισμένα με κόμμα.',
+      };
+    }
+
+    const year = Number(text);
+
+    if (year < 1900 || year > 2100) {
+      return {
+        years: [],
+        error:
+          'κάθε έτος ειδικής υπηρεσίας πρέπει να είναι από 1900 έως 2100.',
+      };
+    }
+
+    if (seen.has(year)) {
+      return {
+        years: [],
+        error:
+          `το έτος ${year} δηλώθηκε περισσότερες από μία φορές.`,
+      };
+    }
+
+    seen.add(year);
+    years.push(year);
+  }
+
+  return {
+    years,
+    error: null,
+  };
 }
 
 function parsePositiveDecimal(value) {
@@ -1702,17 +2067,6 @@ function getSpecialSemestersDays(specialSemesters = {}, insuranceRegime = '') {
     };
   }
 
-  const semestersType = String(
-    specialSemesters.specialSemestersType || ''
-  ).trim();
-
-  if (!isValidSpecialSemestersType(semestersType)) {
-    return {
-      days: 0,
-      error: 'Επιλέξτε τύπο εξαμήνων.',
-    };
-  }
-
   const semestersCount = parseNonNegativeIntegerOrEmpty(
     specialSemesters.semestersCount
   );
@@ -1721,24 +2075,6 @@ function getSpecialSemestersDays(specialSemesters = {}, insuranceRegime = '') {
     return {
       days: 0,
       error: 'Το πλήθος εξαμήνων πρέπει να είναι ακέραιος αριθμός μεγαλύτερος από 0.',
-    };
-  }
-
-  if (insuranceRegime === 'new_ika' && semestersCount.value > 14) {
-    return {
-      days: 0,
-      error: 'Για κατάταξη από 01/01/2011, τα εξάμηνα δεν μπορούν να είναι περισσότερα από 14.',
-    };
-  }
-
-  const milestoneCompletionYear = String(
-    specialSemesters.milestoneCompletionYear || ''
-  ).trim();
-
-  if (milestoneCompletionYear && !/^\d{4}$/.test(milestoneCompletionYear)) {
-    return {
-      days: 0,
-      error: 'Το έτος συμπλήρωσης πραγματικής υπηρεσίας πρέπει να έχει 4 ψηφία.',
     };
   }
 
@@ -1771,12 +2107,33 @@ function parseNonNegativeIntegerOrEmpty(value) {
   };
 }
 
-function ConfirmedValueWithLabel({ label, value }) {
+function ConfirmedValueWithLabel({
+  label,
+  value,
+  statusText = '✓ Επιλέχθηκε αυτόματα',
+  pending = false,
+}) {
   return (
-    <div style={confirmedValueFieldStyle}>
+    <div
+      style={{
+        ...confirmedValueFieldStyle,
+        ...(pending
+          ? confirmedValuePendingFieldStyle
+          : {}),
+      }}
+    >
       <span style={confirmedValueLabelStyle}>{label}</span>
       <strong>{value}</strong>
-      <span style={confirmedValueStatusStyle}>✓ Επιλέχθηκε αυτόματα</span>
+      <span
+        style={{
+          ...confirmedValueStatusStyle,
+          ...(pending
+            ? confirmedValuePendingStatusStyle
+            : {}),
+        }}
+      >
+        {statusText}
+      </span>
     </div>
   );
 }
@@ -1898,7 +2255,7 @@ const FUND_OPTIONS = [
   },
   {
     value: 'uniformed',
-    label: 'Ένστολοι / στρατιωτικοί',
+    label: 'Ένστολοι',
   },
   {
     value: 'tap_dei',
@@ -2044,21 +2401,8 @@ const SPECIAL_SEMESTERS_STATUS_OPTIONS = [
   { value: 'yes', label: 'Ναι' },
 ];
 
-const SPECIAL_SEMESTERS_TYPE_OPTIONS = [
-  { value: '', label: 'Επιλέξτε' },
-  { value: 'flight', label: 'Πτητικά εξάμηνα' },
-  { value: 'diving', label: 'Καταδυτικά εξάμηνα' },
-  {
-    value: 'paratrooper_or_special_forces',
-    label: 'Αλεξιπτωτιστών / ειδικών δυνάμεων',
-  },
-  { value: 'mine_clearance', label: 'Εκκαθαριστών ναρκοπεδίων' },
-  { value: 'other_special_category', label: 'Άλλη ειδική κατηγορία' },
-];
-
-const SPECIAL_SEMESTERS_TYPE_VALUES = SPECIAL_SEMESTERS_TYPE_OPTIONS
-  .map((option) => option.value)
-  .filter(Boolean);
+const FREE_RECOGNIZED_ARTICLE_41_SEMESTERS_TYPE =
+  'recognized_article_41';
 
 const UNIFORMED_INSURANCE_REGIME_OPTIONS = [
   { value: '', label: 'Επιλέξτε' },
@@ -2072,33 +2416,34 @@ const UNIFORMED_INSURANCE_REGIME_OPTIONS = [
   },
 ];
 
-const ARTICLE_36A_CATEGORY_OPTIONS = [
-  { value: '', label: 'Δεν υπάγεται / δεν δηλώθηκε' },
-  { value: 'flight', label: 'Ιπτάμενος σε κατάσταση πτητικής ενέργειας' },
-  {
-    value: 'submarine_or_diving',
-    label: 'Πλήρωμα υποβρυχίου / καταδυτική ενέργεια',
-  },
-  { value: 'paratrooper', label: 'Αλεξιπτωτιστής' },
-  {
-    value: 'underwater_demolition_or_special_ops',
-    label: 'Υποβρύχιος καταστροφέας / ειδικές αποστολές',
-  },
-  {
-    value: 'mine_clearance_or_eod',
-    label: 'Ναρκαλιευτής / πυροτεχνουργός',
-  },
-  {
-    value: 'other_confirmed',
-    label: 'Άλλη κατηγορία με επιβεβαιωμένη διάταξη',
-  },
-];
 
 const RECOGNITION_PERIOD_OPTIONS = [
   { value: '', label: 'Επιλέξτε' },
   { value: 'before_2002', label: 'Πριν το 2002' },
   { value: 'between_2002_2016', label: 'Από 2002 έως 2016' },
   { value: 'after_2016', label: 'Μετά το 2016' },
+];
+
+const UNIFORMED_CONTRIBUTION_PAYMENT_MODE_OPTIONS = [
+  { value: '', label: 'Επιλέξτε' },
+  {
+    value: 'withheld_during_service',
+    label: 'Οι πρόσθετες εισφορές παρακρατούνταν κατά την υπηρεσία',
+  },
+  {
+    value: 'later_recognition',
+    label:
+      'Έγινε αναγνώριση αργότερα, χωρίς παλιά δήλωση μη παρακράτησης',
+  },
+  {
+    value: 'legacy_opt_out_later_recognition',
+    label:
+      'Παλιά περίπτωση: είχε δηλωθεί μη παρακράτηση και αργότερα ζητήθηκε αναγνώριση',
+  },
+  {
+    value: 'legal_exemption',
+    label: 'Δεν απαιτούνταν καταβολή εισφορών',
+  },
 ];
 
 const DEFAULT_EMPTY_OPTION = {
@@ -2251,6 +2596,9 @@ function createEmptyUniformedSpecialTimeDraft() {
       years: '',
       months: '',
       days: '',
+      serviceYears: '',
+      contributionPaymentMode: '',
+      applicationYear: '',
       recognitionPeriod: '',
       paidAmount: '',
       contributionRatePercent: '',
@@ -2260,8 +2608,12 @@ function createEmptyUniformedSpecialTimeDraft() {
     specialSemesters: {
       status: 'none',
       specialSemestersType: '',
+      recognizedArticle41Time: false,
       semestersCount: '',
       milestoneCompletionYear: '',
+      serviceYears: '',
+      contributionPaymentMode: '',
+      applicationYear: '',
       recognitionPeriod: '',
       paidAmount: '',
       contributionRatePercent: '',
@@ -2271,16 +2623,20 @@ function createEmptyUniformedSpecialTimeDraft() {
   };
 }
 
-function normalizeUniformedSpecialTimeDraft(value) {
-  const defaultValue = createEmptyUniformedSpecialTimeDraft();
+function normalizeUniformedSpecialTimeDraft(
+  value
+) {
+  const defaultValue =
+    createEmptyUniformedSpecialTimeDraft();
 
   if (!value || typeof value !== 'object') {
     return defaultValue;
   }
 
   const normalizedDraft = {
-    insuranceRegime: value.insuranceRegime || '',
-    article36ACategory: value.article36ACategory || '',
+    insuranceRegime:
+      value.insuranceRegime || '',
+    article36ACategory: '',
     combatFiveYearService: {
       ...defaultValue.combatFiveYearService,
       ...(value.combatFiveYearService || {}),
@@ -2291,23 +2647,67 @@ function normalizeUniformedSpecialTimeDraft(value) {
     },
   };
 
-  if (normalizedDraft.combatFiveYearService.recognitionPeriod === 'before_2002') {
-    normalizedDraft.combatFiveYearService.paidAmount = '0';
+  if (
+    normalizedDraft
+      .combatFiveYearService.status ===
+    'none'
+  ) {
+    normalizedDraft
+      .combatFiveYearService
+      .serviceYears = '';
+    normalizedDraft
+      .combatFiveYearService
+      .contributionPaymentMode = '';
+    normalizedDraft
+      .combatFiveYearService
+      .applicationYear = '';
   }
 
-  if (normalizedDraft.specialSemesters.status === 'none') {
-    normalizedDraft.specialSemesters.specialSemestersType = '';
+  if (
+    normalizedDraft.specialSemesters
+      .status === 'none'
+  ) {
+    normalizedDraft.specialSemesters
+      .specialSemestersType = '';
+    normalizedDraft.specialSemesters
+      .recognizedArticle41Time = false;
+    normalizedDraft.specialSemesters
+      .serviceYears = '';
+    normalizedDraft.specialSemesters
+      .contributionPaymentMode = '';
+    normalizedDraft.specialSemesters
+      .applicationYear = '';
+  } else {
+    normalizedDraft.specialSemesters
+      .specialSemestersType =
+      FREE_RECOGNIZED_ARTICLE_41_SEMESTERS_TYPE;
+    normalizedDraft.specialSemesters
+      .recognizedArticle41Time = true;
+    normalizedDraft.specialSemesters
+      .milestoneCompletionYear = '';
   }
 
-  if (normalizedDraft.specialSemesters.recognitionPeriod === 'before_2002') {
-    normalizedDraft.specialSemesters.paidAmount = '0';
+  if (
+    normalizedDraft
+      .combatFiveYearService
+      .contributionPaymentMode !==
+    'legacy_opt_out_later_recognition'
+  ) {
+    normalizedDraft
+      .combatFiveYearService
+      .applicationYear = '';
+  }
+
+  if (
+    normalizedDraft.specialSemesters
+      .contributionPaymentMode !==
+    'legacy_opt_out_later_recognition'
+  ) {
+    normalizedDraft.specialSemesters
+      .applicationYear = '';
   }
 
   return normalizedDraft;
-}
-
-function isValidSpecialSemestersType(value) {
-  return SPECIAL_SEMESTERS_TYPE_VALUES.includes(value);
 }
 
 const gridStyle = {
@@ -2386,6 +2786,16 @@ const confirmedValueStatusStyle = {
   marginTop: '0.3rem',
   color: '#15803d',
   fontSize: '0.8rem',
+};
+
+const confirmedValuePendingFieldStyle = {
+  border: '1px solid #fcd34d',
+  background: '#fffbeb',
+  color: '#92400e',
+};
+
+const confirmedValuePendingStatusStyle = {
+  color: '#b45309',
 };
 
 const periodBoxStyle = {

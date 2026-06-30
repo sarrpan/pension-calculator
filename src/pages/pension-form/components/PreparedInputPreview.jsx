@@ -173,6 +173,13 @@ function PreparedInputPreview({ analysis }) {
                 <p>
                   <strong>Ασφαλισμένος:</strong> {period.insuredTypeLabel}
                 </p>
+                {period.uniformedBodyLabel && (
+                  <p>
+                    <strong>Κλάδος / σώμα ενστόλου:</strong>{" "}
+                    {period.uniformedBodyLabel}
+                  </p>
+                )}
+
 
                 <p>
                   <strong>Κατηγορία εργασίας / εισφορών:</strong>{" "}
@@ -211,6 +218,9 @@ function PreparedInputPreview({ analysis }) {
                   <strong>Εσωτερικά values:</strong> fund={period.fund},
                   insuredType={period.insuredType}, employmentCategory=
                   {period.employmentCategory}
+                  {period.uniformedBody
+                    ? `, uniformedBody=${period.uniformedBody}`
+                    : ""}
                   {period.formerAuxiliaryFund
                     ? `, formerAuxiliaryFund=${period.formerAuxiliaryFund}`
                     : ""}

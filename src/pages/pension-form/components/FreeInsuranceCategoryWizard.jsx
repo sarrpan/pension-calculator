@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { getDefaultEmploymentCategoryForFund } from '../data/insuranceFundWorkTypeRules';
+import { UNIFORMED_BODY_GROUPS } from '../utils/uniformedBodyOptions';
 
 const WORK_CATEGORIES = [
   {
@@ -138,19 +139,15 @@ const WORK_CATEGORIES = [
     id: 'uniformed',
     title: 'Ένστολοι',
     description: 'Στρατιωτικοί και σώματα ασφαλείας',
-    options: [
-      {
+    options: UNIFORMED_BODY_GROUPS.flatMap((uniformedGroup) =>
+      uniformedGroup.options.map((option) => ({
         value: 'uniformed',
-        label: 'Ένστολοι / στρατιωτικοί',
-        aliases: [
-          'στρατός',
-          'αστυνομία',
-          'πυροσβεστική',
-          'λιμενικό',
-          'στρατιωτικός',
-        ],
-      },
-    ],
+        uniformedBody: option.value,
+        groupLabel: uniformedGroup.label,
+        label: option.label,
+        aliases: option.aliases,
+      })),
+    ),
   },
   {
     id: 'seafarers',
@@ -235,8 +232,20 @@ function FreeInsuranceCategoryWizard({
   const [searchQuery, setSearchQuery] = React.useState('');
   const [helpVisible, setHelpVisible] = React.useState(false);
 
-  function selectFund(fund) {
+  function selectFund(selection) {
+    const fund =
+      typeof selection === 'string' ? selection : selection?.value || '';
+    const uniformedBody =
+      fund === 'uniformed' && typeof selection === 'object'
+        ? selection.uniformedBody || ''
+        : '';
+
     onInsurancePeriodGroupChange(group.id, 'fund', fund);
+    onInsurancePeriodGroupChange(
+      group.id,
+      'uniformedBody',
+      uniformedBody
+    );
     onInsurancePeriodGroupChange(
       group.id,
       'nonSalariedEarningsInputMode',
@@ -274,6 +283,7 @@ function FreeInsuranceCategoryWizard({
 
   function clearSelectedFund() {
     onInsurancePeriodGroupChange(group.id, 'fund', '');
+    onInsurancePeriodGroupChange(group.id, 'uniformedBody', '');
     onInsurancePeriodGroupChange(
       group.id,
       'nonSalariedEarningsInputMode',
@@ -310,12 +320,14 @@ function FreeInsuranceCategoryWizard({
     setSearchQuery('');
 
     if (category.options.length === 1) {
-      selectFund(category.options[0].value);
+      selectFund(category.options[0]);
       return;
     }
 
     const currentFundBelongsToCategory = category.options.some(
-      (option) => option.value === group.fund
+      (option) =>
+        option.value === group.fund &&
+        (!option.uniformedBody || option.uniformedBody === group.uniformedBody)
     );
 
     if (group.fund && !currentFundBelongsToCategory) {
@@ -411,9 +423,9 @@ function FreeInsuranceCategoryWizard({
                 <div style={selectorSearchResultGridStyle}>
                   {searchResults.map((result) => (
                     <button
-                      key={`${result.categoryTitle}-${result.value}`}
+                      key={`${result.categoryTitle}-${result.value}-${result.uniformedBody || 'general'}`}
                       type="button"
-                      onClick={() => selectFund(result.value)}
+                      onClick={() => selectFund(result)}
                       style={selectorSearchResultButtonStyle}
                     >
                       <span style={selectorSearchCategoryStyle}>
@@ -496,18 +508,47 @@ function FreeInsuranceCategoryWizard({
               </span>
             </div>
 
-            <div style={selectorSubOptionGridStyle}>
-              {openCategoryData.options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => selectFund(option.value)}
-                  style={selectorSubOptionStyle}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+            {openCategoryData.id === 'uniformed' ? (
+              <div style={selectorUniformedGroupsStyle}>
+                {UNIFORMED_BODY_GROUPS.map((uniformedGroup) => (
+                  <div key={uniformedGroup.value}>
+                    <strong style={selectorUniformedGroupTitleStyle}>
+                      {uniformedGroup.label}
+                    </strong>
+                    <div style={selectorSubOptionGridStyle}>
+                      {openCategoryData.options
+                        .filter(
+                          (option) =>
+                            option.groupLabel === uniformedGroup.label
+                        )
+                        .map((option) => (
+                          <button
+                            key={option.uniformedBody}
+                            type="button"
+                            onClick={() => selectFund(option)}
+                            style={selectorSubOptionStyle}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={selectorSubOptionGridStyle}>
+                {openCategoryData.options.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => selectFund(option)}
+                    style={selectorSubOptionStyle}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}
@@ -702,6 +743,19 @@ const selectorSubOptionsHeadingStyle = {
   display: 'flex',
   flexDirection: 'column',
   gap: '0.2rem',
+};
+
+
+const selectorUniformedGroupsStyle = {
+  display: 'grid',
+  gap: '0.9rem',
+  marginTop: '0.65rem',
+};
+
+const selectorUniformedGroupTitleStyle = {
+  display: 'block',
+  marginBottom: '0.45rem',
+  color: '#334155',
 };
 
 const selectorSubOptionGridStyle = {

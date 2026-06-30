@@ -21,6 +21,7 @@ function FreePlasticYearsInputSection({
   const entry = safeValue.entries[0] || createEmptyPlasticYearEntry();
   const choice = safeValue.freeFlowChoice;
   const isPaidKnown = choice === "paid_known";
+  const requiresDuration = choice === "free" || isPaidKnown;
   const sectionIsComplete =
     FREE_FLOW_CHOICES.includes(choice) && fieldIssues.length === 0;
   const sectionHasError =
@@ -59,11 +60,23 @@ function FreePlasticYearsInputSection({
           ...entry,
           recognitionStatus: "recognized",
           recognitionMode:
-            nextChoice === "paid_known" ? "paid" : "",
+            nextChoice === "paid_known"
+              ? "paid"
+              : nextChoice === "free"
+                ? "free"
+                : "",
           financialInputMode:
             nextChoice === "paid_known"
               ? "buyout_amount_and_rate"
               : "",
+          applicationYear:
+            nextChoice === "paid_known" ? entry.applicationYear : "",
+          applicationPeriod2016:
+            nextChoice === "paid_known"
+              ? entry.applicationPeriod2016
+              : "",
+          buyoutAmount:
+            nextChoice === "paid_known" ? entry.buyoutAmount : "",
         },
       ],
     });
@@ -77,8 +90,11 @@ function FreePlasticYearsInputSection({
         {
           ...entry,
           recognitionStatus: "recognized",
-          recognitionMode: "paid",
-          financialInputMode: "buyout_amount_and_rate",
+          recognitionMode: choice === "free" ? "free" : "paid",
+          financialInputMode:
+            choice === "paid_known"
+              ? "buyout_amount_and_rate"
+              : "",
           [field]: fieldValue,
         },
       ],
@@ -148,13 +164,6 @@ function FreePlasticYearsInputSection({
         </div>
       </QuestionBox>
 
-      {choice === "free" && (
-        <p style={noticeStyle}>
-          Ο πλασματικός χρόνος χωρίς εξαγορά δεν θα προστεθεί στον
-          υπολογισμό της ανταποδοτικής σύνταξης.
-        </p>
-      )}
-
       {choice === "paid_unknown" && (
         <p style={noticeStyle}>
           Ο υπολογισμός θα συνεχιστεί χωρίς τον πλασματικό χρόνο.
@@ -163,7 +172,7 @@ function FreePlasticYearsInputSection({
         </p>
       )}
 
-      {isPaidKnown && (
+      {requiresDuration && (
         <div style={{ marginTop: "1rem" }}>
           <QuestionBox
             id="plasticYearsDurationField"
@@ -172,8 +181,9 @@ function FreePlasticYearsInputSection({
             validationAttempted={validationAttempted}
           >
             <p style={questionTitleStyle}>
-              Πόσος πλασματικός χρόνος εξαγοράστηκε ή θα
-              εξαγοραστεί;
+              {choice === "free"
+                ? "Πόσος είναι ο πλασματικός χρόνος χωρίς εξαγορά;"
+                : "Πόσος πλασματικός χρόνος εξαγοράστηκε ή θα εξαγοραστεί;"}
             </p>
 
             <div style={gridStyle}>
@@ -209,6 +219,18 @@ function FreePlasticYearsInputSection({
             </div>
           </QuestionBox>
 
+          {choice === "free" && (
+            <p style={noticeStyle}>
+              Ο χρόνος θα καταγραφεί, αλλά δεν θα προστεθεί στον
+              υπολογισμό της ανταποδοτικής σύνταξης επειδή δεν υπάρχει
+              εξαγορά.
+            </p>
+          )}
+        </div>
+      )}
+
+      {isPaidKnown && (
+        <div style={{ marginTop: "1rem" }}>
           <QuestionBox
             id="plasticYearsApplicationYearField"
             isComplete={applicationYearIsComplete}

@@ -1,3 +1,9 @@
+import {
+  getUniformedBodyLabel,
+  normalizeUniformedBody,
+  uniformedBodyHasAuxiliaryPension,
+} from "./uniformedBodyOptions";
+
 const AUXILIARY_EXTRA_CONTRIBUTION_OPTIONS = [
   { value: "", label: "Επιλέξτε" },
   { value: "no_extra", label: "Όχι, μόνο την κανονική εισφορά" },
@@ -110,6 +116,7 @@ const FORMER_AUXILIARY_FUND_METADATA = Object.freeze({
     workerGroupLabel:
       "Προσωπικό προερχόμενο από την πρώην Αστυνομία Πόλεων",
     compatibleMainFunds: Object.freeze(["uniformed"]),
+    compatibleUniformedBodies: Object.freeze(["hellenic_police"]),
     knownExtraContributionRatePercent: null,
   }),
   teayps: Object.freeze({
@@ -117,6 +124,7 @@ const FORMER_AUXILIARY_FUND_METADATA = Object.freeze({
     fundLabel: "ΤΕΑΥΠΣ",
     workerGroupLabel: "Προσωπικό του Πυροσβεστικού Σώματος",
     compatibleMainFunds: Object.freeze(["uniformed"]),
+    compatibleUniformedBodies: Object.freeze(["fire_service"]),
     knownExtraContributionRatePercent: null,
   }),
   teaisyt: Object.freeze({
@@ -141,6 +149,7 @@ const FORMER_AUXILIARY_FUND_METADATA = Object.freeze({
     workerGroupLabel:
       "Προσωπικό προερχόμενο από την πρώην Ελληνική Χωροφυλακή",
     compatibleMainFunds: Object.freeze(["uniformed"]),
+    compatibleUniformedBodies: Object.freeze(["hellenic_police"]),
     knownExtraContributionRatePercent: null,
   }),
 });
@@ -155,7 +164,6 @@ const FORMER_AUXILIARY_FUND_ALIASES = Object.freeze({
 const EXACT_FORMER_FUND_REQUIRED_MAIN_FUNDS = new Set([
   "deko",
   "banking_funds",
-  "uniformed",
   "artistic",
 ]);
 
@@ -191,7 +199,7 @@ const FUND_LABELS = Object.freeze({
   ika: "ΙΚΑ / e-ΕΦΚΑ μισθωτών",
   public_sector: "Δημόσιο",
   ota: "ΟΤΑ",
-  uniformed: "Ένστολοι / στρατιωτικοί",
+  uniformed: "Ένστολοι",
   tap_dei: "ΤΑΠ-ΔΕΗ",
   ika_tsp_hsap: "τ. ΤΣΠ-ΗΣΑΠ",
   ika_tsp_ete: "τ. ΤΣΠ-ΕΤΕ",
@@ -298,9 +306,11 @@ function getAuxiliaryExtraRateFromChoice(choice) {
 
 function isFormerAuxiliaryFundCompatibleWithMainFund({
   fund,
+  uniformedBody,
   formerAuxiliaryFund,
 } = {}) {
   const normalizedFund = String(fund || "").trim();
+  const normalizedUniformedBody = normalizeUniformedBody(uniformedBody);
   const normalizedFormerFund = normalizeFormerAuxiliaryFundSelection(
     formerAuxiliaryFund,
   );
@@ -319,20 +329,45 @@ function isFormerAuxiliaryFundCompatibleWithMainFund({
 
   const metadata = FORMER_AUXILIARY_FUND_METADATA[normalizedFormerFund];
 
+  if (!metadata || !metadata.compatibleMainFunds.includes(normalizedFund)) {
+    return false;
+  }
+
+  if (normalizedFund !== "uniformed") {
+    return true;
+  }
+
   return Boolean(
-    metadata && metadata.compatibleMainFunds.includes(normalizedFund),
+    normalizedUniformedBody &&
+      metadata.compatibleUniformedBodies?.includes(normalizedUniformedBody)
   );
 }
 
-function getFormerAuxiliaryFundOptionsForFund(fund) {
+function getFormerAuxiliaryFundOptionsForFund(fund, uniformedBody = "") {
   const normalizedFund = String(fund || "").trim();
+  const normalizedUniformedBody = normalizeUniformedBody(uniformedBody);
 
   if (!normalizedFund) {
     return [];
   }
 
   const metadataEntries = Object.values(FORMER_AUXILIARY_FUND_METADATA).filter(
-    (metadata) => metadata.compatibleMainFunds.includes(normalizedFund),
+    (metadata) => {
+      if (!metadata.compatibleMainFunds.includes(normalizedFund)) {
+        return false;
+      }
+
+      if (normalizedFund !== "uniformed") {
+        return true;
+      }
+
+      return Boolean(
+        normalizedUniformedBody &&
+          metadata.compatibleUniformedBodies?.includes(
+            normalizedUniformedBody,
+          )
+      );
+    },
   );
 
   if (metadataEntries.length === 0) {
@@ -357,11 +392,13 @@ function getFormerAuxiliaryFundOptionsForFund(fund) {
 
 function resolveAuxiliaryFormClassification({
   fund,
+  uniformedBody,
   employmentCategory,
   choice,
   formerAuxiliaryFund,
 } = {}) {
   const normalizedFund = String(fund || "").trim();
+  const normalizedUniformedBody = normalizeUniformedBody(uniformedBody);
   const normalizedCategory = String(employmentCategory || "").trim();
   let normalizedChoice = normalizeAuxiliaryExtraContributionChoice(choice);
   let normalizedFormerFund = normalizeFormerAuxiliaryFundSelection(
@@ -373,6 +410,28 @@ function resolveAuxiliaryFormClassification({
       code: "not_ready",
       label: "Δεν έχει επιλεγεί ακόμη ασφαλιστική κατηγορία",
       hasAuxiliary: false,
+    });
+  }
+
+  if (normalizedFund === "uniformed" && !normalizedUniformedBody) {
+    return createClassification({
+      code: "uniformed_body_required",
+      label: "Επιλέξτε το συγκεκριμένο σώμα του ενστόλου",
+      hasAuxiliary: false,
+    });
+  }
+
+  if (
+    normalizedFund === "uniformed" &&
+    !uniformedBodyHasAuxiliaryPension(normalizedUniformedBody)
+  ) {
+    return createClassification({
+      code: "uniformed_without_auxiliary",
+      label:
+        `${getUniformedBodyLabel(normalizedUniformedBody)} — ` +
+        "δεν υπολογίζεται επικουρική σύνταξη από αυτή την ασφαλιστική περίοδο",
+      hasAuxiliary: false,
+      extraContributionRatePercent: 0,
     });
   }
 
@@ -389,6 +448,7 @@ function resolveAuxiliaryFormClassification({
     normalizedFormerFund &&
     !isFormerAuxiliaryFundCompatibleWithMainFund({
       fund: normalizedFund,
+      uniformedBody: normalizedUniformedBody,
       formerAuxiliaryFund: normalizedFormerFund,
     })
   ) {
@@ -407,7 +467,9 @@ function resolveAuxiliaryFormClassification({
   }
 
   if (
-    EXACT_FORMER_FUND_REQUIRED_MAIN_FUNDS.has(normalizedFund) &&
+    (EXACT_FORMER_FUND_REQUIRED_MAIN_FUNDS.has(normalizedFund) ||
+      (normalizedFund === "uniformed" &&
+        uniformedBodyHasAuxiliaryPension(normalizedUniformedBody))) &&
     !normalizedFormerFund
   ) {
     return createClassification({
@@ -678,6 +740,7 @@ function getAuxiliaryQuestionPeriods({
       id: "period_1",
       fund: simpleFundInput,
       employmentCategory: simpleEmploymentCategoryInput,
+      uniformedBody: "",
       label: FUND_LABELS[simpleFundInput] || simpleFundInput || "Μία περίοδος",
     });
   }
@@ -691,8 +754,11 @@ function getAuxiliaryQuestionPeriods({
         id: String(group?.id || `period_${index + 1}`),
         fund: group?.fund || "",
         employmentCategory: group?.employmentCategory || "",
+        uniformedBody: normalizeUniformedBody(group?.uniformedBody),
         label: `Περίοδος ${index + 1}: ${
-          FUND_LABELS[group?.fund] || group?.fund || "χωρίς φορέα"
+          group?.fund === "uniformed" && getUniformedBodyLabel(group?.uniformedBody)
+            ? `${FUND_LABELS.uniformed} — ${getUniformedBodyLabel(group?.uniformedBody)}`
+            : FUND_LABELS[group?.fund] || group?.fund || "χωρίς φορέα"
         }`,
       });
     }
@@ -706,6 +772,7 @@ function getAuxiliaryQuestionPeriods({
       };
       const formerFundOptions = getFormerAuxiliaryFundOptionsForFund(
         period.fund,
+        period.uniformedBody,
       );
       const hasOptionalIkaFormerFunds =
         period.fund === "ika" && formerFundOptions.length > 0;
@@ -713,6 +780,7 @@ function getAuxiliaryQuestionPeriods({
       const hasCompatibleFormerFundSelection =
         isFormerAuxiliaryFundCompatibleWithMainFund({
           fund: period.fund,
+          uniformedBody: period.uniformedBody,
           formerAuxiliaryFund: selectedFormerFund,
         });
       const hasSpecialFormerFundSelection = Boolean(
@@ -725,6 +793,7 @@ function getAuxiliaryQuestionPeriods({
         : "common";
       const classification = resolveAuxiliaryFormClassification({
         fund: period.fund,
+        uniformedBody: period.uniformedBody,
         employmentCategory: period.employmentCategory,
         choice: periodDraft.extraContributionChoice,
         formerAuxiliaryFund: periodDraft.formerAuxiliaryFund,
@@ -744,14 +813,6 @@ function getAuxiliaryQuestionPeriods({
           classification.requiresUserChoice === true,
         classification,
       };
-    })
-    .filter((period) => {
-      return (
-        period.showFormerFundModeSelect ||
-        period.showFormerFundSelect ||
-        period.requiresExtraContributionChoice ||
-        period.requiresFormerAuxiliaryFundChoice
-      );
     });
 }
 

@@ -25,19 +25,26 @@ function AuxiliaryContributionInputSection({
     auxiliaryContributionDraft: safeValue,
   });
 
-  if (periods.length === 0) {
-    return null;
-  }
-
   return (
     <fieldset style={fieldsetStyle}>
       <legend>Στοιχεία επικουρικής ασφάλισης</legend>
 
       <p style={{ marginTop: 0, color: "#475569" }}>
-        Η εφαρμογή βρίσκει αυτόματα την επικουρική ασφάλιση όταν υπάρχουν
-        αρκετά στοιχεία. Θα εμφανιστεί ερώτηση μόνο όταν χρειάζεται δική σας
-        επιλογή.
+        Η ενότητα παραμένει πάντοτε ορατή. Για κάθε ασφαλιστική περίοδο
+        εμφανίζεται ως ενεργή όταν υπάρχει επικουρική ασφάλιση και ως
+        ανενεργή όταν δεν προκύπτει επικουρική σύνταξη από τη συγκεκριμένη
+        περίοδο.
       </p>
+
+      {periods.length === 0 && (
+        <div style={inactivePeriodBoxStyle}>
+          <strong>Ανενεργή</strong>
+          <p style={{ marginBottom: 0 }}>
+            Επιλέξτε και ολοκληρώστε ασφαλιστική περίοδο για να ελεγχθεί η
+            επικουρική ασφάλιση.
+          </p>
+        </div>
+      )}
 
       {periods.map((period) => {
         const periodValue = safeValue[period.id] || {
@@ -45,13 +52,35 @@ function AuxiliaryContributionInputSection({
           formerAuxiliaryFund: "",
         };
 
-        return (
-          <div key={period.id} style={periodBoxStyle}>
-            <p style={{ marginTop: 0 }}>
-              <strong>{period.label}</strong>
-            </p>
+        const isActive = period.classification?.hasAuxiliary === true;
 
-            {period.showFormerFundModeSelect && (
+        return (
+          <div
+            key={period.id}
+            style={isActive ? periodBoxStyle : inactivePeriodBoxStyle}
+          >
+            <div style={periodHeaderStyle}>
+              <strong>{period.label}</strong>
+              <span style={isActive ? activeBadgeStyle : inactiveBadgeStyle}>
+                {isActive ? "Ενεργή" : "Ανενεργή"}
+              </span>
+            </div>
+
+            {!isActive && (
+              <p style={inactiveMessageStyle}>
+                {period.classification?.label ||
+                  "Δεν προκύπτει επικουρική σύνταξη από αυτή την περίοδο."}
+              </p>
+            )}
+
+            {isActive && period.classification?.label && (
+              <p style={activeStatusTextStyle}>
+                <strong>Κατάσταση:</strong>{" "}
+                {period.classification.label}
+              </p>
+            )}
+
+            {isActive && period.showFormerFundModeSelect && (
               <div style={fieldBlockStyle}>
                 <label htmlFor={`auxiliary_fund_mode_${period.id}`}>
                   Είχατε ειδικό επικουρικό ταμείο;
@@ -91,7 +120,7 @@ function AuxiliaryContributionInputSection({
               </div>
             )}
 
-            {period.showFormerFundSelect && (
+            {isActive && period.showFormerFundSelect && (
               <div style={fieldBlockStyle}>
                 <label htmlFor={`auxiliary_fund_${period.id}`}>
                   Σε ποιο επικουρικό ταμείο ανήκατε;
@@ -132,7 +161,7 @@ function AuxiliaryContributionInputSection({
               </div>
             )}
 
-            {period.requiresExtraContributionChoice && (
+            {isActive && period.requiresExtraContributionChoice && (
               <div style={fieldBlockStyle}>
                 <label htmlFor={`auxiliary_extra_${period.id}`}>
                   Πληρώνατε επιπλέον εισφορά για την επικουρική σύνταξη;
@@ -161,7 +190,7 @@ function AuxiliaryContributionInputSection({
               </div>
             )}
 
-            {period.classification?.workerGroupLabel && (
+            {isActive && period.classification?.workerGroupLabel && (
               <p style={resolvedTextStyle}>
                 <strong>Επιλεγμένη κατηγορία:</strong>{" "}
                 {period.classification.workerGroupLabel}
@@ -174,11 +203,13 @@ function AuxiliaryContributionInputSection({
         );
       })}
 
-      <p style={{ color: "#8a5a00", marginBottom: 0 }}>
-        Αν επιλέξετε προσεγγιστικό ποσοστό, θα εφαρμοστεί σε ολόκληρη την
-        ασφαλιστική περίοδο. Αν δεν γνωρίζετε το επικουρικό ταμείο, ο
-        υπολογισμός του παλιού χρόνου επικουρικής μπορεί να μείνει εκκρεμής.
-      </p>
+      {periods.some((period) => period.classification?.hasAuxiliary) && (
+        <p style={{ color: "#8a5a00", marginBottom: 0 }}>
+          Αν επιλέξετε προσεγγιστικό ποσοστό, θα εφαρμοστεί σε ολόκληρη την
+          ασφαλιστική περίοδο. Αν δεν γνωρίζετε το επικουρικό ταμείο, ο
+          υπολογισμός του παλιού χρόνου επικουρικής μπορεί να μείνει εκκρεμής.
+        </p>
+      )}
     </fieldset>
   );
 }
@@ -189,6 +220,47 @@ const periodBoxStyle = {
   borderRadius: "8px",
   padding: "0.75rem",
   background: "#f8fafc",
+};
+
+
+const inactivePeriodBoxStyle = {
+  ...periodBoxStyle,
+  background: "#f1f5f9",
+  color: "#64748b",
+};
+
+const periodHeaderStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "0.75rem",
+};
+
+const activeBadgeStyle = {
+  padding: "0.2rem 0.55rem",
+  borderRadius: "999px",
+  background: "#dcfce7",
+  color: "#166534",
+  fontSize: "0.82rem",
+  fontWeight: 700,
+};
+
+const inactiveBadgeStyle = {
+  ...activeBadgeStyle,
+  background: "#e2e8f0",
+  color: "#475569",
+};
+
+const inactiveMessageStyle = {
+  marginTop: "0.65rem",
+  marginBottom: 0,
+  color: "#64748b",
+};
+
+const activeStatusTextStyle = {
+  marginTop: "0.65rem",
+  marginBottom: 0,
+  color: "#1e3a8a",
 };
 
 const fieldBlockStyle = {
