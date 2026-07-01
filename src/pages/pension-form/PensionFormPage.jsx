@@ -1220,17 +1220,6 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
               }}
             />
 
-            <PlasticYearsInputSection
-              calculatorEdition={calculatorEdition}
-              value={plasticYearsDraft}
-              validationAttempted={mainValidationAttempted}
-              fieldIssues={plasticYearsFieldIssues}
-              onChange={(value) => {
-                setPlasticYearsDraft(normalizeSavedPlasticYearsDraft(value));
-                clearBackendResult();
-              }}
-            />
-
             <EtaaExtraBenefitInputSection
               insurancePeriodsInputMode={insurancePeriodsInputMode}
               simpleFundInput={simpleFundInput}
@@ -1249,6 +1238,17 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
                     },
                   };
                 });
+                clearBackendResult();
+              }}
+            />
+
+            <PlasticYearsInputSection
+              calculatorEdition={calculatorEdition}
+              value={plasticYearsDraft}
+              validationAttempted={mainValidationAttempted}
+              fieldIssues={plasticYearsFieldIssues}
+              onChange={(value) => {
+                setPlasticYearsDraft(normalizeSavedPlasticYearsDraft(value));
                 clearBackendResult();
               }}
             />
@@ -2672,10 +2672,14 @@ function normalizeSavedEtaaExtraBenefitDraft(value) {
       hasHigherSalariedRateBefore2007: "no",
       higherRateYears: "",
       higherRateMonths: "",
+      higherRateTotalContributionRatePercent: "",
       additionalPointsAboveTwelve: "",
       hasAdditionalTwoPercent: "no",
       additionalTwoPercentYears: "",
       additionalTwoPercentMonths: "",
+      hasRecognizedTime: "no",
+      recognizedTimeYears: "",
+      recognizedTimeMonths: "",
     },
     tsay: {
       status: "",
@@ -2689,16 +2693,41 @@ function normalizeSavedEtaaExtraBenefitDraft(value) {
     return defaultValue;
   }
 
+  const rawTsmede = value.tsmede || {};
+  const legacyAdditionalPoints = parseSavedOptionalDecimal(
+    rawTsmede.additionalPointsAboveTwelve,
+  );
+  const higherRateTotalContributionRatePercent = String(
+    rawTsmede.higherRateTotalContributionRatePercent || "",
+  ).trim()
+    ? rawTsmede.higherRateTotalContributionRatePercent
+    : legacyAdditionalPoints !== null
+      ? String(12 + legacyAdditionalPoints)
+      : "";
+
   return {
     tsmede: {
       ...defaultValue.tsmede,
-      ...(value.tsmede || {}),
+      ...rawTsmede,
+      higherRateTotalContributionRatePercent,
     },
     tsay: {
       ...defaultValue.tsay,
       ...(value.tsay || {}),
     },
   };
+}
+
+function parseSavedOptionalDecimal(value) {
+  const normalizedValue = String(value || "")
+    .trim()
+    .replace(",", ".");
+
+  if (!/^\d+(\.\d+)?$/.test(normalizedValue)) {
+    return null;
+  }
+
+  return Number(normalizedValue);
 }
 
 function shouldOpenMainStep(search = "") {

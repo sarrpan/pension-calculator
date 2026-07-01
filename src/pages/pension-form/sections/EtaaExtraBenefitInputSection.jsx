@@ -50,6 +50,7 @@ function TsmedeFields({ value, onChange }) {
   const isActive = value.status === 'yes';
   const hasHigherRate = value.hasHigherSalariedRateBefore2007 === 'yes';
   const hasAdditionalTwoPercent = value.hasAdditionalTwoPercent === 'yes';
+  const hasRecognizedTime = value.hasRecognizedTime === 'yes';
 
   return (
     <div style={benefitBoxStyle}>
@@ -65,39 +66,12 @@ function TsmedeFields({ value, onChange }) {
 
       {isActive && (
         <>
-          <div style={gridStyle}>
-            <TextInputWithLabel
-              id="tsmedeExtraBenefitBaseAmount"
-              label="Μέση μηνιαία βάση της πρόσθετης εισφοράς"
-              value={value.baseAmount}
-              onChange={(fieldValue) => onChange('baseAmount', fieldValue)}
-              placeholder="π.χ. 1800,50"
-            />
-
-            <TextInputWithLabel
-              id="tsmedeContributionYears"
-              label="Συνολικά έτη Ειδικής Προσαύξησης που προσμετρώνται"
-              value={value.contributionYears}
-              onChange={(fieldValue) => onChange('contributionYears', fieldValue)}
-              placeholder="π.χ. 30"
-            />
-
-            <TextInputWithLabel
-              id="tsmedeContributionMonths"
-              label="Επιπλέον μήνες"
-              value={value.contributionMonths}
-              onChange={(fieldValue) => onChange('contributionMonths', fieldValue)}
-              placeholder="0 έως 11"
-            />
+          <div style={noticeStyle}>
+            Η μέση μηνιαία βάση θα ληφθεί αυτόματα από τις συντάξιμες
+            αποδοχές της ανταποδοτικής σύνταξης. Ο βασικός χρόνος θα προκύψει
+            αυτόματα από τον δηλωμένο χρόνο ΤΣΜΕΔΕ έως 31/12/2015 και θα
+            υπολογιστεί με 12 μονάδες εισφοράς.
           </div>
-
-          <p style={helpTextStyle}>
-            Για τον βασικό χρόνο της Ειδικής Προσαύξησης χρησιμοποιούνται 12
-            επιπλέον μονάδες εισφοράς. Στον χρόνο δηλώνονται και οι
-            αναγνωρισμένοι χρόνοι που προσμετρώνται. Η βάση πρέπει να έχει
-            υπολογιστεί με τις αποδοχές αναγνώρισης μετά το 2002, όπου
-            απαιτείται.
-          </p>
 
           <div style={subBoxStyle}>
             <SelectWithLabel
@@ -111,33 +85,47 @@ function TsmedeFields({ value, onChange }) {
             />
 
             {hasHigherRate && (
-              <div style={gridStyle}>
-                <TextInputWithLabel
-                  id="tsmedeHigherRateYears"
-                  label="Έτη με το υψηλότερο ασφάλιστρο"
-                  value={value.higherRateYears}
-                  onChange={(fieldValue) => onChange('higherRateYears', fieldValue)}
-                  placeholder="π.χ. 5"
-                />
+              <>
+                <div style={gridStyle}>
+                  <TextInputWithLabel
+                    id="tsmedeHigherRateYears"
+                    label="Έτη με το υψηλότερο ασφάλιστρο"
+                    value={value.higherRateYears}
+                    onChange={(fieldValue) =>
+                      onChange('higherRateYears', fieldValue)
+                    }
+                    placeholder="π.χ. 5"
+                  />
 
-                <TextInputWithLabel
-                  id="tsmedeHigherRateMonths"
-                  label="Επιπλέον μήνες"
-                  value={value.higherRateMonths}
-                  onChange={(fieldValue) => onChange('higherRateMonths', fieldValue)}
-                  placeholder="0 έως 11"
-                />
+                  <TextInputWithLabel
+                    id="tsmedeHigherRateMonths"
+                    label="Μήνες με το υψηλότερο ασφάλιστρο"
+                    value={value.higherRateMonths}
+                    onChange={(fieldValue) =>
+                      onChange('higherRateMonths', fieldValue)
+                    }
+                    placeholder="0 έως 11"
+                  />
 
-                <TextInputWithLabel
-                  id="tsmedeAdditionalPointsAboveTwelve"
-                  label="Πρόσθετες μονάδες πάνω από τις 12"
-                  value={value.additionalPointsAboveTwelve}
-                  onChange={(fieldValue) =>
-                    onChange('additionalPointsAboveTwelve', fieldValue)
-                  }
-                  placeholder="π.χ. 8"
-                />
-              </div>
+                  <TextInputWithLabel
+                    id="tsmedeHigherRateTotalContributionRatePercent"
+                    label="Συνολικό ποσοστό ασφαλίστρου"
+                    value={value.higherRateTotalContributionRatePercent}
+                    onChange={(fieldValue) =>
+                      onChange(
+                        'higherRateTotalContributionRatePercent',
+                        fieldValue,
+                      )
+                    }
+                    placeholder="π.χ. 19,33"
+                  />
+                </div>
+
+                <p style={helpTextStyle}>
+                  Η εφαρμογή αφαιρεί αυτόματα το βασικό 12% και χρησιμοποιεί
+                  μόνο την πρόσθετη διαφορά ως επιπλέον μονάδες εισφοράς.
+                </p>
+              </>
             )}
           </div>
 
@@ -153,27 +141,56 @@ function TsmedeFields({ value, onChange }) {
             />
 
             {hasAdditionalTwoPercent && (
-              <div style={gridStyle}>
-                <TextInputWithLabel
-                  id="tsmedeAdditionalTwoPercentYears"
-                  label="Έτη καταβολής της πρόσθετης εισφοράς 2%"
-                  value={value.additionalTwoPercentYears}
-                  onChange={(fieldValue) =>
-                    onChange('additionalTwoPercentYears', fieldValue)
-                  }
-                  placeholder="π.χ. 4"
-                />
+              <p style={helpTextStyle}>
+                Ο χρόνος της πρόσθετης εισφοράς 2% θα προκύψει αυτόματα από
+                την επικάλυψη των δηλωμένων περιόδων ΤΣΜΕΔΕ με το διάστημα
+                1/7/2011–31/12/2015.
+              </p>
+            )}
+          </div>
 
-                <TextInputWithLabel
-                  id="tsmedeAdditionalTwoPercentMonths"
-                  label="Επιπλέον μήνες"
-                  value={value.additionalTwoPercentMonths}
-                  onChange={(fieldValue) =>
-                    onChange('additionalTwoPercentMonths', fieldValue)
-                  }
-                  placeholder="0 έως 11"
-                />
-              </div>
+          <div style={subBoxStyle}>
+            <SelectWithLabel
+              id="tsmedeRecognizedTime"
+              label="Υπάρχει αναγνωρισμένος χρόνος που προσμετράται στην Ειδική Προσαύξηση;"
+              value={value.hasRecognizedTime}
+              onChange={(fieldValue) =>
+                onChange('hasRecognizedTime', fieldValue)
+              }
+              options={YES_NO_OPTIONS}
+            />
+
+            {hasRecognizedTime && (
+              <>
+                <div style={gridStyle}>
+                  <TextInputWithLabel
+                    id="tsmedeRecognizedTimeYears"
+                    label="Έτη αναγνωρισμένου χρόνου"
+                    value={value.recognizedTimeYears}
+                    onChange={(fieldValue) =>
+                      onChange('recognizedTimeYears', fieldValue)
+                    }
+                    placeholder="π.χ. 2"
+                  />
+
+                  <TextInputWithLabel
+                    id="tsmedeRecognizedTimeMonths"
+                    label="Μήνες αναγνωρισμένου χρόνου"
+                    value={value.recognizedTimeMonths}
+                    onChange={(fieldValue) =>
+                      onChange('recognizedTimeMonths', fieldValue)
+                    }
+                    placeholder="0 έως 11"
+                  />
+                </div>
+
+                <div style={warningNoticeStyle}>
+                  Ο αναγνωρισμένος χρόνος προστίθεται με 12 μονάδες. Αν η
+                  επίσημη πράξη αναγνώρισης μετά το 2002 ορίζει διαφορετική
+                  βάση από τις συντάξιμες αποδοχές της κύριας σύνταξης,
+                  απαιτείται ο αναλυτικός υπολογισμός της πλήρους έκδοσης.
+                </div>
+              </>
             )}
           </div>
         </>
@@ -283,10 +300,14 @@ function normalizeEtaaExtraBenefitDraft(value) {
       hasHigherSalariedRateBefore2007: 'no',
       higherRateYears: '',
       higherRateMonths: '',
+      higherRateTotalContributionRatePercent: '',
       additionalPointsAboveTwelve: '',
       hasAdditionalTwoPercent: 'no',
       additionalTwoPercentYears: '',
       additionalTwoPercentMonths: '',
+      hasRecognizedTime: 'no',
+      recognizedTimeYears: '',
+      recognizedTimeMonths: '',
     },
     tsay: {
       status: '',
@@ -300,16 +321,41 @@ function normalizeEtaaExtraBenefitDraft(value) {
     return defaultValue;
   }
 
+  const rawTsmede = value.tsmede || {};
+  const legacyAdditionalPoints = parseOptionalDecimal(
+    rawTsmede.additionalPointsAboveTwelve,
+  );
+  const higherRateTotalContributionRatePercent = String(
+    rawTsmede.higherRateTotalContributionRatePercent || '',
+  ).trim()
+    ? rawTsmede.higherRateTotalContributionRatePercent
+    : legacyAdditionalPoints !== null
+      ? String(12 + legacyAdditionalPoints)
+      : '';
+
   return {
     tsmede: {
       ...defaultValue.tsmede,
-      ...(value.tsmede || {}),
+      ...rawTsmede,
+      higherRateTotalContributionRatePercent,
     },
     tsay: {
       ...defaultValue.tsay,
       ...(value.tsay || {}),
     },
   };
+}
+
+function parseOptionalDecimal(value) {
+  const normalizedValue = String(value || '')
+    .trim()
+    .replace(',', '.');
+
+  if (!/^\d+(\.\d+)?$/.test(normalizedValue)) {
+    return null;
+  }
+
+  return Number(normalizedValue);
 }
 
 function SelectWithLabel({ id, label, value, onChange, options }) {
@@ -382,6 +428,16 @@ const helpTextStyle = {
 };
 
 const noticeStyle = {
+  marginTop: '0.5rem',
+  marginBottom: '0.75rem',
+  padding: '0.75rem',
+  border: '1px solid #60a5fa',
+  borderRadius: '6px',
+  background: '#eff6ff',
+  color: '#1e3a8a',
+};
+
+const warningNoticeStyle = {
   marginTop: '0.5rem',
   padding: '0.75rem',
   border: '1px solid #f59e0b',
