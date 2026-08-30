@@ -15,10 +15,29 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   font-family: sans-serif;
   background-color: var(--bg-light);
   color: var(--text-dark);
+}
+
+/* ─── ΔΙΟΡΘΩΣΗ: το footer πάει πάντα στο κάτω μέρος του παραθύρου ───
+   Ισχύει για ΟΛΕΣ τις σελίδες, όχι μόνο για την Παρακολούθηση. */
+.App {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh; /* για κινητά, ώστε να μη μετράει η μπάρα του browser */
+}
+
+.app-main {
+  flex: 1 0 auto;
 }
 
 .container {

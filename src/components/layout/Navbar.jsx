@@ -33,9 +33,11 @@ const Navbar = () => {
             </Link>
           </li>
           <li>
+            {/* ΔΙΟΡΘΩΣΗ: έλεγχε το "/recovery" ενώ η σελίδα είναι "/report-recovery",
+                γι' αυτό δεν φωτιζόταν ποτέ το κουμπί όταν ήσουν μέσα στη σελίδα. */}
             <Link
               to="/report-recovery"
-              className={`track-btn ${location.pathname === "/recovery" ? "active" : ""}`}
+              className={`track-btn ${location.pathname === "/report-recovery" ? "active" : ""}`}
             >
               Παρακολούθηση Αίτησης
             </Link>

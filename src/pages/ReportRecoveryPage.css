@@ -1,123 +1,462 @@
-/* Βασικό Container */
-.recovery-container {
-  padding: 40px;
-  max-width: 500px;
+/* ════════════════════════════════════════════════
+   ΣΕΛΙΔΑ: ΠΑΡΑΚΟΛΟΥΘΗΣΗ ΑΙΤΗΣΗΣ
+   Κλίμακα αποστάσεων: 8 / 16 / 24 / 32 / 48 / 64
+   ════════════════════════════════════════════════ */
+
+.recovery-page {
+  padding: 64px 24px 80px;
+}
+
+.recovery-inner {
+  max-width: 620px;
   margin: 0 auto;
-  font-family: sans-serif;
-  text-align: center;
 }
 
-/* Φόρμα Αναζήτησης */
-.recovery-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-top: 25px;
-  background: #f9f9f9;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+/* --- Επικεφαλίδα --- */
+
+.recovery-eyebrow {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
 }
 
-/* --- Νέο Στυλ για το πεδίο του PIN --- */
+.recovery-title {
+  font-size: 2rem;
+  line-height: 1.25;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+
+.recovery-subtitle {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+  max-width: 54ch;
+}
+
+/* --- Λευκή κάρτα με τη φόρμα --- */
+
+.recovery-card {
+  background: var(--white);
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius);
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.field {
+  margin-bottom: 24px;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.field-help {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* --- Πεδίο κωδικού με το σταθερό "PIN-" --- */
+
 .pin-input-group {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  background-color: #ffffff;
-  overflow: hidden; 
+  border-radius: 8px;
+  background-color: var(--white);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pin-input-group:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.14);
 }
 
 .pin-prefix {
-  background-color: #f1f5f9; 
+  display: flex;
+  align-items: center;
+  background-color: #f1f5f9;
   color: #475569;
-  padding: 12px 16px;
-  font-weight: bold;
+  padding: 0 16px;
+  font-weight: 700;
   font-size: 1rem;
-  border-right: 1px solid #cbd5e1; 
+  border-right: 1px solid #cbd5e1;
 }
 
 .pin-input-group input {
   flex: 1;
-  border: none; 
-  padding: 12px;
-  font-size: 1rem;
-  outline: none; 
-}
-
-/* Το πεδίο του email (που είναι απλό) παραμένει ως έχει */
-.recovery-form > input[type="email"] {
-  padding: 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 1rem;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Κουμπί Υποβολής */
-.submit-btn {
-  padding: 12px;
-  background-color: #f97316; 
-  color: white;
+  min-width: 0;
   border: none;
-  border-radius: 6px;
-  font-weight: bold;
+  padding: 14px 12px;
   font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  font-family: inherit;
+  color: var(--text-dark);
+  outline: none;
+  background: transparent;
 }
 
-.submit-btn:hover {
-  background-color: #ea580c;
+/* --- Απλό πεδίο κειμένου (email) --- */
+
+.text-input {
+  width: 100%;
+  padding: 14px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text-dark);
+  background-color: var(--white);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* Κουτί Αποτελέσματος (Λευκό πλαίσιο) */
-.status-box {
-  margin-top: 35px;
-  padding: 30px;
-  border-radius: 12px;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.03); 
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.text-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.14);
 }
 
-/* Το Navy Blue Ταμπελάκι */
-.status-badge-site {
-  display: inline-block;
-  background-color: var(--primary); 
-  color: #ffffff; 
-  padding: 12px 24px;
-  border-radius: 8px; 
+/* --- Κουμπί υποβολής --- */
+
+.recovery-submit {
+  width: 100%;
+  padding: 15px;
+  background-color: var(--accent);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
   font-weight: 700;
   font-size: 1rem;
-  text-align: center;
-  border: none;
-  margin-top: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-/* Κουμπί Download (εμφανίζεται μόνο όταν ολοκληρωθεί) */
-.download-btn {
+.recovery-submit:hover:not(:disabled) {
+  background-color: #c2410c;
+}
+
+.recovery-submit:disabled {
+  background-color: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.recovery-submit:focus-visible,
+.download-btn:focus-visible,
+.form-error-link:focus-visible,
+.recovery-help-link a:focus-visible {
+  outline: 3px solid rgba(234, 88, 12, 0.45);
+  outline-offset: 2px;
+}
+
+/* --- Μήνυμα σφάλματος --- */
+
+.form-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  background-color: #fef2f2;
+  border-radius: 10px;
+  color: #7f1d1d;
+}
+
+.form-error-icon {
+  flex-shrink: 0;
+  color: #dc2626;
+  margin-top: 1px;
+}
+
+.form-error-body {
+  min-width: 0;
+}
+
+.form-error-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #991b1b;
+  margin-bottom: 8px;
+}
+
+.form-error-text {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: #7f1d1d;
+}
+
+.form-error-link {
   display: inline-block;
-  margin-top: 20px;
-  padding: 12px 25px;
-  background-color: #22c55e;
-  color: white;
+  margin-top: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #991b1b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.form-error-link:hover {
+  color: #dc2626;
+}
+
+/* --- Δευτερεύον link προς Επικοινωνία --- */
+
+.recovery-help-link {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.recovery-help-link a {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.recovery-help-link a:hover {
+  color: var(--accent);
+}
+
+/* --- Κουτί αποτελέσματος --- */
+
+.status-box {
+  margin-top: 32px;
+  padding: 32px;
+  background-color: var(--white);
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.status-eyebrow {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 32px;
+}
+
+/* --- Τα τέσσερα στάδια --- */
+
+.stages {
+  display: flex;
+  list-style: none;
+  margin: 0 0 32px 0;
+  padding: 0;
+}
+
+.stage {
+  flex: 1;
+  position: relative;
+  text-align: center;
+}
+
+/* η γραμμή που ενώνει το κάθε στάδιο με το προηγούμενο */
+.stage::before {
+  content: "";
+  position: absolute;
+  top: 17px;
+  right: 50%;
+  left: -50%;
+  height: 2px;
+  background-color: #e2e8f0;
+}
+
+.stage:first-child::before {
+  display: none;
+}
+
+.stage.is-done::before,
+.stage.is-current::before {
+  background-color: var(--primary);
+}
+
+.stage-dot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 10px auto;
+  border-radius: 50%;
+  background-color: var(--white);
+  border: 2px solid #e2e8f0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.stage.is-done .stage-dot {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--white);
+}
+
+.stage.is-current .stage-dot {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--white);
+}
+
+/* Το τελευταίο στάδιο, όταν η αίτηση έχει ολοκληρωθεί */
+.stage.is-final .stage-dot {
+  background-color: #15803d;
+  border-color: #15803d;
+  color: var(--white);
+}
+
+.stage.is-final::before {
+  background-color: #15803d;
+}
+
+.stage-label {
+  display: block;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+.stage.is-done .stage-label,
+.stage.is-current .stage-label {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.stage.is-final .stage-label {
+  color: #15803d;
+}
+
+/* --- Περιγραφή κατάστασης --- */
+
+.status-text {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--text-dark);
+}
+
+.status-note {
+  margin-top: 16px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* --- Κουμπί λήψης --- */
+
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 14px 24px;
+  background-color: #15803d;
+  color: var(--white);
   text-decoration: none;
-  font-weight: bold;
-  border-radius: 5px;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: 8px;
   transition: background-color 0.2s ease;
 }
 
 .download-btn:hover {
-  background-color: #16a34a;
+  background-color: #166534;
 }
 
-.error-text {
-  color: #ef4444;
-  font-weight: bold;
+/* ════════════════════════════════════════════════
+   ΚΙΝΗΤΑ
+   ════════════════════════════════════════════════ */
+
+@media (max-width: 560px) {
+  .recovery-page {
+    padding: 48px 20px 64px;
+  }
+
+  .recovery-title {
+    font-size: 1.6rem;
+  }
+
+  .recovery-subtitle {
+    font-size: 1rem;
+  }
+
+  .recovery-card,
+  .status-box {
+    padding: 24px 20px;
+  }
+
+  .form-error {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  /* τα στάδια μπαίνουν το ένα κάτω από το άλλο */
+  .stages {
+    flex-direction: column;
+  }
+
+  .stage {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+    padding-bottom: 20px;
+  }
+
+  .stage:last-child {
+    padding-bottom: 0;
+  }
+
+  .stage::before {
+    top: -20px;
+    left: 17px;
+    right: auto;
+    width: 2px;
+    height: 20px;
+  }
+
+  .stage-dot {
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .stage-label {
+    font-size: 0.95rem;
+    padding: 0;
+  }
+
+  .download-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Σεβασμός στη ρύθμιση "λιγότερη κίνηση" του λειτουργικού */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }

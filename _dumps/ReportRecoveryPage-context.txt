@@ -1,0 +1,597 @@
+CODE EXPORT - ReportRecoveryPage
+Project: FreePension
+Date: 29/08/2026 13:56
+
+Contains: the page component, its CSS,
+and (optionally) shared layout/style files for context.
+
+================================================================
+### PAGE - JSX
+### .\src\pages\ReportRecoveryPage.jsx   (104 lines)
+================================================================
+```jsx
+import React, { useState } from 'react';
+import { ref, get } from "firebase/database";
+import { db } from "../firebase";
+import './ReportRecoveryPage.css';
+
+const ReportRecoveryPage = () => {
+  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
+  const [reportData, setReportData] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setError('');
+    setReportData(null);
+    setLoading(true);
+
+    try {
+      // Καθαρίζουμε το PIN από τυχόν κενά 
+      const cleanPin = pin.trim().toUpperCase();
+      
+      // Ο χρήστης γράφει μόνο τον αριθμό, εμείς προσθέτουμε το PIN- για την αναζήτηση
+      const searchPin = `PIN-${cleanPin}`;
+
+      // Ψάχνουμε στη διαδρομή του συγκεκριμένου PIN
+      const reportRef = ref(db, `premium_requests/${searchPin}`);
+      const snapshot = await get(reportRef);
+
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        
+        // Έλεγχος Ασφαλείας με το Email
+        if (data.email.toLowerCase() === email.trim().toLowerCase()) {
+          setReportData(data);
+        } else {
+          setError('Τα στοιχεία δεν ταιριάζουν. Ελέγξτε το PIN και το Email σας.');
+        }
+      } else {
+        setError('Δεν βρέθηκε αίτηση με αυτόν τον κωδικό.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Υπήρξε κάποιο πρόβλημα κατά την αναζήτηση.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="recovery-container">
+      <h2>Παρακολούθηση Αίτησης</h2>
+      <p>Συμπληρώστε τα παρακάτω πεδία για να ενημερωθείτε για την εξέλιξη της αίτησής σας.</p>
+
+      <form onSubmit={handleSearch} className="recovery-form">
+        {/* Νέο πεδίο με το σταθερό "PIN-" */}
+        <div className="pin-input-group">
+          <span className="pin-prefix">PIN-</span>
+          <input 
+            type="text" 
+            placeholder="π.χ. 146138" 
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            required 
+          />
+        </div>
+        
+        <input 
+          type="email" 
+          placeholder="Το Email της αίτησης" 
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required 
+        />
+        
+        <button type="submit" className="submit-btn" disabled={loading}>
+          {loading ? 'Αναζήτηση...' : 'Έλεγχος Κατάστασης'}
+        </button>
+      </form>
+
+      {error && <p className="error-text" style={{marginTop: '20px'}}>{error}</p>}
+
+      {reportData && (
+        <div className="status-box">
+          <h3 style={{ margin: '0 0 15px 0', color: '#1e293b' }}>Κατάσταση Αίτησης</h3>
+          
+          <div className="status-badge-site">
+            {reportData.status === 'pending_payment' ? 'Η αίτηση καταχωρήθηκε - Γίνεται έλεγχος δικαιολογητικών' : 
+             reportData.status === 'processing' ? 'Σε εξέλιξη - Υπολογισμός σύνταξης' : 
+             reportData.status === 'completed' ? 'Ολοκληρώθηκε - Το Report είναι έτοιμο' : reportData.status}
+          </div>
+          
+          {reportData.status === 'completed' && reportData.finalReportUrl && (
+            <a href={reportData.finalReportUrl} target="_blank" rel="noreferrer" className="download-btn">
+              📥 Κατέβασμα Report (PDF)
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ReportRecoveryPage;
+```
+
+================================================================
+### PAGE - CSS
+### .\src\pages\ReportRecoveryPage.css   (123 lines)
+================================================================
+```css
+/* Βασικό Container */
+.recovery-container {
+  padding: 40px;
+  max-width: 500px;
+  margin: 0 auto;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+/* Φόρμα Αναζήτησης */
+.recovery-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 25px;
+  background: #f9f9f9;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* --- Νέο Στυλ για το πεδίο του PIN --- */
+.pin-input-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #ffffff;
+  overflow: hidden; 
+}
+
+.pin-prefix {
+  background-color: #f1f5f9; 
+  color: #475569;
+  padding: 12px 16px;
+  font-weight: bold;
+  font-size: 1rem;
+  border-right: 1px solid #cbd5e1; 
+}
+
+.pin-input-group input {
+  flex: 1;
+  border: none; 
+  padding: 12px;
+  font-size: 1rem;
+  outline: none; 
+}
+
+/* Το πεδίο του email (που είναι απλό) παραμένει ως έχει */
+.recovery-form > input[type="email"] {
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Κουμπί Υποβολής */
+.submit-btn {
+  padding: 12px;
+  background-color: #f97316; 
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-btn:hover {
+  background-color: #ea580c;
+}
+
+/* Κουτί Αποτελέσματος (Λευκό πλαίσιο) */
+.status-box {
+  margin-top: 35px;
+  padding: 30px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.03); 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Το Navy Blue Ταμπελάκι */
+.status-badge-site {
+  display: inline-block;
+  background-color: var(--primary); 
+  color: #ffffff; 
+  padding: 12px 24px;
+  border-radius: 8px; 
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: center;
+  border: none;
+  margin-top: 5px;
+}
+
+/* Κουμπί Download (εμφανίζεται μόνο όταν ολοκληρωθεί) */
+.download-btn {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 12px 25px;
+  background-color: #22c55e;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 5px;
+  transition: background-color 0.2s ease;
+}
+
+.download-btn:hover {
+  background-color: #16a34a;
+}
+
+.error-text {
+  color: #ef4444;
+  font-weight: bold;
+}
+```
+
+================================================================
+### SHARED - Global CSS / variables
+### .\src\index.css   (28 lines)
+================================================================
+```css
+:root {
+  --primary: #0f172a;
+  --accent: #ea580c;
+  --bg-light: #f8fafc;
+  --text-dark: #1e293b;
+  --text-muted: #64748b;
+  --white: #ffffff;
+  --container-max: 1200px;
+  --radius: 16px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+}
+
+.container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+```
+
+================================================================
+### SHARED - Routing
+### .\src\App.jsx   (50 lines)
+================================================================
+```jsx
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import './index.css';
+import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
+import HomePage from './pages/HomePage';
+import StartPage from './pages/StartPage';
+import ContactPage from './pages/ContactPage';
+import TermsPage from './pages/legal/TermsPage';
+import PrivacyPage from './pages/legal/PrivacyPage';
+import DisclaimerPage from './pages/legal/DisclaimerPage';
+
+import FreeGuidePage from './pages/FreeGuidePage';
+import ReportGuidePage from './pages/ReportGuidePage';
+
+import ReportRecoveryPage from './pages/ReportRecoveryPage';
+import ScrollToTop from './components/ScrollToTop';
+import PremiumUploadPage from './pages/PremiumUploadPage';
+import AdminDashboard from './pages/AdminDashboard';
+
+import PensionFormPage from './pages/pension-form/PensionFormPage';
+
+function App() {
+  return (
+    <div className="App">
+      <Navbar />
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/start" element={<StartPage />} />
+
+        <Route path="/free-guide" element={<FreeGuidePage />} />
+        <Route path="/report-guide" element={<ReportGuidePage />} />
+
+        <Route path="/calculator" element={<PensionFormPage calculatorEdition="free" />} />
+
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/disclaimer" element={<DisclaimerPage />} />
+        <Route path="/report-recovery" element={<ReportRecoveryPage />} />
+        <Route path="/premium-upload" element={<PremiumUploadPage />} />
+        <Route path="/$Sp83199" element={<AdminDashboard />} />
+      </Routes>
+      <Footer />
+    </div>
+  );
+}
+
+export default App;
+```
+
+================================================================
+### SHARED - Navbar
+### .\src\components\layout\Navbar.jsx   (55 lines)
+================================================================
+```jsx
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import './Navbar.css';
+
+const Navbar = () => {
+  const location = useLocation();
+
+  return (
+    <nav className="navbar">
+      <div className="container nav-container">
+        <div className="logo">Υπολογισμός Σύνταξης</div>
+
+        <ul className="nav-links">
+          <li>
+            <Link to="/" className={location.pathname === "/" ? "active" : ""}>
+              Αρχική
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/calculator?start=main"
+              className={location.pathname === "/calculator" ? "active" : ""}
+            >
+              Υπολογισμός
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/premium-upload"
+              className={location.pathname === "/premium-upload" ? "active" : ""}
+            >
+              Αποστολή Ιστορικού
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/report-recovery"
+              className={`track-btn ${location.pathname === "/recovery" ? "active" : ""}`}
+            >
+              Παρακολούθηση Αίτησης
+            </Link>
+          </li>
+          <li>
+            <Link to="/contact" className={location.pathname === "/contact" ? "active" : ""}>
+              Επικοινωνία
+            </Link>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;
+```
+
+================================================================
+### SHARED - Navbar CSS
+### .\src\components\layout\Navbar.css   (88 lines)
+================================================================
+```css
+.navbar {
+  height: 80px;
+  background: var(--white);
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between; 
+  align-items: center;
+  width: 100%;
+}
+
+.logo {
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--primary);
+}
+
+.nav-links {
+  display: flex;
+  gap: 22px;
+  list-style: none;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--text-main); 
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  position: relative;
+  padding: 4px 0;
+}
+
+.nav-links a:hover {
+  color: var(--primary); 
+}
+
+.nav-links a.active {
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+}
+
+/* Υπογράμμιση στο hover ΜΟΝΟ για τα απλά links (εξαιρούμε ρητά το track-btn) */
+.nav-links a:not(.active):not(.track-btn):hover::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--primary); 
+  border-radius: 2px;
+}
+
+/* --- Ghost Button (Διαφανές) για την Παρακολούθηση Αίτησης --- */
+.nav-links a.track-btn {
+  background-color: #f1f5f9; /* Πολύ απαλό γκρι-γαλάζιο φόντο */
+  color: var(--primary); /* Το κανονικό σκούρο χρώμα του μενού */
+  padding: 8px 18px;
+  border-radius: 8px; /* Απαλές, στρογγυλεμένες γωνίες */
+  border: none; /* Τέρμα οι γραμμές */
+  font-weight: 600;
+  display: inline-block;
+  transition: all 0.2s ease;
+}
+
+/* Στο hover γεμίζει με το χρώμα */
+.nav-links a.track-btn:hover {
+  background-color: #e2e8f0; /* Γίνεται ένα κλικ πιο σκούρο */
+  color: var(--primary);
+}
+
+/* Όταν ο χρήστης βρίσκεται ήδη στη σελίδα παρακολούθησης */
+.nav-links a.track-btn.active {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-bottom: none;
+}
+```
+
+================================================================
+### SHARED - Footer
+### .\src\components\layout\Footer.jsx   (42 lines)
+================================================================
+```jsx
+import React from 'react';
+import { Link } from 'react-router-dom';
+import './Footer.css';
+
+const Footer = () => {
+  return (
+    <footer className="footer">
+      <div className="container footer-grid">
+        <div className="footer-brand">
+          <h4>Υπολογισμός Σύνταξης</h4>
+          <p>Ενημερωτικό εργαλείο υπολογισμού βάσει της τρέχουσας ασφαλιστικής νομοθεσίας.</p>
+        </div>
+        
+        <div className="footer-links">
+          <h5>Υπηρεσίες</h5>
+          <ul>
+            <li><Link to="/premium-upload" className="premium-accent">Premium Ανάλυση</Link></li>
+            <li><Link to="/track-request">Παρακολούθηση Αίτησης</Link></li>
+            <li><Link to="/contact">Επικοινωνία</Link></li>
+          </ul>
+        </div>
+
+        <div className="footer-links">
+          <h5>Πληροφορίες</h5>
+          <ul>
+            <li><Link to="/terms">Όροι Χρήσης</Link></li>
+            <li><Link to="/privacy">Πολιτική Απορρήτου</Link></li>
+            <li><Link to="/disclaimer">Αποποίηση Ευθύνης</Link></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div className="footer-bottom">
+        <div className="container">
+          <p>&copy; 2026 Υπολογισμός Σύνταξης. Με την επιφύλαξη κάθε νόμιμου δικαιώματος.</p>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
+```
+
+================================================================
+### SHARED - Footer CSS
+### .\src\components\layout\Footer.css   (46 lines)
+================================================================
+```css
+.footer {
+  background-color: #0f172a;
+  color: white;
+  padding: 50px 0 0 0;
+  margin-top: 60px;
+  border-top: 1px solid #1e293b;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 40px;
+  padding-bottom: 40px;
+}
+
+/* ΠΟΡΤΟΚΑΛΙ ΤΙΤΛΟΙ */
+.footer-brand h4, .footer-links h5 {
+  color: #ff6b00; /* Το πορτοκαλί σου */
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.footer-links a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+/* ΓΑΛΑΖΙΟ PREMIUM */
+.footer-links a.premium-accent {
+  color: #38bdf8 !important; /* Φωτεινό γαλάζιο */
+  font-weight: 800;
+}
+
+.footer-links a.premium-accent:hover {
+  color: white !important;
+  text-decoration: underline;
+}
+
+.footer-bottom {
+  background-color: #020617;
+  padding: 20px 0;
+  text-align: center;
+}
+```

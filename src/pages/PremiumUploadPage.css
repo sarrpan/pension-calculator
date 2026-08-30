@@ -1,322 +1,745 @@
-/* Γενικό Wrapper για το φόντο */
-.premium-upload-wrapper {
-  padding: 60px 20px;
+/* ==========================================================
+   Αποστολή Ιστορικού — PremiumUploadPage
+   Όλες οι κλάσεις έχουν πρόθεμα .pu- ώστε να μην συγκρούονται
+   με τα global στυλ άλλων σελίδων (π.χ. .submit-btn).
+   Κλίμακα αποστάσεων: 8 / 16 / 24 / 32 / 48 / 80
+   ========================================================== */
+
+.pu-wrapper {
   background-color: #f1f5f9;
-  min-height: 80vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: 48px 24px 80px;
 }
 
-.premium-upload-card {
-  background: white;
-  padding: 40px;
-  max-width: 600px;
-  width: 100%;
-  border-radius: 12px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  box-sizing: border-box;
-}
-
-.premium-upload-card h2 {
-  color: #0f172a;
-  text-align: center;
-  margin-top: 0;
-  margin-bottom: 30px;
-  font-size: 1.8rem;
-}
-
-.premium-upload-form {
+.pu-inner {
+  max-width: 640px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
-.input-group label {
-  display: block;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 8px;
-  font-size: 0.95rem;
+/* ── Επικεφαλίδα ───────────────────────────────────────── */
+.pu-header {
+  text-align: left;
 }
 
-.email-input {
-  width: 100%;
-  padding: 12px 15px;
-  font-size: 16px;
-  box-sizing: border-box;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  transition: border-color 0.2s;
+/* Το κείμενο γράφεται ήδη με κεφαλαία στο JSX, χωρίς τόνους.
+   Δεν χρησιμοποιείται text-transform: uppercase, γιατί ο browser
+   μετατρέπει το «ή» σε «Ή» και αφήνει τον τόνο. */
+.pu-eyebrow {
+  margin: 0 0 8px;
+  color: #e85d24;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
 }
 
-.email-input:focus {
-  outline: none;
-  border-color: #e65c00;
-  box-shadow: 0 0 0 3px rgba(230, 92, 0, 0.1);
+.pu-title {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 2rem;
+  line-height: 1.25;
+  font-weight: 800;
 }
 
-.file-drop-area {
-  border-radius: 8px;
-  transition: all 0.2s ease-in-out;
-  cursor: pointer;
+.pu-subtitle {
+  margin: 0;
+  color: #475569;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 52ch;
 }
 
-.file-drop-area.idle, 
-.file-drop-area {
-  border: 2px dashed #cbd5e1;
-  background-color: #f8fafc;
+/* ── Κάρτες ────────────────────────────────────────────── */
+.pu-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 32px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.file-drop-area:hover {
-  border-color: #94a3b8;
-  background-color: #f1f5f9;
+.pu-card-title {
+  margin: 0 0 24px;
+  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
-.file-drop-area.has-file {
-  border: 2px solid #22c55e;
-  background-color: #f0fdf4;
+/* ── Σύνοψη παραγγελίας ────────────────────────────────── */
+.pu-order-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.file-label-wrapper {
-  display: block;
-  cursor: pointer;
-  padding: 25px;
-  text-align: center;
+.pu-order-title {
+  margin: 0 0 4px;
+  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
-.file-status-text {
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.file-status-text.success {
-  color: #15803d;
-}
-
-.file-status-text.idle {
+.pu-order-sub {
+  margin: 0;
   color: #64748b;
+  font-size: 0.9rem;
 }
 
-/* --- ΝΕΟ DESIGN ΚΑΡΤΑΣ ΑΣΠΙΔΑΣ --- */
-.confirmation-card {
-  display: flex;
-  align-items: center;
-  background: linear-gradient(135deg, #fdfdfd 0%, #f0f4f8 100%);
-  border-radius: 10px;
-  padding: 15px 20px;
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid #cbd5e1;
-  box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.8), 0 3px 8px rgba(0, 0, 0, 0.05);
-  margin: 5px 0;
-  gap: 15px;
+.pu-price {
+  text-align: right;
+  flex-shrink: 0;
 }
 
-.left-section {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.checkbox-container {
+.pu-price-amount {
   display: block;
-  position: relative;
-  width: 26px;
-  height: 26px;
+  color: #e85d24;
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.pu-price-note {
+  display: block;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.pu-order-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pu-order-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.pu-order-list svg {
+  color: #e85d24;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pu-order-foot {
+  margin: 16px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+/* ── Φόρμα ─────────────────────────────────────────────── */
+.pu-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pu-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.pu-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.pu-input {
+  width: 100%;
+  padding: 13px 15px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #0f172a;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pu-input::placeholder {
+  color: #94a3b8;
+}
+
+.pu-input:focus {
+  outline: none;
+  border-color: #e85d24;
+  box-shadow: 0 0 0 3px rgba(232, 93, 36, 0.15);
+}
+
+.pu-field-hint {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.pu-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Περιοχή επιλογής αρχείου ──────────────────────────── */
+.pu-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 32px 24px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
   cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.styled-checkbox {
-  opacity: 0;
-  width: 0; height: 0;
-  position: absolute;
+.pu-drop:hover,
+.pu-drop.is-dragging,
+.pu-drop:focus-within {
+  border-color: #e85d24;
+  background: #fff7f3;
 }
 
-.checkmark {
-  position: absolute;
-  top: 0; left: 0;
-  width: 26px;
-  height: 26px;
-  background-color: white;
+.pu-drop-icon {
+  width: 28px;
+  height: 28px;
+  color: #e85d24;
+  margin-bottom: 4px;
+}
+
+.pu-drop-main {
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.98rem;
+}
+
+.pu-drop-sub {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.pu-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.pu-file-icon {
+  width: 22px;
+  height: 22px;
+  color: #e85d24;
+  flex-shrink: 0;
+}
+
+.pu-file-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.pu-file-name {
+  margin: 0;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pu-file-size {
+  margin: 2px 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.pu-file-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 6px 8px;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.pu-file-remove:hover {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+/* ── Επιβεβαίωση (checkbox) ────────────────────────────── */
+.pu-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.pu-confirm:hover {
+  border-color: #94a3b8;
+}
+
+.pu-confirm.is-checked {
+  border-color: #e85d24;
+  background: #fff7f3;
+}
+
+.pu-checkbox {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  margin-top: 1px;
   border: 2px solid #94a3b8;
   border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.checkbox-container input:checked ~ .checkmark {
-  background-color: #e65c00;
-  border-color: #e65c00;
-}
-
-.checkbox-container input:checked ~ .checkmark::after {
-  content: '';
-  position: absolute;
-  left: 8px; top: 4px;
-  width: 6px; height: 12px;
-  border: solid white;
-  border-width: 0 3px 3px 0;
-  transform: rotate(45deg);
-}
-
-.shield-section {
+  background: #ffffff;
   display: flex;
-  justify-content: center;
   align-items: center;
-}
-
-.shield-emblem {
-  width: 45px;
-  height: 55px;
-  position: relative;
-  display: flex;
   justify-content: center;
-  align-items: center;
+  transition: all 0.15s ease;
 }
 
-.shield-body {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 40%, #cbd5e1 60%, #e2e8f0 100%);
-  border-radius: 4px 4px 50% 50% / 4px 4px 10px 10px;
-  border: 2px solid #64748b;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.pu-confirm.is-checked .pu-checkbox {
+  background: #e85d24;
+  border-color: #e85d24;
 }
 
-.shield-blue-center {
-  width: 75%;
-  height: 75%;
-  background: radial-gradient(circle, #3b82f6 0%, #1e3a8a 100%);
-  border-radius: inherit;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+.pu-checkbox-icon {
+  width: 14px;
+  height: 14px;
+  color: #ffffff;
+  opacity: 0;
+  stroke-width: 3;
 }
 
-.shield-center-metal {
-  width: 40%;
-  height: 40%;
-  background: linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%);
-  border-radius: inherit;
-  border: 1px solid #94a3b8;
+.pu-confirm.is-checked .pu-checkbox-icon {
+  opacity: 1;
 }
 
-.text-section {
+.pu-confirm input:focus-visible ~ .pu-checkbox {
+  box-shadow: 0 0 0 3px rgba(232, 93, 36, 0.25);
+}
+
+.pu-confirm-text {
   color: #334155;
-  flex: 1;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+/* ── Λίστα προϋποθέσεων ────────────────────────────────── */
+.pu-checklist {
+  padding: 16px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.pu-checklist-title {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.pu-checklist ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pu-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.pu-checklist li svg {
+  color: #cbd5e1;
+  flex-shrink: 0;
+}
+
+.pu-checklist li.is-done {
+  color: #334155;
+}
+
+.pu-checklist li.is-done svg {
+  color: #e85d24;
+}
+
+/* ── Μηνύματα ──────────────────────────────────────────── */
+.pu-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
   font-size: 0.9rem;
-  line-height: 1.4;
+  line-height: 1.55;
 }
 
-.text-section p {
-  margin: 2px 0;
+.pu-notice p {
+  margin: 0;
 }
 
-/* Responsive για κινητά */
-@media (max-width: 500px) {
-  .confirmation-card {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-/* --- ΤΕΛΟΣ ΝΕΟΥ DESIGN --- */
-
-.error-box {
-  background-color: #fef2f2;
-  color: #b91c1c;
-  padding: 12px;
-  border-radius: 6px;
-  border: 1px solid #fee2e2;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  font-weight: 500;
+.pu-notice svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
-.submit-btn {
-  padding: 15px;
-  background-color: #e65c00;
-  color: white;
+.pu-notice-title {
+  font-weight: 700;
+  margin-bottom: 2px !important;
+}
+
+.pu-notice--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.pu-notice--warn {
+  background: #fff7f3;
+  border: 1px solid #fed7c3;
+  color: #9a3412;
+  text-align: left;
+  margin-top: 24px;
+}
+
+/* ── Κουμπιά ───────────────────────────────────────────── */
+.pu-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 28px;
+  background: #e85d24;
+  color: #ffffff;
   border: none;
-  font-size: 16px;
-  font-weight: bold;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
   cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s ease-in-out;
-  width: 100%;
-  margin-top: 10px;
+  transition: background-color 0.15s ease;
 }
 
-.submit-btn:hover:not(.disabled) {
-  background-color: #cc5200;
-  transform: translateY(-1px);
+.pu-btn-primary:hover:not(:disabled) {
+  background: #cc4f1c;
 }
 
-.submit-btn.disabled {
-  background-color: #cbd5e1;
+.pu-btn-primary:disabled {
+  background: #e2e8f0;
   color: #94a3b8;
   cursor: not-allowed;
-  opacity: 0.8;
 }
 
-.payment-confirmation-zone {
-  animation: fadeIn 0.4s ease-out;
+.pu-btn-full {
+  width: 100%;
 }
 
-.summary-box {
-  background: #f1f5f9;
-  padding: 15px;
+.pu-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 28px;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  margin-bottom: 20px;
-  font-size: 0.95rem;
-  color: #334155;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
-.summary-box p {
-  margin: 5px 0;
+.pu-btn-secondary:hover {
+  background: #f1f5f9;
 }
 
-.back-btn {
+.pu-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 8px 0;
   background: none;
   border: none;
   color: #64748b;
-  cursor: pointer;
-  margin-top: 15px;
-  text-decoration: underline;
+  font-family: inherit;
   font-size: 0.9rem;
-  width: 100%;
-  text-align: center;
+  cursor: pointer;
 }
 
-.premium-success-container {
-  text-align: center;
-  padding: 60px 20px;
-  max-width: 600px;
-  margin: 0 auto;
+.pu-back:hover {
+  color: #0f172a;
 }
 
-.success-icon {
-  font-size: 4rem;
-  margin-bottom: 20px;
+/* ── Ενότητα ασφάλειας ─────────────────────────────────── */
+.pu-security {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
 }
 
-.pin-label {
+.pu-security-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: #0f172a;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.pu-security-title svg {
+  color: #e85d24;
+}
+
+.pu-security ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pu-security li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   color: #64748b;
-  margin-bottom: 10px;
+  font-size: 0.86rem;
+  line-height: 1.55;
 }
 
-.pin-display {
-  color: #e65c00;
-  font-size: 4rem;
-  margin: 0 0 20px 0;
-  letter-spacing: 2px;
+.pu-security li svg {
+  color: #94a3b8;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+/* ── Οθόνη πληρωμής ────────────────────────────────────── */
+.pu-review {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.pu-review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 16px;
+  font-size: 0.92rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pu-review-row:last-child {
+  border-bottom: none;
+}
+
+.pu-review-row span {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.pu-review-row strong {
+  color: #0f172a;
+  text-align: right;
+  word-break: break-all;
+}
+
+.pu-review-total {
+  background: #f8fafc;
+}
+
+.pu-review-total strong {
+  color: #e85d24;
+  font-size: 1.1rem;
+}
+
+.pu-payment {
+  animation: pu-fade 0.3s ease-out;
+}
+
+/* ── Οθόνη επιτυχίας ───────────────────────────────────── */
+.pu-pin-card {
+  text-align: center;
+}
+
+.pu-pin-label {
+  margin: 0 0 8px;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.pu-pin-value {
+  margin: 0 0 16px;
+  color: #0f172a;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.pu-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.pu-copy-btn:hover {
+  background: #f1f5f9;
+}
+
+.pu-next-steps {
+  margin: 0 0 24px;
+  padding-left: 20px;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.pu-next-steps li {
+  margin-bottom: 8px;
+}
+
+.pu-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pu-actions > * {
+  flex: 1;
+  min-width: 180px;
+}
+
+.pu-hint {
+  margin: 16px 0 0;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+/* ── Εικονίδια ─────────────────────────────────────────── */
+.pu-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.pu-icon-sm {
+  width: 17px;
+  height: 17px;
+}
+
+/* ── Κινητά ────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .pu-wrapper {
+    padding: 32px 16px 48px;
+  }
+
+  .pu-card {
+    padding: 24px 20px;
+  }
+
+  .pu-title {
+    font-size: 1.6rem;
+  }
+
+  .pu-subtitle {
+    font-size: 1rem;
+  }
+
+  .pu-order-head {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pu-price {
+    text-align: left;
+  }
+
+  .pu-pin-value {
+    font-size: 2rem;
+  }
+
+  .pu-file {
+    flex-wrap: wrap;
+  }
+
+  .pu-actions > * {
+    min-width: 100%;
+  }
+}
+
+@keyframes pu-fade {
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pu-payment {
+    animation: none;
+  }
 }

@@ -576,13 +576,15 @@ function resolveParallelRowMeaning({ year, matchingPeriods, context }) {
 
 function parseDisplayOrIsoYear(value) {
   const text = String(value || "").trim();
-  const isoMatch = /^(\d{4})-\d{2}-\d{2}$/.exec(text);
+
+  const isoMatch = /^(\d{4})-\d{1,2}-\d{1,2}$/.exec(text);
 
   if (isoMatch) {
     return Number(isoMatch[1]);
   }
 
-  const displayMatch = /^\d{2}\/\d{2}\/(\d{4})$/.exec(text);
+  const displayMatch =
+    /^\d{1,2}[\/\-. ]\d{1,2}[\/\-. ](\d{4})$/.exec(text);
 
   if (displayMatch) {
     return Number(displayMatch[1]);

@@ -10,12 +10,13 @@ const Footer = () => {
           <h4>Υπολογισμός Σύνταξης</h4>
           <p>Ενημερωτικό εργαλείο υπολογισμού βάσει της τρέχουσας ασφαλιστικής νομοθεσίας.</p>
         </div>
-        
+
         <div className="footer-links">
           <h5>Υπηρεσίες</h5>
           <ul>
             <li><Link to="/premium-upload" className="premium-accent">Premium Ανάλυση</Link></li>
-            <li><Link to="/track-request">Παρακολούθηση Αίτησης</Link></li>
+            {/* ΔΙΟΡΘΩΣΗ: ήταν /track-request, που δεν υπάρχει ως σελίδα */}
+            <li><Link to="/report-recovery">Παρακολούθηση Αίτησης</Link></li>
             <li><Link to="/contact">Επικοινωνία</Link></li>
           </ul>
         </div>
@@ -29,7 +30,7 @@ const Footer = () => {
           </ul>
         </div>
       </div>
-      
+
       <div className="footer-bottom">
         <div className="container">
           <p>&copy; 2026 Υπολογισμός Σύνταξης. Με την επιφύλαξη κάθε νόμιμου δικαιώματος.</p>

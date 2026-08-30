@@ -176,12 +176,18 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
     averageMonthlyPensionableEarningsInput,
     setAverageMonthlyPensionableEarningsInput,
   ] = useState(savedDraft.averageMonthlyPensionableEarningsInput || "");
-  const [yearlyEarningsRows, setYearlyEarningsRows] = useState(
+  const [yearlyEarningsRows, setYearlyEarningsRows] = useState(() => {
+  const initialRows =
     Array.isArray(savedDraft.yearlyEarningsRows) &&
-      savedDraft.yearlyEarningsRows.length > 0
+    savedDraft.yearlyEarningsRows.length > 0
       ? savedDraft.yearlyEarningsRows
-      : createEmptyYearlyEarningsRows(),
+      : createEmptyYearlyEarningsRows();
+
+  return ensureYearlyEarningsRowsThroughYear(
+    initialRows,
+    new Date().getFullYear(),
   );
+});
 
   const [backendResponse, setBackendResponse] = useState(null);
   const [backendError, setBackendError] = useState("");
@@ -288,6 +294,30 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
       { replace: true },
     );
   }, [location.pathname, location.search, navigate]);
+
+useEffect(() => {
+  const latestDeclaredEmploymentYear =
+    getLatestDeclaredEmploymentYearForYearlyRows({
+      insurancePeriodsInputMode,
+      simpleToDateInput,
+      insurancePeriodGroups,
+    });
+
+  if (latestDeclaredEmploymentYear === null) {
+    return;
+  }
+
+  setYearlyEarningsRows((currentRows) =>
+    ensureYearlyEarningsRowsThroughYear(
+      currentRows,
+      latestDeclaredEmploymentYear,
+    ),
+  );
+}, [
+  insurancePeriodsInputMode,
+  simpleToDateInput,
+  insurancePeriodGroups,
+]);
 
   const analysis = useMemo(() => {
     return analyzePensionForm({
@@ -2185,19 +2215,111 @@ function getSubmitButtonText({
   return "Υπολογισμός σύνταξης";
 }
 
-function createEmptyYearlyEarningsRows() {
+function createEmptyYearlyEarningsRow(year) {
+  return {
+    id: `year_${year}`,
+    year: String(year),
+    annualEarnings: "",
+    insuranceDays: "",
+  };
+}
+
+function createEmptyYearlyEarningsRows(
+  lastYear = new Date().getFullYear(),
+) {
+  const numericLastYear = Number(lastYear);
+  const normalizedLastYear =
+    Number.isInteger(numericLastYear) && numericLastYear >= 2002
+      ? numericLastYear
+      : new Date().getFullYear();
+
   const rows = [];
 
-  for (let year = 2002; year <= 2025; year += 1) {
-    rows.push({
-      id: `year_${year}`,
-      year: String(year),
-      annualEarnings: "",
-      insuranceDays: "",
-    });
+  for (let year = 2002; year <= normalizedLastYear; year += 1) {
+    rows.push(createEmptyYearlyEarningsRow(year));
   }
 
   return rows;
+}
+
+function ensureYearlyEarningsRowsThroughYear(rows, lastYear) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const numericLastYear = Number(lastYear);
+
+  if (!Number.isInteger(numericLastYear) || numericLastYear < 2002) {
+    return safeRows;
+  }
+
+  const existingYears = new Set(
+    safeRows
+      .map((row) => Number(String(row?.year || "").trim()))
+      .filter((year) => Number.isInteger(year)),
+  );
+
+  const missingRows = [];
+
+  for (let year = 2002; year <= numericLastYear; year += 1) {
+    if (!existingYears.has(year)) {
+      missingRows.push(createEmptyYearlyEarningsRow(year));
+    }
+  }
+
+  if (missingRows.length === 0) {
+    return safeRows;
+  }
+
+  return [...safeRows, ...missingRows].sort((left, right) => {
+    const leftYear = Number(left?.year);
+    const rightYear = Number(right?.year);
+
+    if (!Number.isInteger(leftYear)) {
+      return 1;
+    }
+
+    if (!Number.isInteger(rightYear)) {
+      return -1;
+    }
+
+    return leftYear - rightYear;
+  });
+}
+
+function getLatestDeclaredEmploymentYearForYearlyRows({
+  insurancePeriodsInputMode,
+  simpleToDateInput,
+  insurancePeriodGroups,
+}) {
+  const toDateValues =
+    insurancePeriodsInputMode === "simple"
+      ? [simpleToDateInput]
+      : Array.isArray(insurancePeriodGroups)
+        ? insurancePeriodGroups.map((group) => group?.toDate)
+        : [];
+
+  const years = toDateValues
+    .map((value) => parseDateYearForYearlyRows(value))
+    .filter((year) => Number.isInteger(year));
+
+  return years.length > 0 ? Math.max(...years) : null;
+}
+
+function parseDateYearForYearlyRows(value) {
+  const text = String(value || "").trim();
+
+  const isoMatch = /^(\d{4})-\d{1,2}-\d{1,2}$/.exec(text);
+
+  if (isoMatch) {
+    return Number(isoMatch[1]);
+  }
+
+  const displayMatch =
+    /^\d{1,2}[\/\-. ]\d{1,2}[\/\-. ](\d{4})$/.exec(text);
+
+  if (displayMatch) {
+    return Number(displayMatch[1]);
+  }
+
+  return null;
 }
 
 const REAL_YEARLY_EARNINGS_ROWS = [

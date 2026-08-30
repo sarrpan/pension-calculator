@@ -25,23 +25,28 @@ function App() {
     <div className="App">
       <Navbar />
       <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/start" element={<StartPage />} />
 
-        <Route path="/free-guide" element={<FreeGuidePage />} />
-        <Route path="/report-guide" element={<ReportGuidePage />} />
+      {/* Το <main> με το app-main είναι που σπρώχνει το footer στο κάτω μέρος */}
+      <main className="app-main">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/start" element={<StartPage />} />
 
-        <Route path="/calculator" element={<PensionFormPage calculatorEdition="free" />} />
+          <Route path="/free-guide" element={<FreeGuidePage />} />
+          <Route path="/report-guide" element={<ReportGuidePage />} />
 
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/disclaimer" element={<DisclaimerPage />} />
-        <Route path="/report-recovery" element={<ReportRecoveryPage />} />
-        <Route path="/premium-upload" element={<PremiumUploadPage />} />
-        <Route path="/$Sp83199" element={<AdminDashboard />} />
-      </Routes>
+          <Route path="/calculator" element={<PensionFormPage calculatorEdition="free" />} />
+
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/disclaimer" element={<DisclaimerPage />} />
+          <Route path="/report-recovery" element={<ReportRecoveryPage />} />
+          <Route path="/premium-upload" element={<PremiumUploadPage />} />
+          <Route path="/$Sp83199" element={<AdminDashboard />} />
+        </Routes>
+      </main>
+
       <Footer />
     </div>
   );

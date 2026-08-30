@@ -4,3 +4,6 @@
 !.env.example
 firebase-debug.log
 firebase-debug.*.log
+.patch-backups/
+_dumps/
+*.log
