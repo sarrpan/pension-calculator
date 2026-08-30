@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './PremiumUploadPage.css';
-import { submitPremiumRequest } from '../services/stripe/premiumService';
+import { anevasmaAitisis, katagrafiPliromis } from '../services/stripe/premiumService';
 import stripePromise from '../services/stripe/stripeService';
 import { Elements } from '@stripe/react-stripe-js';
 import StripePaymentForm from '../components/stripe/StripePaymentForm';
@@ -89,14 +89,19 @@ const IconCopy = (p) => (
   </svg>
 );
 
-const IconArrowLeft = (p) => (
-  <svg {...svgBase} {...p}>
-    <path d="M19 12H5" />
-    <path d="m12 19-7-7 7-7" />
-  </svg>
-);
 
 /* ────────────────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════════
+   ΔΟΚΙΜΑΣΤΙΚΗ ΠΑΡΑΚΑΜΨΗ
+
+   Με τιμή true, η σελίδα ΔΕΝ ανεβάζει αρχείο και ΔΕΝ ζητά κάρτα.
+   Πηγαίνει κατευθείαν στην οθόνη επιτυχίας με ψεύτικο κωδικό,
+   ώστε να ελεγχθεί η εμφάνιση χωρίς Blaze.
+
+   ΠΡΙΝ ΤΟ ΑΝΕΒΑΣΜΑ ΣΤΟ LIVE ΠΡΕΠΕΙ ΝΑ ΓΙΝΕΙ false.
+   ══════════════════════════════════════════════════════════════ */
+const DOKIMASTIKI_PARAKAMPSI = false;
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -116,6 +121,8 @@ const PremiumUploadPage = () => {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pinAitisis, setPinAitisis] = useState(null);
+  const [prosochiPliromis, setProsochiPliromis] = useState(false);
 
   const successRef = useRef(null);
 
@@ -175,7 +182,7 @@ const PremiumUploadPage = () => {
     setError('');
   };
 
-  const handlePreSubmit = (e) => {
+  const handlePreSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -192,17 +199,35 @@ const PremiumUploadPage = () => {
       return;
     }
 
+    // Δοκιμαστική παράκαμψη: ούτε ανέβασμα ούτε πληρωμή.
+    if (DOKIMASTIKI_PARAKAMPSI) {
+      setGeneratedPin('PIN-146138');
+      return;
+    }
+
+    // Το αρχείο ανεβαίνει ΠΡΙΝ ζητηθεί κάρτα.
+    setIsSubmitting(true);
+    const apotelesma = await anevasmaAitisis(email.trim(), file);
+    setIsSubmitting(false);
+
+    if (!apotelesma.success) {
+      setError(apotelesma.error);
+      return;
+    }
+
+    setPinAitisis(apotelesma.pin);
     setShowPayment(true);
   };
 
   const handleFinalSubmit = async (paymentIntentId) => {
     setIsSubmitting(true);
-    const result = await submitPremiumRequest(email.trim(), file, paymentIntentId);
-    if (result.success) {
-      setGeneratedPin(result.pin);
-    } else {
-      setError(result.error);
+    const apotelesma = await katagrafiPliromis(pinAitisis, paymentIntentId);
+    if (!apotelesma.success) {
+      // Η πληρωμή πέτυχε αλλά δεν καταγράφηκε. Ο πελάτης δεν φταίει
+      // και δεν πρέπει να ξαναπληρώσει — του δείχνουμε τον κωδικό του.
+      setProsochiPliromis(true);
     }
+    setGeneratedPin(pinAitisis);
     setIsSubmitting(false);
   };
 
@@ -250,6 +275,19 @@ const PremiumUploadPage = () => {
                 </p>
               </div>
             </div>
+
+            {prosochiPliromis && (
+              <div className="pu-notice pu-notice--warn">
+                <IconAlert className="pu-icon" />
+                <div>
+                  <p className="pu-notice-title">Η πληρωμή σας καταχωρήθηκε με καθυστέρηση</p>
+                  <p>
+                    Το αρχείο σας παραλήφθηκε κανονικά και δεν χρειάζεται να πληρώσετε ξανά. Αν δεν
+                    λάβετε ενημέρωση εντός 24 ωρών, στείλτε μας τον κωδικό σας.
+                  </p>
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="pu-card">
@@ -296,7 +334,7 @@ const PremiumUploadPage = () => {
             <>
               <h1 className="pu-title">Ολοκλήρωση πληρωμής</h1>
               <p className="pu-subtitle">
-                Δέσμευση 10€. Η χρέωση γίνεται μόνο όταν παραδοθεί η έκθεση.
+                Το αρχείο σας παραλήφθηκε. Δέσμευση 10€ — η χρέωση γίνεται μόνο όταν παραδοθεί η έκθεση.
               </p>
             </>
           )}
@@ -425,8 +463,8 @@ const PremiumUploadPage = () => {
                 </div>
               )}
 
-              <button type="submit" className="pu-btn-primary pu-btn-full" disabled={!canContinue}>
-                Συνέχεια στην πληρωμή
+              <button type="submit" className="pu-btn-primary pu-btn-full" disabled={!canContinue || isSubmitting}>
+                {isSubmitting ? 'Γίνεται αποστολή του αρχείου…' : 'Αποστολή αρχείου και πληρωμή'}
               </button>
             </form>
 
@@ -465,7 +503,7 @@ const PremiumUploadPage = () => {
               </div>
             </Elements>
 
-            {isSubmitting && <p className="pu-hint">Γίνεται αποστολή του αρχείου…</p>}
+            {isSubmitting && <p className="pu-hint">Ολοκληρώνεται η καταχώριση…</p>}
 
             {error && (
               <div className="pu-notice pu-notice--error" role="alert">
@@ -477,10 +515,9 @@ const PremiumUploadPage = () => {
               </div>
             )}
 
-            <button type="button" onClick={() => setShowPayment(false)} className="pu-back">
-              <IconArrowLeft className="pu-icon-sm" />
-              Αλλαγή στοιχείων ή αρχείου
-            </button>
+            <p className="pu-hint">
+              Αν διακόψετε εδώ, δεν χρεώνεστε και η αίτηση δεν προχωρά σε επεξεργασία.
+            </p>
           </section>
         )}
       </div>

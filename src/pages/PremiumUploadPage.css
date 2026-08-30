@@ -502,24 +502,6 @@
   background: #f1f5f9;
 }
 
-.pu-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 24px;
-  padding: 8px 0;
-  background: none;
-  border: none;
-  color: #64748b;
-  font-family: inherit;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-.pu-back:hover {
-  color: #0f172a;
-}
-
 /* ── Ενότητα ασφάλειας ─────────────────────────────────── */
 .pu-security {
   margin-top: 32px;
