@@ -1,21 +1,119 @@
 import React, { useState } from 'react';
-import { CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import {
+  CardNumberElement,
+  CardExpiryElement,
+  CardCvcElement,
+  useStripe,
+  useElements,
+} from '@stripe/react-stripe-js';
+import './StripePaymentForm.css';
 
 const CREATE_PAYMENT_INTENT_URL = import.meta.env.VITE_CREATE_PAYMENT_INTENT_URL;
 
-const StripePaymentForm = ({ onFileSubmit }) => {
+/* ══════════════════════════════════════════════════════════════
+   ΜΗΝΥΜΑΤΑ ΣΦΑΛΜΑΤΟΣ
+
+   Ο browser και το Stripe δίνουν μηνύματα στα αγγλικά, γραμμένα για
+   προγραμματιστές. Ο πελάτης δεν πρέπει να τα δει ποτέ.
+   ══════════════════════════════════════════════════════════════ */
+const MINYMA_DIKTYOU =
+  'Η σύνδεση με την υπηρεσία πληρωμών δεν ήταν δυνατή. Δεν χρεωθήκατε. Δοκιμάστε ξανά σε λίγο· αν το πρόβλημα συνεχίζεται, επικοινωνήστε μαζί μας.';
+
+const MINYMA_AGNOSTO =
+  'Η πληρωμή δεν ολοκληρώθηκε. Δεν χρεωθήκατε. Δοκιμάστε ξανά σε λίγο ή επικοινωνήστε μαζί μας.';
+
+/* Ξεχωρίζει τα σφάλματα δικτύου από τα υπόλοιπα. Το «Failed to fetch»
+   είναι ό,τι λέει ο browser όταν δεν βρίσκει καθόλου τον διακομιστή. */
+const elliniko_minima = (err) => {
+  const keimeno = String(err?.message || '');
+
+  if (
+    err instanceof TypeError ||
+    keimeno.includes('Failed to fetch') ||
+    keimeno.includes('NetworkError') ||
+    keimeno.includes('Load failed')
+  ) {
+    return MINYMA_DIKTYOU;
+  }
+
+  // Τα δικά μας μηνύματα είναι ήδη ελληνικά και τα κρατάμε.
+  if (/[\u0370-\u03ff\u1f00-\u1fff]/.test(keimeno)) return keimeno;
+
+  return MINYMA_AGNOSTO;
+};
+
+/* ──────────────────────────────────────────────
+   Εικονίδια (inline SVG, χωρίς emoji)
+   ────────────────────────────────────────────── */
+const svgBase = {
+  xmlns: 'http://www.w3.org/2000/svg',
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.75,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': 'true',
+};
+
+const IconCard = (p) => (
+  <svg {...svgBase} {...p}>
+    <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+    <path d="M2.5 10h19" />
+  </svg>
+);
+
+const IconLock = (p) => (
+  <svg {...svgBase} {...p}>
+    <rect x="4" y="10" width="16" height="10" rx="2" />
+    <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+  </svg>
+);
+
+const IconAlert = (p) => (
+  <svg {...svgBase} {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v5" />
+    <path d="M12 16.5h.01" />
+  </svg>
+);
+
+const IconCheck = (p) => (
+  <svg {...svgBase} {...p}>
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+);
+
+/* ══════════════════════════════════════════════════════════════
+   ΦΟΡΜΑ ΠΛΗΡΩΜΗΣ
+
+   Εμφανίζεται αφού ελεγχθεί ο φάκελος του πελάτη. Η χρέωση είναι
+   κανονική και εφάπαξ — δεν υπάρχει δέσμευση που εισπράττεται
+   αργότερα, όπως στην παλιά σειρά των βημάτων.
+
+   Το κουτάκι της υπαναχώρησης είναι νομική υποχρέωση, όχι επιλογή:
+   χωρίς ρητή δήλωση του πελάτη ότι ζητά άμεση εκτέλεση, διατηρεί
+   δικαίωμα επιστροφής χρημάτων για 14 ημέρες ακόμη και αφού λάβει
+   την έκθεση. Είναι χωριστό από κάθε άλλη αποδοχή όρων· αν ήταν
+   ενωμένο, δεν θα μετρούσε ως ρητή δήλωση.
+   ══════════════════════════════════════════════════════════════ */
+const StripePaymentForm = ({ onFileSubmit, timi = '20 €' }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [paymentError, setPaymentError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // States για να παρακολουθούμε αν συμπληρώθηκαν σωστά τα πεδία
+  // Παρακολούθηση της συμπλήρωσης των τριών πεδίων της κάρτας
   const [isCardNumberComplete, setIsCardNumberComplete] = useState(false);
   const [isCardExpiryComplete, setIsCardExpiryComplete] = useState(false);
   const [isCardCvcComplete, setIsCardCvcComplete] = useState(false);
 
-  // Το κουμπί είναι ενεργό ΜΟΝΟ αν και τα τρία πεδία είναι πλήρη (true)
-  const isFormComplete = isCardNumberComplete && isCardExpiryComplete && isCardCvcComplete;
+  // Η δήλωση υπαναχώρησης. Ποτέ προεπιλεγμένη.
+  const [ypanaxorisi, setYpanaxorisi] = useState(false);
+
+  const isCardComplete =
+    isCardNumberComplete && isCardExpiryComplete && isCardCvcComplete;
+  const isFormComplete = isCardComplete && ypanaxorisi;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -24,59 +122,66 @@ const StripePaymentForm = ({ onFileSubmit }) => {
       return;
     }
 
-    setIsProcessing(true); // Ξεκινάει το loading και ΔΕΝ το σταματάμε εμείς!
+    setIsProcessing(true);
     setPaymentError(null);
 
     try {
       if (!CREATE_PAYMENT_INTENT_URL) {
-        throw new Error(
-          'Δεν έχει οριστεί η διεύθυνση δημιουργίας πληρωμής.'
-        );
+        throw new Error('Δεν έχει οριστεί η διεύθυνση δημιουργίας πληρωμής.');
       }
 
       const response = await fetch(CREATE_PAYMENT_INTENT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
       });
       const data = await response.json();
 
       if (!response.ok || data.success === false || !data.clientSecret) {
-        throw new Error(
-          data.error || 'Αποτυχία δημιουργίας της πληρωμής.'
-        );
+        throw new Error(data.error || 'Αποτυχία δημιουργίας της πληρωμής.');
       }
 
       const cardElement = elements.getElement(CardNumberElement);
-      const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
-        payment_method: {
-          card: cardElement,
-        }
-      });
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        data.clientSecret,
+        { payment_method: { card: cardElement } }
+      );
 
       if (error) {
         setPaymentError(error.message);
-        setIsProcessing(false); // Σταματάμε το loading ΜΟΝΟ αν υπάρξει σφάλμα στην κάρτα
-      } else if (paymentIntent.status === "requires_capture" || paymentIntent.status === "succeeded") {
-        // Καλούμε την κεντρική συνάρτηση για να ανεβάσει το PDF. 
-        // ΔΕΝ κάνουμε setIsProcessing(false) εδώ, το αφήνουμε να γυρίζει μέχρι να βγει το PIN!
-        await onFileSubmit(paymentIntent.id); 
+        setIsProcessing(false);
+        return;
       }
+
+      /* Αν η κατάσταση δεν είναι μία από τις δύο επιτυχείς, η πληρωμή
+         ΔΕΝ πέρασε. Παλιότερα η περίπτωση αυτή περνούσε σιωπηλά και η
+         σελίδα προχωρούσε σαν να είχε πληρωθεί. */
+      if (
+        paymentIntent?.status !== 'requires_capture' &&
+        paymentIntent?.status !== 'succeeded'
+      ) {
+        setPaymentError(MINYMA_AGNOSTO);
+        setIsProcessing(false);
+        return;
+      }
+
+      /* Η δήλωση υπαναχώρησης περνάει μαζί με την πληρωμή, ώστε να
+         καταγραφεί στη βάση με ημερομηνία και ώρα. */
+      await onFileSubmit(paymentIntent.id, { ypanaxorisiAt: Date.now() });
+      // Το isProcessing μένει ενεργό: η σελίδα από πάνω αλλάζει οθόνη.
     } catch (err) {
-      console.error("Σφάλμα:", err);
-      setPaymentError(
-        err.message || "Υπήρξε πρόβλημα με την επικοινωνία. Δοκιμάστε ξανά."
-      );
-      setIsProcessing(false); // Σταματάμε το loading αν "σκάσει" το fetch
+      console.error('Σφάλμα πληρωμής:', err);
+      setPaymentError(elliniko_minima(err));
+      setIsProcessing(false);
     }
   };
 
-  // Κοινό στυλ για όλα τα πεδία της κάρτας
+  // Κοινό στυλ για τα πεδία της κάρτας
   const ELEMENT_OPTIONS = {
     style: {
       base: {
         fontSize: '16px',
         color: '#334155',
-        fontFamily: 'sans-serif',
+        fontFamily: 'inherit',
         '::placeholder': { color: '#94a3b8' },
       },
       invalid: { color: '#b91c1c' },
@@ -84,73 +189,89 @@ const StripePaymentForm = ({ onFileSubmit }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginTop: '20px', padding: '20px', border: '1px solid #e2e8f0', borderRadius: '12px', backgroundColor: '#f8fafc', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-      <label style={{ fontWeight: '600', display: 'block', margin: '0 0 20px 0', color: '#1e293b', fontSize: '1.1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
-        💳 Στοιχεία Κάρτας (Δέσμευση 10€)
-      </label>
+    <form onSubmit={handleSubmit} className="sp-form">
+      <p className="sp-title">
+        <IconCard className="sp-icon" />
+        Στοιχεία κάρτας — πληρωμή {timi}
+      </p>
 
-      {/* Πεδίο: Αριθμός Κάρτας */}
-      <div style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: '#475569', fontWeight: '500' }}>Αριθμός Κάρτας</label>
-        <div style={{ padding: '14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#ffffff', transition: 'border-color 0.2s' }}>
-          <CardNumberElement 
-            options={ELEMENT_OPTIONS} 
-            onChange={(e) => setIsCardNumberComplete(e.complete)} 
+      {/* Αριθμός κάρτας */}
+      <div className="sp-field">
+        <label className="sp-label" htmlFor="sp-card-number">Αριθμός κάρτας</label>
+        <div className="sp-input" id="sp-card-number">
+          <CardNumberElement
+            options={ELEMENT_OPTIONS}
+            onChange={(e) => setIsCardNumberComplete(e.complete)}
           />
         </div>
       </div>
 
-      {/* Δίπλα-δίπλα: Ημερομηνία & CVC */}
-      <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: '#475569', fontWeight: '500' }}>Λήξη (ΜΜ/ΕΕ)</label>
-          <div style={{ padding: '14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#ffffff' }}>
-            <CardExpiryElement 
-              options={ELEMENT_OPTIONS} 
+      {/* Λήξη και CVC, δίπλα-δίπλα */}
+      <div className="sp-row">
+        <div className="sp-field">
+          <label className="sp-label" htmlFor="sp-card-expiry">Λήξη (ΜΜ/ΕΕ)</label>
+          <div className="sp-input" id="sp-card-expiry">
+            <CardExpiryElement
+              options={ELEMENT_OPTIONS}
               onChange={(e) => setIsCardExpiryComplete(e.complete)}
             />
           </div>
         </div>
 
-        <div style={{ flex: 1 }}>
-          <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', color: '#475569', fontWeight: '500' }}>CVC</label>
-          <div style={{ padding: '14px', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#ffffff' }}>
-            <CardCvcElement 
-              options={ELEMENT_OPTIONS} 
+        <div className="sp-field">
+          <label className="sp-label" htmlFor="sp-card-cvc">CVC</label>
+          <div className="sp-input" id="sp-card-cvc">
+            <CardCvcElement
+              options={ELEMENT_OPTIONS}
               onChange={(e) => setIsCardCvcComplete(e.complete)}
             />
           </div>
         </div>
       </div>
 
+      {/* Δήλωση υπαναχώρησης — υποχρεωτική, ποτέ προεπιλεγμένη */}
+      <label className={`sp-confirm ${ypanaxorisi ? 'is-checked' : ''}`}>
+        <input
+          type="checkbox"
+          checked={ypanaxorisi}
+          onChange={(e) => setYpanaxorisi(e.target.checked)}
+          className="sp-visually-hidden"
+          disabled={isProcessing}
+        />
+        <span className="sp-checkbox" aria-hidden="true">
+          <IconCheck className="sp-checkbox-icon" />
+        </span>
+        <span className="sp-confirm-text">
+          Ζητώ να ξεκινήσει άμεσα η εκτέλεση της υπηρεσίας και γνωρίζω ότι, μόλις
+          ολοκληρωθεί, χάνω το δικαίωμα υπαναχώρησης.
+        </span>
+      </label>
+
       {paymentError && (
-        <div style={{ color: '#b91c1c', backgroundColor: '#fef2f2', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px', border: '1px solid #f87171' }}>
-          ⚠️ {paymentError}
+        <div className="sp-error" role="alert">
+          <IconAlert className="sp-icon" />
+          <span>{paymentError}</span>
         </div>
       )}
 
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         disabled={!stripe || isProcessing || !isFormComplete}
-        className="submit-btn" 
-        style={{ 
-          width: '100%', 
-          padding: '14px',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          backgroundColor: (!stripe || isProcessing || !isFormComplete) ? '#cbd5e1' : '#f97316',
-          color: (!stripe || isProcessing || !isFormComplete) ? '#64748b' : '#ffffff',
-          cursor: (!stripe || isProcessing || !isFormComplete) ? 'not-allowed' : 'pointer',
-          border: 'none',
-          borderRadius: '8px',
-          transition: 'all 0.3s ease'
-        }}
+        className="sp-btn"
       >
-        {isProcessing ? 'Επεξεργασία & Ανέβασμα Αρχείου... ⏳' : 'Έγκριση Δέσμευσης & Υποβολή'}
+        {isProcessing ? 'Γίνεται η πληρωμή…' : `Πληρωμή ${timi}`}
       </button>
 
-      <p style={{ fontSize: '13px', color: '#64748b', marginTop: '16px', textAlign: 'center', lineHeight: '1.5' }}>
-        🔒 Η πληρωμή είναι απολύτως ασφαλής μέσω <strong>Stripe</strong>. <br/> Τα χρήματα θα δεσμευτούν και θα χρεωθούν οριστικά <strong>μόνο</strong> μετά την παράδοση του Report.
+      {isCardComplete && !ypanaxorisi && (
+        <p className="sp-hint">
+          Για να συνεχίσετε, επιλέξτε τη δήλωση παραπάνω.
+        </p>
+      )}
+
+      <p className="sp-secure">
+        <IconLock className="sp-icon-sm" />
+        Η πληρωμή γίνεται μέσω Stripe. Τα στοιχεία της κάρτας σας δεν περνούν
+        ούτε αποθηκεύονται στη δική μας σελίδα.
       </p>
     </form>
   );

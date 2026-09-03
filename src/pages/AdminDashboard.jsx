@@ -1,11 +1,76 @@
 import React, { useState, useEffect } from 'react';
 import { ref, onValue, update, remove } from "firebase/database";
-import { ref as sRef, uploadBytes, getDownloadURL } from "firebase/storage"; 
+import { ref as sRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
-import { db, auth, storage } from "../firebase"; 
+import { db, auth, storage } from "../firebase";
 import './AdminDashboard.css';
 
-const CAPTURE_PAYMENT_URL = import.meta.env.VITE_CAPTURE_PAYMENT_URL;
+/* ══════════════════════════════════════════════════════════════
+   ΟΙ ΠΕΝΤΕ ΚΑΤΑΣΤΑΣΕΙΣ
+
+   Ίδιοι κωδικοί με το premiumService.js και το ReportRecoveryPage.jsx.
+   Αν αλλάξει ένας, αλλάζει και στα τρία αρχεία.
+   ══════════════════════════════════════════════════════════════ */
+const KATASTASEIS = [
+  { kodikos: 'documents_received', etiketa: 'Τα έγγραφα παραλήφθηκαν' },
+  { kodikos: 'needs_more_info', etiketa: 'Χρειάζονται επιπλέον στοιχεία' },
+  { kodikos: 'awaiting_payment', etiketa: 'Αναμονή πληρωμής' },
+  { kodikos: 'processing', etiketa: 'Σε επεξεργασία' },
+  { kodikos: 'delivered', etiketa: 'Η έκθεση παραδόθηκε' },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   ΤΑ ΑΡΧΕΙΑ ΤΟΥ ΠΕΛΑΤΗ
+
+   Στη βάση αποθηκεύεται η διαδρομή του κάθε αρχείου, όχι σύνδεσμος.
+   Ο σύνδεσμος λήψης παράγεται τη στιγμή που τον ζητάς, ώστε να μην
+   γίνονται δεκάδες κλήσεις κάθε φορά που ανοίγει ο πίνακας.
+
+   Δέχεται και τη ΠΑΛΙΑ μορφή (ένα πεδίο pdfUrl), για τις δοκιμαστικές
+   αιτήσεις που είχαν καταχωρηθεί πριν την αλλαγή.
+   ══════════════════════════════════════════════════════════════ */
+const ArxeiaPelati = ({ req }) => {
+  const [fortoni, setFortoni] = useState(null);
+
+  const lista =
+    Array.isArray(req.files) && req.files.length
+      ? req.files
+      : req.pdfUrl
+      ? [{ path: req.pdfUrl, name: 'Αρχείο πελάτη' }]
+      : [];
+
+  if (!lista.length) {
+    return <span style={{ color: '#94a3b8', fontSize: '12px' }}>—</span>;
+  }
+
+  const anoigma = async (arxeio, index) => {
+    setFortoni(index);
+    try {
+      const url = await getDownloadURL(sRef(storage, arxeio.path));
+      window.open(url, '_blank', 'noopener');
+    } catch (error) {
+      console.error(error);
+      alert('Το αρχείο δεν βρέθηκε. Ελέγξτε αν έχει διαγραφεί.');
+    }
+    setFortoni(null);
+  };
+
+  return (
+    <div className="admin-file-list">
+      {lista.map((arxeio, index) => (
+        <button
+          key={arxeio.path || index}
+          type="button"
+          className="admin-view-pdf"
+          onClick={() => anoigma(arxeio, index)}
+          title={arxeio.name}
+        >
+          {fortoni === index ? '⏳' : '📄'} {index + 1}. {arxeio.name}
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const [requests, setRequests] = useState({});
@@ -13,7 +78,7 @@ const AdminDashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [uploadingPin, setUploadingPin] = useState(null); 
+  const [uploadingPin, setUploadingPin] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -53,38 +118,10 @@ const AdminDashboard = () => {
     setUploadingPin(null);
   };
 
+  /* Αλλάζει μόνο την κατάσταση της αίτησης στη βάση.
+     Καμία επικοινωνία με το Stripe — η πληρωμή δεν έχει στηθεί ακόμη. */
   const handleUpdate = async (pin, newData) => {
     try {
-      const currentRequest = requests[pin];
-
-      if (newData.status === 'completed' && currentRequest.status !== 'completed') {
-        if (currentRequest.paymentIntentId) {
-          if (!CAPTURE_PAYMENT_URL) {
-            throw new Error(
-              'Δεν έχει οριστεί η διεύθυνση οριστικής είσπραξης.'
-            );
-          }
-
-          const response = await fetch(CAPTURE_PAYMENT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-              paymentIntentId: currentRequest.paymentIntentId,
-              customerEmail: currentRequest.email,
-              pin: pin                            
-            })
-          });
-          const result = await response.json();
-
-          if (!response.ok || !result.success) {
-            alert(`⚠️ Η πληρωμή απέτυχε: ${result.error || 'Άγνωστο σφάλμα'}`);
-            return;
-          }
-
-          alert("✅ Η είσπραξη των 10€ ολοκληρώθηκε!");
-        }
-      }
-
       const requestRef = ref(db, `premium_requests/${pin}`);
       await update(requestRef, newData);
       alert('Ενημερώθηκε!');
@@ -107,7 +144,7 @@ const AdminDashboard = () => {
     }
   };
 
-  if (!isAuthenticated) { 
+  if (!isAuthenticated) {
     return (
       <div className="admin-container" style={{textAlign: 'center', marginTop: '100px'}}>
         <h2>Είσοδος Διαχειριστή</h2>
@@ -133,8 +170,8 @@ const AdminDashboard = () => {
         <thead>
           <tr>
             <th>PIN</th>
-            <th>Email</th>
-            <th>Αρχείο Πελάτη</th>
+            <th>Επικοινωνία</th>
+            <th>Αρχεία Πελάτη</th>
             <th>Κατάσταση</th>
             <th>Παράδοση Report (PDF)</th>
             <th>Ενέργειες</th>
@@ -146,29 +183,34 @@ const AdminDashboard = () => {
             return (
               <tr key={pin}>
                 <td><strong>{pin}</strong></td>
-                <td>{req.email}</td>
                 <td>
-                  <a href={req.pdfUrl} target="_blank" rel="noreferrer" className="admin-view-pdf">
-                    <span className="icon">📄</span> Προβολή
-                  </a>
+                  <div>{req.email}</div>
+                  {req.phone && (
+                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                      ☎ {req.phone}
+                    </div>
+                  )}
                 </td>
                 <td>
-                  <select 
-                    className="status-select" 
-                    defaultValue={req.status} 
+                  <ArxeiaPelati req={req} />
+                </td>
+                <td>
+                  <select
+                    className="status-select"
+                    defaultValue={req.status}
                     onChange={(e) => req.tempStatus = e.target.value}
                   >
-                    <option value="pending_payment">Pending Payment</option>
-                    <option value="processing">Processing</option>
-                    <option value="completed">Completed</option>
+                    {KATASTASEIS.map((k) => (
+                      <option key={k.kodikos} value={k.kodikos}>{k.etiketa}</option>
+                    ))}
                   </select>
                 </td>
                 <td>
                    <div className="admin-upload-wrapper">
                       <label className="custom-file-upload">
-                        <input 
-                          type="file" 
-                          accept="application/pdf" 
+                        <input
+                          type="file"
+                          accept="application/pdf"
                           onChange={(e) => handleAdminFileUpload(e, pin)}
                         />
                         {uploadingPin === pin ? "⏳..." : "📤 Ανέβασμα"}

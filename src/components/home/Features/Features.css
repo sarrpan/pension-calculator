@@ -1,12 +1,13 @@
 .features-section {
-  padding: 50px 0 90px 0;
+  /* Ήταν 50px 0 90px. Συμπύκνωση. */
+  padding: 40px 0 64px 0;
   background-color: var(--white);
 }
 
 .section-title {
   text-align: center;
-  font-size: clamp(2rem, 4vw, 2.8rem);
-  margin-bottom: 60px;
+  font-size: clamp(1.8rem, 4vw, 2.3rem);
+  margin-bottom: 48px;
   color: var(--primary);
   font-weight: 800;
 }
@@ -14,22 +15,57 @@
 .feature-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 100px;
+  gap: 56px;
   align-items: center;
-  margin-bottom: 80px;
+  margin-bottom: 20px;
+  /* Απαλό φόντο ανά σειρά: δίνει ρυθμό στη σελίδα και κάνει τα
+     λευκά γραφικά να ξεχωρίζουν αντί να χάνονται στο λευκό. */
+  background: #f8fafc;
+  border: 1px solid #e8edf3;
+  border-radius: 20px;
+  padding: 40px 44px;
 }
 
-.feature-row.reverse {
-  direction: rtl;
+/* Εναλλαγή φόντου. nth-of-type μετράει μόνο τις σειρές, όχι και
+   τον τίτλο της ενότητας. */
+.feature-row:nth-of-type(odd) {
+  background: #ffffff;
+  border-color: #e2e8f0;
 }
 
-.feature-row.reverse .feature-text,
-.feature-row.reverse .feature-visual {
-  direction: ltr;
+/* Απαλό πορτοκαλί, η ίδια οικογένεια με τον τόνο της σελίδας. */
+.feature-row:nth-of-type(even) {
+  background: #fdf3ea;
+  border-color: #fbdccd;
 }
+
+/* Διπλή κλάση, ώστε να υπερισχύει των δύο παραπάνω. */
+.feature-row.feature-row-last {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.feature-row-last .feature-text h3 {
+  color: #ffffff;
+}
+
+.feature-row-last .feature-text p,
+.feature-row-last .feature-bullets li {
+  color: #e2e8f0;
+}
+
+/* Η παλιά εναλλαγή στηλών (direction: rtl) καταργήθηκε. Όλες οι
+   σειρές έχουν πλέον το κείμενο αριστερά και το γραφικό δεξιά,
+   ώστε το μάτι να μη χοροπηδά από τη μία πλευρά στην άλλη. */
 
 .feature-row-last {
   margin-bottom: 0;
+}
+
+.feature-visual {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
 }
 
 .step-label {
@@ -42,18 +78,19 @@
 }
 
 .feature-text h3 {
-  font-size: 2.1rem;
+  font-size: 1.85rem;
   color: var(--primary);
-  margin-bottom: 15px;
-  line-height: 1.2;
+  margin-bottom: 12px;
+  line-height: 1.25;
 }
 
 .feature-text p {
-  font-size: 1.16rem;
-  color: var(--primary);
-  line-height: 1.6;
-  margin: 0;
-  margin-bottom: 25px; /* Προστέθηκε για απόσταση από τα bullets */
+  font-size: 1.08rem;
+  /* Ήταν --text-muted (ανοιχτό γκρι). Πολύ αχνό για κοινό 50-65 ετών. */
+  color: #334155;
+  line-height: 1.65;
+  margin: 0 0 20px 0;
+  text-align: left;
 }
 
 .feature-bullets {
@@ -64,11 +101,11 @@
 
 .feature-bullets li {
   position: relative;
-  padding-left: 28px;
-  margin-bottom: 14px;
-  font-size: 1.08rem;
+  padding-left: 26px;
+  margin-bottom: 12px;
+  font-size: 1.03rem;
   color: var(--primary);
-  line-height: 1.65;
+  line-height: 1.6;
 }
 
 .feature-bullets li::before {
@@ -77,96 +114,194 @@
   left: 8px;
   top: 0;
   color: var(--accent);
-  font-size: 1.35rem;
-  line-height: 1.2;
+  font-size: 1.3rem;
+  line-height: 1.15;
   font-weight: 700;
 }
 
-/* Γραφικά (Mockups) */
+/* ── Κοινό πλαίσιο γραφικών ─────────────────────────────── */
 .ui-mockup {
   width: 100%;
-  max-width: 380px;
-  min-height: 240px;
+  /* Ίδιο πλάτος και ίδιο ελάχιστο ύψος σε όλα τα γραφικά, ώστε
+     να μη μοιάζουν με τυχαία κουτιά διαφορετικού μεγέθους. */
+  max-width: 360px;
+  min-height: 310px;
+  justify-content: center;
   background: #ffffff;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
-  padding: 30px;
-  position: relative;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.10);
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 10px;
 }
 
-.doc-card .line {
-  height: 8px;
-  background: #f1f5f9;
-  margin-bottom: 15px;
-  border-radius: 4px;
-}
-
-.line.long { width: 90%; }
-.line.mid { width: 60%; }
-.line.short { width: 40%; }
-
-.stamp {
-  position: absolute;
-  bottom: 30px;
-  right: 30px;
-  border: 2px solid #e2e8f0;
-  padding: 5px 10px;
-  border-radius: 4px;
-  color: #cbd5e1;
-  font-weight: bold;
-  font-size: 0.8rem;
-}
-
-.stat-card { gap: 12px; justify-content: center; }
-.stat-chip {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  color: var(--primary);
-  border-radius: 999px;
-  padding: 10px 18px; /* Λίγο μεγαλύτερο padding στα πλάγια */
-  font-size: 0.92rem;
+.mk-caption {
+  margin: 0 0 4px;
+  color: #64748b;
+  font-size: 0.72rem;
   font-weight: 700;
-  /* Οι παρακάτω εντολές στέλνουν το κείμενο αριστερά και τα ποσά δεξιά */
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+.mk-note {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* ── 1. Απόσπασμα φόρμας ────────────────────────────────── */
+.mk-field {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
 }
+
+.mk-label {
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.mk-value {
+  color: var(--primary);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.mk-field-empty {
+  background: #ffffff;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(232, 93, 36, 0.12);
+}
+
+.mk-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 16px;
+  background: var(--accent);
+}
+
+/* ── 2. Ανάλυση ποσού ───────────────────────────────────── */
+.stat-chip {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: var(--primary);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
 .stat-chip.deduction {
-  color: #dc2626; /* Κόκκινο χρώμα */
+  color: #dc2626;
   background: #fef2f2;
   border-color: #fca5a5;
 }
+
 .stat-total {
-  margin-top: 6px;
+  margin-top: 4px;
   background: var(--primary);
   color: #ffffff;
   border-radius: 12px;
-  padding: 14px 18px;
-  font-size: 1.05rem;
+  padding: 13px 16px;
+  font-size: 1.02rem;
   font-weight: 800;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
-.form-card { background: var(--primary); }
-.input-placeholder { height: 40px; background: rgba(255, 255, 255, 0.1); margin-bottom: 15px; border-radius: 6px; }
-.short-input { width: 60%; }
-.btn-placeholder { height: 40px; background: var(--accent); border-radius: 6px; width: 50%; }
 
-.result-card { border-top: 5px solid #10b981; text-align: center; justify-content: center; align-items: center; }
-.flow-label { font-size: 1rem; font-weight: 800; color: var(--primary); }
-.flow-arrow { font-size: 1.4rem; color: var(--accent); margin: 10px 0; }
+/* ── 3. Σύγκριση σεναρίων ───────────────────────────────── */
+.mk-scenario {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
 
+.mk-age {
+  color: var(--primary);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.mk-type {
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+.mk-amount {
+  color: var(--accent);
+  font-size: 0.98rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ── 4. Απόσπασμα έκθεσης ───────────────────────────────── */
+.mk-report {
+  border-top: 4px solid var(--accent);
+}
+
+.mk-report-title {
+  margin: 0 0 4px;
+  color: var(--primary);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.mk-report-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.86rem;
+  color: #475569;
+}
+
+.mk-report-row:last-of-type {
+  border-bottom: none;
+}
+
+.mk-report-row strong {
+  color: var(--primary);
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+/* ── Κινητά ─────────────────────────────────────────────── */
 @media (max-width: 968px) {
-  .feature-row, .feature-row.reverse {
+  .feature-row {
     grid-template-columns: 1fr;
     text-align: center;
-    gap: 40px;
+    gap: 28px;
+    margin-bottom: 20px;
+    padding: 28px 24px;
   }
-  .ui-mockup { margin: 0 auto; }
-  .feature-bullets li { text-align: left; }
+
+  .feature-text p {
+    text-align: center;
+  }
+
+  .feature-bullets li {
+    text-align: left;
+  }
 }

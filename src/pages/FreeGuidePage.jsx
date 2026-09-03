@@ -38,33 +38,6 @@ const FreeGuidePage = () => {
               θα χρειαστεί να εισάγετε εσείς τα δεδομένα σας. Βεβαιωθείτε ότι έχετε
               διαθέσιμα τα απαραίτητα στοιχεία πριν ξεκινήσετε.
             </p>
-
-            {/* ΑΡΧΗ ΚΩΔΙΚΑ ΠΟΥ ΘΑ ΔΙΑΓΡΑΦΕΙ */}
-            <div className="free-guide-dev-alerts">
-              <div className="free-guide-dev-alert">
-                <div className="free-guide-dev-alert-title">
-                  ⚠️ ΥΠΕΝΘΥΜΙΣΕΙΣ ΓΙΑ ΤΟΝ ΠΡΟΓΡΑΜΜΑΤΙΣΤΗ
-                </div>
-                <ul className="free-guide-dev-alert-list">
-                  <li>
-                    <strong>Φόρμα ΔΕΗ (Κρίσιμο):</strong> Όταν στα Υπερβαρέα επιλεγεί "Μερικώς",
-                    πρέπει να ανοίγουν πεδία για να δηλώσει ο χρήστης τι ήταν ο υπόλοιπος χρόνος
-                    (Βαρέα ή Απλά) και σε ποια περίοδο (Έως 2014 / Από 2015).
-                    Αν δεν το δηλώσει, ο υπολογισμός θα είναι λάθος.
-                  </li>
-                </ul>
-              </div>
-            </div>
-            {/* ΤΕΛΟΣ ΚΩΔΙΚΑ ΠΟΥ ΘΑ ΔΙΑΓΡΑΦΕΙ */}
-
-            <div className="free-guide-hero-actions">
-              <Link to="/calculator" className="free-guide-button">
-                Μετάβαση στον υπολογισμό
-              </Link>
-              <Link to="/" className="free-guide-link">
-                Επιστροφή στην αρχική
-              </Link>
-            </div>
           </div>
         </section>
 
@@ -125,14 +98,17 @@ const FreeGuidePage = () => {
                 alt="Πεδία επιλογής και συμπλήρωσης βαρέων ενσήμων ανά περίοδο"
                 className="free-guide-image"
               />
+              <p className="free-guide-image-caption">
+                Απόσπασμα από τη φόρμα υπολογισμού
+              </p>
             </div>
           </div>
         </section>
 
         <section className="free-guide-section free-guide-section-split">
           <div className="free-guide-section-copy">
-            <div className="free-guide-section-kicker">ΑΠΟΔΟΧΕΣ & ΕΝΣΗΜΑ</div>
-            <h2>Εισαγωγή Ποσών & Ενσήμων</h2>
+            <div className="free-guide-section-kicker">ΑΠΟΔΟΧΕΣ &amp; ΕΝΣΗΜΑ</div>
+            <h2>Εισαγωγή Ποσών &amp; Ενσήμων</h2>
 
             <h3>Ημέρες Ασφάλισης ανά Έτος</h3>
             <p>
@@ -157,6 +133,9 @@ const FreeGuidePage = () => {
                 alt="Πίνακας εισαγωγής ετήσιων αποδοχών και ημερών ασφάλισης"
                 className="free-guide-image"
               />
+              <p className="free-guide-image-caption">
+                Απόσπασμα από τον πίνακα της φόρμας
+              </p>
             </div>
           </div>
         </section>
@@ -166,9 +145,9 @@ const FreeGuidePage = () => {
             <div className="free-guide-section-kicker">ΠΡΟΣΟΜΟΙΩΣΗ</div>
             <h2>Υπολογισμός για όσους πλησιάζουν στη σύνταξη</h2>
             <p>
-              Αν ο ασφαλισμένος απέχει έως και δύο χρόνια από το όριο συνταξιοδότησής του, 
-              μπορεί να χρησιμοποιήσει το εργαλείο για προσομοίωση της κύριας και της επικουρικής 
-              σύνταξης που του αναλογεί, καθώς και για να δει πώς μπορεί να μεταβληθεί το ποσό αν 
+              Αν ο ασφαλισμένος απέχει έως και δύο χρόνια από το όριο συνταξιοδότησής του,
+              μπορεί να χρησιμοποιήσει το εργαλείο για προσομοίωση της κύριας και της επικουρικής
+              σύνταξης που του αναλογεί, καθώς και για να δει πώς μπορεί να μεταβληθεί το ποσό αν
               παραμείνει στην εργασία του για ένα ή δύο επιπλέον έτη.
             </p>
             <p>

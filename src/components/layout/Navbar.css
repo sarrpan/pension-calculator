@@ -1,6 +1,18 @@
+/* ============================================================
+   ΜΠΑΡΑ ΠΛΟΗΓΗΣΗΣ
+
+   Οι κλάσεις πήραν πρόθεμα nv- ώστε να μη συγκρούονται με
+   άλλες σελίδες. Η .navbar κρατήθηκε με το παλιό της όνομα
+   γιατί μπορεί να την πιάνουν καθολικοί κανόνες αλλού.
+
+   Όλα τα χρώματα γράφονται με εφεδρική τιμή δίπλα, ώστε
+   αν λείπει κάποια μεταβλητή από το index.css να μη σβήνει
+   το κείμενο.
+   ============================================================ */
+
 .navbar {
-  height: 80px;
-  background: var(--white);
+  height: 72px;
+  background: var(--white, #ffffff);
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
@@ -9,80 +21,294 @@
   z-index: 1000;
 }
 
-.nav-container {
+.nv-container {
   display: flex;
-  justify-content: space-between; 
+  justify-content: space-between;
   align-items: center;
   width: 100%;
+  gap: 48px;
 }
 
-.logo {
+/* ---------- Λογότυπο ---------- */
+
+.nv-logo {
   font-weight: 800;
-  font-size: 1.2rem;
-  color: var(--primary);
+  font-size: 1.15rem;
+  color: var(--primary, #0F172A);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition: color 0.2s ease;
 }
 
-.nav-links {
+.nv-logo:hover {
+  color: var(--accent, #E85D24);
+}
+
+/* ---------- Δεξί μέρος ---------- */
+
+.nv-right {
   display: flex;
-  gap: 22px;
-  list-style: none;
   align-items: center;
+  gap: 20px;
+}
+
+.nv-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.nav-links a {
+/* ---------- Απλοί σύνδεσμοι ---------- */
+
+.nv-link {
+  position: relative;
+  display: inline-block;
+  padding: 6px 0;
   text-decoration: none;
-  color: var(--text-main); 
+  color: #7c8695;
   font-weight: 600;
   font-size: 0.95rem;
-  transition: all 0.3s ease;
-  position: relative;
-  padding: 4px 0;
+  white-space: nowrap;
+  transition: color 0.2s ease;
 }
 
-.nav-links a:hover {
-  color: var(--primary); 
+.nv-link:hover {
+  color: var(--primary, #0F172A);
 }
 
-.nav-links a.active {
-  color: var(--accent);
-  border-bottom: 2px solid var(--accent);
-}
-
-/* Υπογράμμιση στο hover ΜΟΝΟ για τα απλά links (εξαιρούμε ρητά το track-btn) */
-.nav-links a:not(.active):not(.track-btn):hover::after {
+/* Υπογράμμιση ΜΟΝΟ στο πέρασμα του ποντικιού, όχι στην ενεργή σελίδα.
+   Το πορτοκαλί στη μπάρα ανήκει αποκλειστικά στο κουμπί δράσης. */
+.nv-link::after {
   content: "";
   position: absolute;
-  bottom: 0;
   left: 0;
+  bottom: 0;
   width: 100%;
   height: 2px;
-  background-color: var(--primary); 
   border-radius: 2px;
+  background-color: var(--primary, #0F172A);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s ease;
 }
 
-/* --- Ghost Button (Διαφανές) για την Παρακολούθηση Αίτησης --- */
-.nav-links a.track-btn {
-  background-color: #f1f5f9; /* Πολύ απαλό γκρι-γαλάζιο φόντο */
-  color: var(--primary); /* Το κανονικό σκούρο χρώμα του μενού */
-  padding: 8px 18px;
-  border-radius: 8px; /* Απαλές, στρογγυλεμένες γωνίες */
-  border: none; /* Τέρμα οι γραμμές */
+.nv-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* Η ενεργή σελίδα ξεχωρίζει με σκούρο χρώμα και βάρος, χωρίς σήμα */
+.nv-link.nv-active {
+  color: var(--primary, #0F172A);
+  font-weight: 700;
+}
+
+.nv-link.nv-active::after {
+  display: none;
+}
+
+/* ---------- Δευτερεύουσα ομάδα ---------- */
+
+.nv-secondary {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-left: 24px;
+  border-left: 1px solid #e2e8f0;
+}
+
+/* Η παρακολούθηση αίτησης: απλός, διακριτικός σύνδεσμος */
+.nv-track {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #5b6472;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.nv-track:hover {
+  color: var(--primary, #0F172A);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.nv-track.nv-active {
+  color: var(--primary, #0F172A);
   font-weight: 600;
-  display: inline-block;
-  transition: all 0.2s ease;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-/* Στο hover γεμίζει με το χρώμα */
-.nav-links a.track-btn:hover {
-  background-color: #e2e8f0; /* Γίνεται ένα κλικ πιο σκούρο */
-  color: var(--primary);
-}
+/* ---------- Κουμπί δράσης ---------- */
 
-/* Όταν ο χρήστης βρίσκεται ήδη στη σελίδα παρακολούθησης */
-.nav-links a.track-btn.active {
-  background-color: var(--primary);
+.nv-cta {
+  background-color: var(--accent, #E85D24);
   color: #ffffff;
-  border-bottom: none;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 11px 20px;
+  border-radius: 8px;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.nv-cta:hover {
+  background-color: #cf4e18;
+  color: #ffffff;
+}
+
+.nv-cta:active {
+  transform: translateY(1px);
+}
+
+/* ---------- Ορατή εστίαση για πλοήγηση με πληκτρολόγιο ---------- */
+
+.nv-logo:focus-visible,
+.nv-link:focus-visible,
+.nv-track:focus-visible,
+.nv-cta:focus-visible,
+.nv-burger:focus-visible {
+  outline: 2px solid rgba(15, 23, 42, 0.35);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+/* ---------- Κουμπί μενού για κινητά ---------- */
+
+.nv-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.nv-burger span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  margin: 0 auto;
+  border-radius: 2px;
+  background-color: var(--primary, #0F172A);
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+/* Όταν ανοίγει, οι τρεις γραμμές γίνονται σταυρός */
+.nv-burger-open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.nv-burger-open span:nth-child(2) {
+  opacity: 0;
+}
+
+.nv-burger-open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ============================================================
+   ΜΙΚΡΕΣ ΟΘΟΝΕΣ
+   ============================================================ */
+
+@media (max-width: 1180px) {
+
+  .navbar {
+    height: 62px;
+  }
+
+  .nv-logo {
+    font-size: 1.05rem;
+  }
+
+  .nv-burger {
+    display: flex;
+  }
+
+  /* Το δεξί μέρος γίνεται πτυσσόμενο πάνελ κάτω από τη μπάρα */
+  .nv-right {
+    position: fixed;
+    top: 62px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 4px 20px 26px;
+    background: var(--white, #ffffff);
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.10);
+    max-height: calc(100dvh - 62px);
+    overflow-y: auto;
+
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  }
+
+  .nv-right.nv-open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .nv-links {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  /* Μεγάλες περιοχές αφής, εύκολες με το δάχτυλο */
+  .nv-link {
+    display: block;
+    padding: 17px 0;
+    font-size: 1.05rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .nv-link::after {
+    display: none;
+  }
+
+  .nv-secondary {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+    padding-left: 0;
+    padding-top: 20px;
+    border-left: none;
+  }
+
+  .nv-track {
+    padding: 4px 0;
+    font-size: 1rem;
+  }
+
+  .nv-cta {
+    text-align: center;
+    padding: 15px 20px;
+    font-size: 1.05rem;
+  }
+}
+
+/* ---------- Σεβασμός στη ρύθμιση "λιγότερη κίνηση" ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-right,
+  .nv-link::after,
+  .nv-burger span,
+  .nv-cta {
+    transition: none;
+  }
 }

@@ -1,0 +1,233 @@
+/* ==========================================================
+   Φόρμα πληρωμής — StripePaymentForm
+   Πρόθεμα .sp- ώστε να μη συγκρούεται με άλλες σελίδες.
+   Τα στυλ ήταν γραμμένα inline μέσα στο JSX και μεταφέρθηκαν εδώ.
+   ========================================================== */
+
+.sp-form {
+  margin-top: 20px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background-color: #f8fafc;
+}
+
+.sp-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.sp-field {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 16px;
+}
+
+.sp-row {
+  display: flex;
+  gap: 16px;
+}
+
+.sp-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+/* Μέσα σε αυτό το πλαίσιο ζωγραφίζει το Stripe τα δικά του πεδία. */
+.sp-input {
+  padding: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sp-input:focus-within {
+  border-color: #e85d24;
+  box-shadow: 0 0 0 3px rgba(232, 93, 36, 0.15);
+}
+
+/* ── Δήλωση υπαναχώρησης ───────────────────────────────── */
+.sp-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 8px 0 20px;
+  padding: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.sp-confirm:hover {
+  border-color: #94a3b8;
+}
+
+.sp-confirm.is-checked {
+  border-color: #e85d24;
+  background: #fff7f3;
+}
+
+.sp-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  border: 2px solid #94a3b8;
+  border-radius: 6px;
+  background: #ffffff;
+  transition: all 0.15s ease;
+}
+
+.sp-confirm.is-checked .sp-checkbox {
+  background: #e85d24;
+  border-color: #e85d24;
+}
+
+.sp-checkbox-icon {
+  width: 14px;
+  height: 14px;
+  color: #ffffff;
+  opacity: 0;
+  stroke-width: 3;
+}
+
+.sp-confirm.is-checked .sp-checkbox-icon {
+  opacity: 1;
+}
+
+.sp-confirm input:focus-visible ~ .sp-checkbox {
+  box-shadow: 0 0 0 3px rgba(232, 93, 36, 0.25);
+}
+
+.sp-confirm-text {
+  color: #334155;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.sp-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Μήνυμα σφάλματος ──────────────────────────────────── */
+.sp-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 14px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background-color: #fef2f2;
+  color: #991b1b;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.sp-error svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Κουμπί ────────────────────────────────────────────── */
+.sp-btn {
+  width: 100%;
+  padding: 15px;
+  background-color: #e85d24;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.sp-btn:hover:not(:disabled) {
+  background-color: #cc4f1c;
+}
+
+.sp-btn:disabled {
+  background-color: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.sp-btn:focus-visible {
+  outline: 3px solid rgba(232, 93, 36, 0.45);
+  outline-offset: 2px;
+}
+
+.sp-hint {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.sp-secure {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.sp-secure svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #94a3b8;
+}
+
+/* ── Εικονίδια ─────────────────────────────────────────── */
+.sp-icon {
+  width: 20px;
+  height: 20px;
+  color: #e85d24;
+}
+
+.sp-icon-sm {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Κινητά ────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .sp-form {
+    padding: 20px 16px;
+  }
+
+  .sp-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}

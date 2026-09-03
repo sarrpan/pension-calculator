@@ -1,59 +1,81 @@
-import { ref as storageRef, uploadBytes } from "firebase/storage";
+import { ref as storageRef, uploadBytes, deleteObject } from "firebase/storage";
 import { ref as dbRef, set, update } from "firebase/database";
 import { storage, db } from "../../firebase";
 
 /* ══════════════════════════════════════════════════════════════
-   ΣΕΙΡΑ ΤΩΝ ΒΗΜΑΤΩΝ
+   Η ΣΕΙΡΑ ΤΩΝ ΒΗΜΑΤΩΝ
 
-   1. anevasmaAitisis()   -> ανεβαίνει το PDF και δημιουργείται η αίτηση
-   2. (ενδιάμεσα)            γίνεται η δέσμευση των 10€ στο Stripe
-   3. katagrafiPliromis() -> η αίτηση ενημερώνεται με τον κωδικό πληρωμής
+   1. anevasmaAitisis()   -> ανεβαίνουν τα αρχεία και δημιουργείται η αίτηση
+   2. (εκτός εφαρμογής)      ελέγχουμε τον φάκελο· αν λείπει κάτι, επικοινωνούμε
+   3. katagrafiPliromis() -> η αίτηση ενημερώνεται όταν γίνει η πληρωμή
 
-   Το αρχείο ανεβαίνει ΠΡΙΝ δεσμευτούν χρήματα. Έτσι, αν αποτύχει το
-   ανέβασμα, ο πελάτης δεν έχει χάσει τίποτα.
+   ΠΡΟΣΟΧΗ: το βήμα 3 ΔΕΝ καλείται σήμερα από πουθενά. Η πληρωμή δεν
+   ζητείται πλέον τη στιγμή της αποστολής, αλλά αφού ελεγχθεί ο φάκελος.
+   Η συνάρτηση μένει εδώ έτοιμη για το κανάλι πληρωμής, όταν φτιαχτεί.
    ══════════════════════════════════════════════════════════════ */
 
-/* Οι καταστάσεις γράφονται με πεζά και κάτω παύλα, ώστε να ταιριάζουν
-   με όσα διαβάζει η σελίδα «Παρακολούθηση Αίτησης». */
-const KATASTASI_ARXIKI = "pending_payment";
+/* ══════════════════════════════════════════════════════════════
+   ΟΙ ΠΕΝΤΕ ΚΑΤΑΣΤΑΣΕΙΣ ΤΗΣ ΑΙΤΗΣΗΣ
+
+   Είναι τα πέντε στάδια της σελίδας «Παρακολούθηση Αίτησης».
+   Τα ίδια ακριβώς κείμενα πρέπει να αναγνωρίζονται και από το
+   ReportRecoveryPage.jsx και από το AdminDashboard.
+   ══════════════════════════════════════════════════════════════ */
+export const KATASTASEIS = {
+  PARALIFTHIKAN: "documents_received",   // Τα έγγραφα παραλήφθηκαν
+  ELLIPI: "needs_more_info",             // Χρειάζονται επιπλέον στοιχεία
+  ANAMONI_PLIROMIS: "awaiting_payment",  // Αναμονή πληρωμής
+  SE_EPEXERGASIA: "processing",          // Σε επεξεργασία
+  PARADOTHIKE: "delivered",              // Η έκθεση παραδόθηκε
+};
 
 const dimiourgiaKodikou = () => {
   const arithmos = Math.floor(100000 + Math.random() * 900000);
   return `PIN-${arithmos}`;
 };
 
+/* Το όνομα του αρχείου καθαρίζεται πριν αποθηκευτεί: ελληνικά, κενά
+   και σημεία στίξης γίνονται κάτω παύλα. Η κατάληξη διατηρείται. */
+const katharoOnoma = (onoma) => {
+  const asfales = String(onoma || "arxeio")
+    .replace(/[^\w.\-]+/g, "_")
+    .replace(/_+/g, "_");
+  return asfales.length > 60 ? asfales.slice(-60) : asfales;
+};
+
 /* ══════════════════════════════════════════════════════════════
    ΤΑ ΜΗΝΥΜΑΤΑ ΣΦΑΛΜΑΤΟΣ
 
    Κάθε μήνυμα λέει τι έγινε και τι μπορεί να κάνει ο χρήστης.
-   Όπου το πρόβλημα είναι δικό μας, δεν ζητάμε από τον χρήστη να
-   δοκιμάσει κάτι που δεν πρόκειται να πετύχει.
+   Δεν αναφέρεται πουθενά χρέωση: σε αυτό το βήμα δεν ζητούνται
+   χρήματα, οπότε η διαβεβαίωση «δεν χρεωθήκατε» μόνο απορία θα
+   δημιουργούσε.
    ══════════════════════════════════════════════════════════════ */
 const MINYMATA = {
   xoros: {
     kodikos: "xoris_apothikeytiko_xoro",
     minima:
-      "Η υπηρεσία δεν μπορεί να δεχτεί αρχεία αυτή τη στιγμή. Δεν χρεωθήκατε. Δοκιμάστε αργότερα ή επικοινωνήστε μαζί μας.",
+      "Η υπηρεσία δεν μπορεί να δεχτεί αρχεία αυτή τη στιγμή. Δοκιμάστε αργότερα ή επικοινωνήστε μαζί μας.",
   },
   adeia: {
     kodikos: "xoris_adeia",
     minima:
-      "Η αποστολή αρχείων δεν είναι διαθέσιμη αυτή τη στιγμή. Δεν χρεωθήκατε. Επικοινωνήστε μαζί μας για να σας εξυπηρετήσουμε.",
+      "Η αποστολή αρχείων δεν είναι διαθέσιμη αυτή τη στιγμή. Επικοινωνήστε μαζί μας για να σας εξυπηρετήσουμε.",
   },
   syndesi: {
     kodikos: "provlima_syndesis",
     minima:
-      "Η αποστολή διακόπηκε. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά. Δεν χρεωθήκατε.",
+      "Η αποστολή διακόπηκε. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά.",
   },
   arxeio: {
     kodikos: "provlima_arxeiou",
     minima:
-      "Το αρχείο δεν στάλθηκε σωστά. Δοκιμάστε ξανά, ή κατεβάστε εκ νέου το PDF από τον e-ΕΦΚΑ και ανεβάστε το.",
+      "Κάποιο αρχείο δεν στάλθηκε σωστά. Δοκιμάστε ξανά ή αφαιρέστε το και στείλτε το χωριστά.",
   },
   vasi: {
     kodikos: "provlima_katagrafis",
     minima:
-      "Το αρχείο στάλθηκε, αλλά η αίτηση δεν καταχωρήθηκε. Μην πληρώσετε ξανά. Επικοινωνήστε μαζί μας για να την ολοκληρώσουμε.",
+      "Τα αρχεία στάλθηκαν, αλλά η αίτηση δεν καταχωρήθηκε. Μην τα ξαναστείλετε. Επικοινωνήστε μαζί μας για να την ολοκληρώσουμε.",
   },
   agnosto: {
     kodikos: "agnosto",
@@ -95,22 +117,62 @@ const anagnorisiSfalmatos = (error) => {
   }
 };
 
-/* ══════════════════════════════════════════════════════════════
-   ΒΗΜΑ 1 — Ανέβασμα του αρχείου και δημιουργία της αίτησης
-   Καλείται ΠΡΙΝ ζητηθεί κάρτα.
-   ══════════════════════════════════════════════════════════════ */
-export const anevasmaAitisis = async (email, file) => {
-  const pin = dimiourgiaKodikou();
-  const diadromiArxeiou = `premium_pdfs/${pin}.pdf`;
+/* Αν σπάσει το ανέβασμα στη μέση, τα ήδη ανεβασμένα αρχεία σβήνονται.
+   Διαφορετικά μένουν ορφανά στο Storage, χωρίς αίτηση που να τα δείχνει. */
+const katharismosMisoanevasmenon = async (diadromes) => {
+  await Promise.all(
+    diadromes.map(async (diadromi) => {
+      try {
+        await deleteObject(storageRef(storage, diadromi));
+      } catch {
+        // Αν δεν σβηστεί, δεν σταματά τίποτα. Το βλέπουμε από τον πίνακα.
+      }
+    })
+  );
+};
 
-  // --- Ανέβασμα του PDF ---
-  try {
-    const anaforaArxeiou = storageRef(storage, diadromiArxeiou);
-    await uploadBytes(anaforaArxeiou, file);
-  } catch (error) {
-    console.error("Σφάλμα στο ανέβασμα του αρχείου:", error);
-    const { kodikos, minima } = anagnorisiSfalmatos(error);
-    return { success: false, kodikos, error: minima };
+/* ══════════════════════════════════════════════════════════════
+   ΒΗΜΑ 1 — Ανέβασμα των αρχείων και δημιουργία της αίτησης
+
+   stoicheia: { email, tilefono }
+   arxeia:    πίνακας File (1 έως 10)
+   onProodos: προαιρετική συνάρτηση (trexon, synolo) για την ένδειξη
+              προόδου στην οθόνη. Τα αρχεία ανεβαίνουν ένα-ένα, ώστε
+              να ξέρουμε πάντα ποιο απέτυχε.
+   ══════════════════════════════════════════════════════════════ */
+export const anevasmaAitisis = async (stoicheia, arxeia, onProodos) => {
+  const { email, tilefono } = stoicheia || {};
+  const pin = dimiourgiaKodikou();
+  const lista = Array.from(arxeia || []);
+
+  if (!lista.length) {
+    return { success: false, kodikos: "xoris_arxeia", error: MINYMATA.arxeio.minima };
+  }
+
+  const anevasmena = [];
+
+  // --- Ανέβασμα των αρχείων, ένα-ένα ---
+  for (let i = 0; i < lista.length; i++) {
+    const arxeio = lista[i];
+    const arithmos = String(i + 1).padStart(2, "0");
+    const diadromi = `premium_uploads/${pin}/${arithmos}-${katharoOnoma(arxeio.name)}`;
+
+    if (typeof onProodos === "function") onProodos(i + 1, lista.length);
+
+    try {
+      await uploadBytes(storageRef(storage, diadromi), arxeio);
+      anevasmena.push({
+        path: diadromi,
+        name: arxeio.name,
+        size: arxeio.size,
+        type: arxeio.type,
+      });
+    } catch (error) {
+      console.error(`Σφάλμα στο ανέβασμα του αρχείου ${arxeio.name}:`, error);
+      await katharismosMisoanevasmenon(anevasmena.map((a) => a.path));
+      const { kodikos, minima } = anagnorisiSfalmatos(error);
+      return { success: false, kodikos, error: minima };
+    }
   }
 
   // --- Καταχώριση της αίτησης στη βάση ---
@@ -118,37 +180,43 @@ export const anevasmaAitisis = async (email, file) => {
     await set(dbRef(db, `premium_requests/${pin}`), {
       pin,
       email,
-      pdfUrl: diadromiArxeiou,
-      status: KATASTASI_ARXIKI,
+      phone: tilefono || null,
+      files: anevasmena,
+      fileCount: anevasmena.length,
+      status: KATASTASEIS.PARALIFTHIKAN,
       createdAt: Date.now(),
-      // Συμπληρώνονται στο βήμα 3, μετά τη δέσμευση των χρημάτων.
+      // Η συναίνεση για την επεξεργασία των εγγράφων, με χρόνο.
+      consentAt: Date.now(),
+      // Συμπληρώνονται αργότερα, όταν γίνει η πληρωμή.
       paymentIntentId: null,
-      paymentStatus: "awaiting_payment",
+      paymentStatus: "not_requested",
     });
   } catch (error) {
     console.error("Σφάλμα στην καταχώριση της αίτησης:", error);
+    await katharismosMisoanevasmenon(anevasmena.map((a) => a.path));
     const { kodikos, minima } = anagnorisiSfalmatos(error);
     return { success: false, kodikos, error: minima };
   }
 
-  return { success: true, pin };
+  return { success: true, pin, plithosArxeion: anevasmena.length };
 };
 
 /* ══════════════════════════════════════════════════════════════
-   ΒΗΜΑ 3 — Σύνδεση της αίτησης με τη δέσμευση των χρημάτων
-   Καλείται ΜΕΤΑ την επιτυχή δέσμευση στο Stripe.
+   ΒΗΜΑ 3 — Σύνδεση της αίτησης με την πληρωμή
 
-   Αν αποτύχει, τα χρήματα είναι δεσμευμένα αλλά η αίτηση δεν το
-   γνωρίζει. Ο πελάτης δεν φταίει και δεν πρέπει να ξαναπληρώσει —
-   γι' αυτό η σελίδα δείχνει τον κωδικό του κανονικά και τον καλεί
-   να επικοινωνήσει αν δεν λάβει ενημέρωση.
+   ΔΕΝ ΚΑΛΕΙΤΑΙ ΣΗΜΕΡΑ. Μένει έτοιμη για το κανάλι πληρωμής, το
+   οποίο θα ενεργοποιείται αφού ελεγχθεί ο φάκελος.
    ══════════════════════════════════════════════════════════════ */
-export const katagrafiPliromis = async (pin, paymentIntentId) => {
+export const katagrafiPliromis = async (pin, paymentIntentId, epipleon = {}) => {
   try {
     await update(dbRef(db, `premium_requests/${pin}`), {
       paymentIntentId,
-      paymentStatus: "authorized",
+      paymentStatus: "paid",
       paidAt: Date.now(),
+      status: KATASTASEIS.SE_EPEXERGASIA,
+      /* Η ώρα που ο πελάτης δήλωσε ότι ζητά άμεση εκτέλεση και
+         παραιτείται από το δικαίωμα υπαναχώρησης. Νομικό τεκμήριο. */
+      withdrawalConsentAt: epipleon.ypanaxorisiAt || null,
     });
     return { success: true };
   } catch (error) {

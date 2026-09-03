@@ -1,38 +1,33 @@
-[debug] [2026-08-30T09:36:23.210Z] ----------------------------------------------------------------------
-[debug] [2026-08-30T09:36:23.213Z] Command:       C:\nvm4w\nodejs\node.exe C:\nvm4w\nodejs\node_modules\firebase-tools\lib\bin\firebase.js emulators:start --only functions
-[debug] [2026-08-30T09:36:23.214Z] CLI Version:   15.10.1
-[debug] [2026-08-30T09:36:23.214Z] Platform:      win32
-[debug] [2026-08-30T09:36:23.214Z] Node Version:  v20.19.2
-[debug] [2026-08-30T09:36:23.214Z] Time:          Sun Aug 30 2026 12:36:23 GMT+0300 (Eastern European Summer Time)
-[debug] [2026-08-30T09:36:23.214Z] ----------------------------------------------------------------------
+[debug] [2026-09-03T11:05:30.126Z] ----------------------------------------------------------------------
+[debug] [2026-09-03T11:05:30.129Z] Command:       C:\nvm4w\nodejs\node.exe C:\nvm4w\nodejs\node_modules\firebase-tools\lib\bin\firebase.js emulators:start --only functions
+[debug] [2026-09-03T11:05:30.130Z] CLI Version:   15.10.1
+[debug] [2026-09-03T11:05:30.130Z] Platform:      win32
+[debug] [2026-09-03T11:05:30.130Z] Node Version:  v20.19.2
+[debug] [2026-09-03T11:05:30.130Z] Time:          Thu Sep 03 2026 14:05:30 GMT+0300 (Eastern European Summer Time)
+[debug] [2026-09-03T11:05:30.130Z] ----------------------------------------------------------------------
 [debug] 
-[debug] [2026-08-30T09:36:25.851Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
-[debug] [2026-08-30T09:36:25.851Z] > authorizing via signed-in user (sarrpanjim@gmail.com)
+[debug] [2026-09-03T11:05:31.986Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-03T11:05:31.987Z] > authorizing via signed-in user (sarrpanjim@gmail.com)
 [info] i  emulators: Starting emulators: functions {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: functions"}}
-[debug] [2026-08-30T09:36:25.870Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
-[debug] [2026-08-30T09:36:25.870Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}]},"metadata":{"message":"assigned listening specs for emulators"}}
-[debug] [2026-08-30T09:36:25.912Z] Write emulator hub locator at C:\Users\dsarr\AppData\Local\Temp\hub-pension-calculator-f8e60.json
-[debug] [2026-08-30T09:36:25.959Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
-[debug] [2026-08-30T09:36:25.960Z] [eventarc] Eventarc Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
-[debug] [2026-08-30T09:36:25.960Z] [tasks] Cloud Tasks Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
-[debug] [2026-08-30T09:36:25.960Z] late-assigned ports for functions and eventarc emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"functions":[{"address":"127.0.0.1","family":"IPv4","port":5001}],"eventarc":[{"address":"127.0.0.1","family":"IPv4","port":9299}],"tasks":[{"address":"127.0.0.1","family":"IPv4","port":9499}]},"metadata":{"message":"late-assigned ports for functions and eventarc emulators"}}
+[debug] [2026-09-03T11:05:32.006Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-09-03T11:05:32.006Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2026-09-03T11:05:32.013Z] Write emulator hub locator at C:\Users\dsarr\AppData\Local\Temp\hub-pension-calculator-f8e60.json
+[debug] [2026-09-03T11:05:32.035Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-09-03T11:05:32.035Z] [eventarc] Eventarc Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-09-03T11:05:32.036Z] [tasks] Cloud Tasks Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2026-09-03T11:05:32.036Z] late-assigned ports for functions and eventarc emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"ui":[{"address":"127.0.0.1","family":"IPv4","port":4000},{"address":"::1","family":"IPv6","port":4000}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"functions":[{"address":"127.0.0.1","family":"IPv4","port":5001}],"eventarc":[{"address":"127.0.0.1","family":"IPv4","port":9299}],"tasks":[{"address":"127.0.0.1","family":"IPv4","port":9499}]},"metadata":{"message":"late-assigned ports for functions and eventarc emulators"}}
 [warn] !  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect {"metadata":{"emulator":{"name":"functions"},"message":"The following emulators are not running, calls to these services from the Functions emulator will affect production: \u001b[1mapphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect\u001b[22m"}}
-[debug] [2026-08-30T09:36:26.001Z] defaultcredentials: writing to file C:\Users\dsarr\AppData\Roaming\firebase\sarrpanjim_gmail_com_application_default_credentials.json
-[debug] [2026-08-30T09:36:26.006Z] Setting GAC to C:\Users\dsarr\AppData\Roaming\firebase\sarrpanjim_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to C:\\Users\\dsarr\\AppData\\Roaming\\firebase\\sarrpanjim_gmail_com_application_default_credentials.json"}}
-[debug] [2026-08-30T09:36:26.007Z] Checked if tokens are valid: false, expires at: 1788082880830
-[debug] [2026-08-30T09:36:26.008Z] Checked if tokens are valid: false, expires at: 1788082880830
-[debug] [2026-08-30T09:36:26.008Z] > refreshing access token with scopes: []
-[debug] [2026-08-30T09:36:26.011Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
-[debug] [2026-08-30T09:36:26.011Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
-[debug] [2026-08-30T09:36:26.261Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
-[debug] [2026-08-30T09:36:26.261Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
-[debug] [2026-08-30T09:36:26.283Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/pension-calculator-f8e60/adminSdkConfig [none]
-[debug] [2026-08-30T09:36:26.913Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/pension-calculator-f8e60/adminSdkConfig 200
-[debug] [2026-08-30T09:36:26.914Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/pension-calculator-f8e60/adminSdkConfig {"projectId":"pension-calculator-f8e60","databaseURL":"https://pension-calculator-f8e60-default-rtdb.europe-west1.firebasedatabase.app","storageBucket":"pension-calculator-f8e60.firebasestorage.app"}
+[debug] [2026-09-03T11:05:32.061Z] defaultcredentials: writing to file C:\Users\dsarr\AppData\Roaming\firebase\sarrpanjim_gmail_com_application_default_credentials.json
+[debug] [2026-09-03T11:05:32.065Z] Setting GAC to C:\Users\dsarr\AppData\Roaming\firebase\sarrpanjim_gmail_com_application_default_credentials.json {"metadata":{"emulator":{"name":"functions"},"message":"Setting GAC to C:\\Users\\dsarr\\AppData\\Roaming\\firebase\\sarrpanjim_gmail_com_application_default_credentials.json"}}
+[debug] [2026-09-03T11:05:32.066Z] Checked if tokens are valid: true, expires at: 1788435677771
+[debug] [2026-09-03T11:05:32.066Z] Checked if tokens are valid: true, expires at: 1788435677771
+[debug] [2026-09-03T11:05:32.068Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/pension-calculator-f8e60/adminSdkConfig [none]
+[debug] [2026-09-03T11:05:32.811Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/pension-calculator-f8e60/adminSdkConfig 200
+[debug] [2026-09-03T11:05:32.811Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/pension-calculator-f8e60/adminSdkConfig {"projectId":"pension-calculator-f8e60","databaseURL":"https://pension-calculator-f8e60-default-rtdb.europe-west1.firebasedatabase.app","storageBucket":"pension-calculator-f8e60.firebasestorage.app"}
 [info] i  functions: Watching "C:\PensionProject\FreePension\web-functions" for Cloud Functions... {"metadata":{"emulator":{"name":"functions"},"message":"Watching \"C:\\PensionProject\\FreePension\\web-functions\" for Cloud Functions..."}}
-[debug] [2026-08-30T09:36:26.963Z] Validating nodejs source
+[debug] [2026-09-03T11:05:32.843Z] Validating nodejs source
 [warn] !  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
-[debug] [2026-08-30T09:36:28.579Z] > [functions] package.json contents: {
+[debug] [2026-09-03T11:05:33.993Z] > [functions] package.json contents: {
   "name": "geodora-web-functions",
   "description": "Stripe and email backend for the Geodora Pension website",
   "scripts": {
@@ -54,21 +49,21 @@
   },
   "private": true
 }
-[debug] [2026-08-30T09:36:28.580Z] Building nodejs source
-[debug] [2026-08-30T09:36:28.580Z] Failed to find version of module node: reached end of search path C:\PensionProject\FreePension\web-functions\node_modules
+[debug] [2026-09-03T11:05:33.994Z] Building nodejs source
+[debug] [2026-09-03T11:05:33.994Z] Failed to find version of module node: reached end of search path C:\PensionProject\FreePension\web-functions\node_modules
 [info] +  functions: Using node@20 from host. 
 [info] i  functions: Loaded environment variables from .env. 
-[debug] [2026-08-30T09:36:28.585Z] Could not find functions.yaml. Must use http discovery
-[debug] [2026-08-30T09:36:28.595Z] Found firebase-functions binary at 'C:\PensionProject\FreePension\web-functions\node_modules\.bin\firebase-functions'
-[info] Serving at port 8984
+[debug] [2026-09-03T11:05:33.999Z] Could not find functions.yaml. Must use http discovery
+[debug] [2026-09-03T11:05:34.013Z] Found firebase-functions binary at 'C:\PensionProject\FreePension\web-functions\node_modules\.bin\firebase-functions'
+[info] Serving at port 8990
 
 [info] ◇ injected env (3) from .env // tip: ⌘ suppress logs { quiet: true }
 
-[debug] [2026-08-30T09:36:29.884Z] Got response from /__/functions.yaml {"endpoints":{"createPaymentIntent":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"httpsTrigger":{},"entryPoint":"createPaymentIntent"},"capturePayment":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"httpsTrigger":{},"entryPoint":"capturePayment"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[debug] [2026-09-03T11:05:34.998Z] Got response from /__/functions.yaml {"endpoints":{"createPaymentIntent":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"httpsTrigger":{},"entryPoint":"createPaymentIntent"},"capturePayment":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"httpsTrigger":{},"entryPoint":"capturePayment"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
 [info] +  functions: Loaded functions definitions from source: createPaymentIntent, capturePayment. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: createPaymentIntent, capturePayment."}}
 [info] +  functions[us-central1-createPaymentIntent]: http function initialized (http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/createPaymentIntent). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/createPaymentIntent)."}}
 [info] +  functions[us-central1-capturePayment]: http function initialized (http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/capturePayment). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/pension-calculator-f8e60/us-central1/capturePayment)."}}
-[debug] [2026-08-30T09:36:33.939Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[debug] [2026-09-03T11:05:39.046Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
 [info] 
 ┌─────────────────────────────────────────────────────────────┐
 │ ✔  All emulators ready! It is now safe to connect your app. │

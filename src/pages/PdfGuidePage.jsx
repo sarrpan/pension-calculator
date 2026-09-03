@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './StartPage.css';
+import './PdfGuidePage.css';
 
 const ImageSlider = ({ slides }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,7 +56,7 @@ const ImageSlider = ({ slides }) => {
   );
 };
 
-const StartPage = () => {
+const PdfGuidePage = () => {
   const allSteps = [
     { text: 'Επιλέξτε συνέχεια στο Taxisnet.', image: '/img/1.png' },
     { text: 'Εισάγετε το Username και το Password σας.', image: '/img/2.png' },
@@ -79,7 +79,7 @@ const StartPage = () => {
     <section className="guide-section">
       <div className="container">
         <div className="guide-header">
-          <div className="guide-kicker">Οδηγός λήψης PDF</div>
+          <div className="guide-kicker">ΟΔΗΓΟΣ ΛΗΨΗΣ PDF</div>
           <h2 className="section-title">Πώς να κατεβάσετε σωστά το PDF από τον e-ΕΦΚΑ</h2>
 
           <div className="info-box">
@@ -118,4 +118,4 @@ const StartPage = () => {
   );
 };
 
-export default StartPage;
+export default PdfGuidePage;

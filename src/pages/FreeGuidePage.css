@@ -30,7 +30,7 @@
   padding: 7px 14px;
   border-radius: 999px;
   background: rgba(243, 127, 44, 0.12);
-  color: #f37f2c;
+  color: #ea580c;
   font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -40,7 +40,7 @@
   margin: 0 0 16px;
   font-size: clamp(2.2rem, 4vw, 3.4rem);
   line-height: 1.06;
-  color: #14213d;
+  color: #0f172a;
 }
 
 .free-guide-lead {
@@ -49,51 +49,6 @@
   color: #5f6b7a;
   line-height: 1.8;
   font-size: 1.05rem;
-}
-
-.free-guide-dev-alerts {
-  display: grid;
-  gap: 14px;
-  margin-top: 24px;
-}
-
-.free-guide-dev-alert {
-  border-radius: 16px;
-  padding: 18px 18px 18px 20px;
-  background: #fff1f2;
-  border: 1px solid #fecdd3;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-}
-
-.free-guide-dev-alert-title {
-  margin-bottom: 10px;
-  color: #9f1239;
-  font-size: 0.98rem;
-  font-weight: 800;
-  line-height: 1.4;
-}
-
-.free-guide-dev-alert-list {
-  margin: 0;
-  padding-left: 18px;
-  color: #881337;
-}
-
-.free-guide-dev-alert-list li {
-  margin-bottom: 8px;
-  line-height: 1.7;
-}
-
-.free-guide-dev-alert-list li:last-child {
-  margin-bottom: 0;
-}
-
-.free-guide-hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 28px;
 }
 
 .free-guide-section {
@@ -132,7 +87,7 @@
 
 .free-guide-section-kicker {
   margin-bottom: 8px;
-  color: #f37f2c;
+  color: #ea580c;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -148,13 +103,13 @@
   margin: 0 0 14px;
   font-size: clamp(1.6rem, 2vw, 2.2rem);
   line-height: 1.2;
-  color: #14213d;
+  color: #0f172a;
 }
 
 .free-guide-section h3 {
   font-size: 1.08rem;
   line-height: 1.4;
-  color: #14213d;
+  color: #0f172a;
   margin: 0 0 10px;
 }
 
@@ -239,18 +194,23 @@
   margin-bottom: 0;
 }
 
+/* Κουτί εικόνας.
+   Το ύψος του καθορίζεται από την ίδια την εικόνα και τη λεζάντα.
+   Δεν ορίζεται min-height: 0, ώστε να μην μπορεί να συμπιεστεί
+   όταν η διπλανή στήλη κειμένου είναι κοντύτερη. */
 .free-guide-image-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 0;
+  gap: 10px;
   border-radius: 18px;
   padding: 18px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  overflow: hidden;
 }
+
 .free-guide-image-card-soft {
   background: #f8fafc;
   border-color: #dbe4ee;
@@ -268,7 +228,7 @@
 
 .free-guide-upload-label {
   margin-bottom: 14px;
-  color: #14213d;
+  color: #0f172a;
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -276,7 +236,7 @@
 .free-guide-note {
   margin-top: 18px;
   padding: 18px 20px;
-  border-left: 4px solid #f37f2c;
+  border-left: 4px solid #ea580c;
   border-radius: 12px;
   background: #fff7ed;
   color: #7c4a16;
@@ -306,6 +266,7 @@
 .free-guide-compact-card-blue {
   background: #f4f8ff;
 }
+
 .free-guide-visual-card {
   display: flex;
   flex-direction: column;
@@ -318,18 +279,26 @@
 }
 
 .free-guide-visual-image-card {
-  height: 100%;
-  min-height: 0;
+  align-self: stretch;
 }
 
+/* Η εικόνα περιορίζεται μόνο από το πλάτος του κουτιού της.
+   Δεν ορίζεται max-height, ώστε το ύψος της να μην εξαρτάται
+   από το ύψος της διπλανής κάρτας κειμένου. */
 .free-guide-image {
   max-width: 100%;
-  max-height: 100%;
   width: auto;
   height: auto;
   display: block;
   border-radius: 14px;
-  object-fit: contain;
+}
+
+.free-guide-image-caption {
+  margin: 0;
+  color: #7b8794;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .free-guide-cta {
@@ -337,7 +306,7 @@
   overflow: hidden;
   border-radius: 24px;
   padding: 36px;
-  background: linear-gradient(180deg, #0d1830 0%, #14213d 100%);
+  background: linear-gradient(180deg, #0d1830 0%, #0f172a 100%);
   box-shadow: 0 18px 40px rgba(20, 33, 61, 0.12);
 }
 
@@ -380,7 +349,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #f37f2c;
+  background: #ea580c;
   color: #ffffff;
   text-decoration: none;
   padding: 14px 22px;
@@ -397,7 +366,7 @@
 
 .free-guide-button-light {
   background: #ffffff;
-  color: #14213d;
+  color: #0f172a;
   box-shadow: none;
 }
 
@@ -406,7 +375,7 @@
 }
 
 .free-guide-link {
-  color: #14213d;
+  color: #0f172a;
   text-decoration: none;
   font-weight: 700;
 }
@@ -458,8 +427,7 @@
 
   .free-guide-lead,
   .free-guide-section p,
-  .free-guide-list li,
-  .free-guide-dev-alert-list li {
+  .free-guide-list li {
     font-size: 0.98rem;
     line-height: 1.75;
   }
@@ -473,8 +441,7 @@
     font-size: 1.45rem;
   }
 
-  .free-guide-actions,
-  .free-guide-hero-actions {
+  .free-guide-actions {
     align-items: stretch;
   }
 
@@ -486,7 +453,6 @@
   }
 
   .free-guide-image-card {
-    min-height: 220px;
     padding: 14px;
   }
 }

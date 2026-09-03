@@ -2,337 +2,336 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import './ReportGuidePage.css';
 
+/* ------------------------------------------------------------------
+   ΡΥΘΜΙΣΕΙΣ — αλλάζουν εδώ, χωρίς να πειραχτεί το υπόλοιπο αρχείο
+   ------------------------------------------------------------------ */
+
+// Μέγιστος χρόνος παράδοσης, σε εργάσιμες ημέρες.
+// Αλλάζει ανάλογα με τον φόρτο. Όποιος πλήρωσε βλέποντας Χ, δικαιούται Χ.
+const XRONOS_PARADOSIS = 10;
+
+// Τιμή υπηρεσίας.
+const TIMI = '20 €';
+
+// Όρια αρχείων της φόρμας.
+// ΠΡΟΣΟΧΗ: πρέπει να συμφωνούν με το PremiumUploadPage.jsx.
+// Σήμερα η φόρμα δέχεται 1 αρχείο έως 5 MB — εκκρεμεί η αλλαγή της.
+const MEGISTA_ARCHEIA = 10;
+const MEGISTO_MEGETHOS = '50 MB';
+
+// Διαδρομές
+const DIADROMES = {
+  apostoli: '/premium-upload',
+  odigosPdf: '/pdf-guide'
+};
+
+/* ------------------------------------------------------------------
+   ΠΕΡΙΕΧΟΜΕΝΟ
+   ------------------------------------------------------------------ */
+
+const HERO_SIMEIA = [
+  {
+    title: 'Τι παίρνετε',
+    text: 'Έκθεση με σενάρια εξόδου σε διαφορετικές ηλικίες και ανάλυση του ποσού ανά σκέλος.'
+  },
+  {
+    title: 'Πότε πληρώνετε',
+    text: 'Αφού δούμε τα έγγραφά σας και επιβεβαιώσουμε ότι μπορεί να γίνει ο υπολογισμός.'
+  },
+  {
+    title: 'Τι κοστίζει',
+    text: `${TIMI}, μία φορά. Περιλαμβάνεται και η επικοινωνία μαζί σας, αν χρειαστούν επιπλέον στοιχεία.`
+  }
+];
+
+const PIGES_APODOCHON = [
+  {
+    title: 'Από το λογιστήριο ή την υπηρεσία σας',
+    text: 'Βεβαίωση αποδοχών ανά έτος. Είναι η ακριβέστερη πηγή. Το Δημόσιο, οι ΔΕΚΟ και οι τράπεζες τις εκδίδουν κανονικά — και είναι ακριβώς οι φορείς με τα μεγαλύτερα κενά στο βιογραφικό.'
+  },
+  {
+    title: 'Από πρόγραμμα εργοδότη',
+    text: 'Ορισμένοι εργοδότες δίνουν στους εργαζομένους αναλυτική κατάσταση αποδοχών ανά έτος — στη ΔΕΗ, για παράδειγμα, το έντυπο 402. Αν έχετε πρόσβαση σε κάτι τέτοιο, είναι έτοιμο.'
+  },
+  {
+    title: 'Από τη φορολογική σας δήλωση',
+    text: 'Στο Taxisnet, ανά έτος, στο Ε1. Για κάποια έτη υπάρχει, για κάποια όχι. Αν βρείτε ποσά εκεί, στείλτε τα και σημειώστε ότι προέρχονται από τη δήλωση.'
+  }
+];
+
+const VIMATA = [
+  {
+    title: 'Στέλνετε τα έγγραφά σας',
+    text: 'Παίρνετε αμέσως κωδικό παρακολούθησης.'
+  },
+  {
+    title: 'Ελέγχουμε τον φάκελο',
+    text: 'Αν λείπουν στοιχεία, επικοινωνούμε μαζί σας.'
+  },
+  {
+    title: `Πληρώνετε ${TIMI}`,
+    text: 'Μόλις επιβεβαιωθεί ότι ο φάκελος είναι πλήρης.'
+  },
+  {
+    title: 'Ετοιμάζουμε την έκθεση',
+    text: `Το αργότερο εντός ${XRONOS_PARADOSIS} εργάσιμων ημερών.`
+  },
+  {
+    title: 'Παραδίδουμε',
+    text: 'Με email και στη σελίδα Παρακολούθησης, όπου μπαίνετε με τον κωδικό σας.'
+  }
+];
+
+const EKTHESI_PERIECHOMENO = [
+  {
+    title: 'Σενάρια εξόδου σε διαφορετικές ηλικίες',
+    text: 'Πείτε μας ποιες σας ενδιαφέρουν και τις υπολογίζουμε. Αν δεν το ορίσετε, δίνουμε τα βασικά όρια που ισχύουν στην περίπτωσή σας.'
+  },
+  {
+    title: 'Εθνική και ανταποδοτική ξεχωριστά',
+    text: 'Τα δύο σκέλη της κύριας σύνταξης, αναλυμένα. Βλέπετε πώς προκύπτει το ποσό, όχι μόνο το ποσό.'
+  },
+  {
+    title: 'Η επικουρική χωριστά',
+    text: 'Υπολογίζεται και παρουσιάζεται ξεχωριστά από την κύρια σύνταξη.'
+  },
+  {
+    title: 'Κρατήσεις και ποσό είσπραξης',
+    text: 'Από το μεικτό ποσό αφαιρούνται οι κρατήσεις που γίνονται πάνω στη σύνταξη. Μένει μόνο η φορολογική επιβάρυνση, που εξαρτάται από τα υπόλοιπα εισοδήματά σας και δεν μπορεί να υπολογιστεί χωρίς αυτά.'
+  },
+  {
+    title: 'Διάκριση των στοιχείων',
+    text: 'Τι προκύπτει από το επίσημο ιστορικό και τι από δική σας δήλωση.'
+  }
+];
+
+/* ------------------------------------------------------------------ */
+
 const ReportGuidePage = () => {
-  const heroFacts = [
-      {
-        title: 'Ξεκάθαρη Εικόνα',
-        text: 'Εκτίμηση κύριας και επικουρικής σύνταξης με βάση τα δεδομένα σας.'
-      },
-      {
-        title: 'Απόλυτη Ασφάλεια',
-        text: 'Η χρέωση προχωρά μόνο αφού επιβεβαιώσουμε ότι μας έχετε δώσει το σωστό αρχείο και όλα τα απαραίτητα στοιχεία.'
-      },
-      {
-        title: 'Χωρίς Ταλαιπωρία',
-        text: 'Λαμβάνετε ένα οργανωμένο report με ποσά και κρατήσεις, χωρίς να χάνεστε σε πολύπλοκους πίνακες.'
-      }
-    ];
-
-  const commonRequirements = [
-      {
-        title: 'Ημερομηνία γέννησης',
-        text: 'Απαραίτητη για να υπολογιστεί η ακριβής ηλικία σας.'
-      },
-      {
-        title: 'Ημερομηνία αποχώρησης',
-        text: 'Πότε επιθυμείτε να συνταξιοδοτηθείτε, ώστε να προσαρμόσουμε το σενάριο της εκτίμησης.'
-      },
-      {
-        title: 'Έτη παραμονής στην Ελλάδα',
-        text: 'Αφορά μόνο όσους έχουν λιγότερα από 40 έτη, καθώς επηρεάζει την Εθνική Σύνταξη'
-      },
-      {
-        title: 'Πρώτη ασφάλιση πριν το 1993',
-        text: 'Κρίσιμη πληροφορία (παλαιός ή νέος ασφαλισμένος) για τον τρόπο υπολογισμού.'
-      },
-      {
-        title: 'Βαρέα ή υπερβαρέα ένσημα',
-        text: 'Αν υπάρχουν, επηρεάζουν ευνοϊκά τα όρια ηλικίας και τον τελικό υπολογισμό.'
-      },
-      {
-        title: 'Ασφαλιστικό ιστορικό ΕΦΚΑ',
-        text: 'Το βασικό έγγραφο (PDF) στο οποίο στηρίζεται όλη η ανάλυση της σύνταξής σας'
-      }
-    ];
-
-  const processSteps = [
-      {
-        title: 'Ανεβάζετε το PDF',
-        text: 'Μας στέλνετε το επίσημο Αναλυτικό Ιστορικό Ασφάλισης σε μορφή PDF.'
-      },
-      {
-        title: 'Γίνεται έλεγχος αρχείου',
-        text: 'Ελέγχουμε πρώτα αν το αρχείο είναι το σωστό.'
-      },
-      {
-        title: 'Μόνο τότε προχωρά η χρέωση',
-        text: 'Η πληρωμή ολοκληρώνεται μόνο όταν επιβεβαιωθεί η λήψη του σωστού αρχείου και των απαραίτητων στοιχείων.'
-      },
-      {
-        title: 'Αν κάτι λείπει, δεν χρεώνεστε',
-        text: 'Αν το PDF δεν είναι το σωστό ή λείπουν βασικά δεδομένα, σας ενημερώνουμε και δεν προχωρά η κανονική χρέωση.'
-      }
-    ];
-
-  const efkaChecklist = [
-    'Το επίσημο Αναλυτικό Ιστορικό Ασφάλισης από την πλατφόρμα του e-ΕΦΚΑ.',
-    'Το αρχείο στην αρχική ψηφιακή του μορφή (PDF).',
-    'Όχι φωτογραφίες, screenshots ή εκτυπώσεις σε μορφή εικόνας.'
-  ];
-
-  const reportIncludes = [
-    {
-      title: 'Ανάλυση ποσού σύνταξης',
-      text: 'Εκτίμηση κύριας σύνταξης και επικουρικής, με βάση τα πραγματικά σας δεδομένα.'
-    },
-    {
-      title: 'Κρατήσεις και καθαρό ποσό',
-      text: 'Υπολογισμός κρατήσεων για να έχετε μια πιο καθαρή εικόνα για το ποσό που απομένει.'
-    },
-    {
-      title: 'Σενάρια εξόδου',
-      text: 'Συγκριτική παρουσίαση διαφορετικών σεναρίων εξόδου, ώστε να βλέπετε πιο καθαρά τις βασικές διαφορές.'
-    },
-    {
-      title: 'Συγκεντρωτική εικόνα ενσήμων',
-      text: 'Οργανωμένη παρουσίαση ενσήμων, ημερών ασφάλισης και βασικών κατηγοριών του ιστορικού σας.'
-    }
-  ];
-
-  const complexCases = [
-      'Έλεγχος και υπολογισμός κόστους για πλασματικά έτη.',
-      'Σενάρια με ειδικές ή πιο σπάνιες συνταξιοδοτικές διατάξεις.',
-      'Περιπτώσεις που απαιτούν εκτεταμένη χειροκίνητη καταμέτρηση (π.χ. παλιές καρτέλες).',
-      'Οποιοδήποτε άλλο εξειδικευμένο ερώτημα αφορά την περίπτωσή σας.'
-    ];
-
   return (
-    <main className="report-guide-page">
-      <div className="report-guide-container">
-        <section className="report-guide-hero">
-          <div className="report-guide-hero-content">
-            <span className="report-guide-badge">Αναλυτικό Report Σύνταξης - 10€</span>
+    <main className="rg-page">
+      <div className="rg-container">
 
-            <h1>Εκτίμηση σύνταξης με βάση τα δικά σας δεδομένα</h1>
+        {/* ---------------- HERO ---------------- */}
+        <section className="rg-hero">
+          <div className="rg-eyebrow">ΑΝΑΛΥΤΙΚΟ REPORT</div>
 
-            <p className="report-guide-lead">
-              Για να μπορέσουμε να ετοιμάσουμε το αναλυτικό σας report, η διαδικασία ξεκινά με
-              τα δικά σας στοιχεία. Θα χρειαστούμε το ασφαλιστικό σας ιστορικό (PDF από τον e-ΕΦΚΑ),
-              καθώς και ορισμένες βασικές πληροφορίες για την περίπτωσή σας (π.χ. έτη, ηλικία ή καθεστώς
-              βαρέων). Εμείς κάνουμε την επεξεργασία και η χρέωση προχωρά μόνο αφού επιβεβαιώσουμε 
-              ότι το αρχείο είναι το σωστό και μας έχετε δώσει όλα τα απαραίτητα στοιχεία.
+          <h1>Το ασφαλιστικό σας ιστορικό πιθανότατα δεν είναι πλήρες</h1>
+
+          <p className="rg-lead">
+            Το αρχείο που κατεβάζετε από τον e-ΕΦΚΑ δείχνει ό,τι έχει καταγραφεί ψηφιακά.
+            Για πολλούς ασφαλισμένους — ιδίως όσους ήταν σε ΔΕΚΟ, τράπεζες ή στο Δημόσιο
+            και εντάχθηκαν στον e-ΕΦΚΑ αργότερα — παλαιότερες περίοδοι δεν εμφανίζονται.
+            Δεν χάθηκαν. Απλώς δεν φαίνονται εκεί.
+          </p>
+
+          <p className="rg-lead">
+            Η δουλειά μας είναι να εντοπίσουμε τι λείπει και να υπολογίσουμε τη
+            σύνταξή σας με πλήρη στοιχεία.
+          </p>
+
+          <div className="rg-panel-dark">
+            {HERO_SIMEIA.map((item) => (
+              <div key={item.title} className="rg-panel-row">
+                <div className="rg-panel-row-title">{item.title}</div>
+                <p>{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ---------------- 1. Η ΥΠΗΡΕΣΙΑ ---------------- */}
+        <section className="rg-section">
+          <div className="rg-eyebrow">1. Η ΥΠΗΡΕΣΙΑ</div>
+          <h2>Τι κάνουμε</h2>
+
+          <div className="rg-copy">
+            <p>
+              Διαβάζουμε το ασφαλιστικό σας ιστορικό, το συνδυάζουμε με όσα μας δηλώσετε,
+              εντοπίζουμε τι λείπει και σας το ζητάμε, και υπολογίζουμε τη σύνταξή σας.
             </p>
+            <p>
+              Δεν χρειάζεται να ξέρετε ποιοι κανόνες ισχύουν στην περίπτωσή σας, ούτε να
+              βρείτε μόνος σας τι λείπει από το βιογραφικό σας. Στέλνετε ό,τι έχετε και
+              το αναλαμβάνουμε εμείς.
+            </p>
+          </div>
+        </section>
 
-            <span className="report-guide-scroll-prompt">
-              Δείτε αναλυτικά τι θα χρειαστείτε παρακάτω
-            </span>
+        {/* ---------------- 2. Η ΔΙΑΔΙΚΑΣΙΑ ---------------- */}
+        <section className="rg-section">
+          <div className="rg-eyebrow">2. Η ΔΙΑΔΙΚΑΣΙΑ</div>
+          <h2>Πληρώνετε αφού δούμε τι έχουμε στα χέρια μας</h2>
+
+          <ol className="rg-steps">
+            {VIMATA.map((vima) => (
+              <li key={vima.title} className="rg-step">
+                <div className="rg-step-title">{vima.title}</div>
+                <p>{vima.text}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div className="rg-block rg-block-warm rg-block-tight">
+            <div className="rg-copy">
+              <p>
+                Η δεύτερη επικοινωνία είναι κανονικό μέρος της δουλειάς, όχι ένδειξη ότι
+                κάτι πήγε στραβά.
+              </p>
+              <p className="rg-strong-line">
+                Γι' αυτό δεν ζητάμε πληρωμή πριν δούμε τον φάκελο.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ---------------- 3. Η ΕΚΘΕΣΗ ---------------- */}
+        <section className="rg-section">
+          <div className="rg-eyebrow">3. ΤΙ ΠΑΙΡΝΕΤΕ</div>
+          <h2>Τι περιλαμβάνει η έκθεση</h2>
+
+          <div className="rg-report-list">
+            {EKTHESI_PERIECHOMENO.map((item) => (
+              <article key={item.title} className="rg-report-card">
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </article>
+            ))}
           </div>
 
-          <aside className="report-guide-panel report-guide-panel-dark">
-            <div className="report-guide-panel-label">Σε αυτή τη σελίδα</div>
+          <div className="rg-copy rg-copy-spaced">
+            <p>
+              Η δομή της έκθεσης ακολουθεί εκείνη του ΕΦΚΑ, ώστε να μπορείτε να βάλετε
+              τα δύο έγγραφα δίπλα-δίπλα.
+            </p>
+            <p>
+              Όπου ο υπολογισμός αφορά μελλοντικά έτη, οι παραδοχές που χρησιμοποιήθηκαν
+              δηλώνονται μέσα στην έκθεση.
+            </p>
+          </div>
 
-            <div className="report-guide-panel-list">
-              {heroFacts.map((item, index) => (
-                <div key={item.title} className="report-guide-panel-row">
-                  <div className="report-guide-panel-row-title">{item.title}</div>
-                  <p>{item.text}</p>
-                  {index !== heroFacts.length - 1 && <div className="report-guide-panel-divider" />}
+          <div className="rg-retention">
+            <div className="rg-retention-title">Διατήρηση στοιχείων</div>
+            <p>
+              Τα έγγραφα και η έκθεση φυλάσσονται για έναν χρόνο σε υπολογιστή χωρίς
+              σύνδεση στο διαδίκτυο, ώστε να μπορούμε να απαντήσουμε αν προκύψουν απορίες
+              όταν βγει η απόφαση του ΕΦΚΑ. Διαγραφή νωρίτερα με απλό αίτημα.
+            </p>
+          </div>
+        </section>
+
+        {/* ---------------- 4. ΤΙ ΘΑ ΧΡΕΙΑΣΤΕΙΤΕ ---------------- */}
+        <section className="rg-section">
+          <div className="rg-eyebrow">4. ΤΙ ΘΑ ΧΡΕΙΑΣΤΕΙΤΕ</div>
+          <h2>Τρία πράγματα</h2>
+
+          {/* 2α — Αποδοχές */}
+          <div className="rg-block rg-block-warm">
+            <h3>Αποδοχές και ημέρες ασφάλισης ανά έτος, από το 2002</h3>
+
+            <div className="rg-copy">
+              <p>
+                Είναι το μόνο στοιχείο που δεν σηκώνει προσέγγιση. Χρειαζόμαστε και τα δύο
+                για κάθε χρονιά — πόσα πήρατε και πόσες ημέρες ασφαλιστήκατε. Χωρίς αυτά
+                δεν υπολογίζεται το ανταποδοτικό σκέλος της σύνταξης.
+              </p>
+              <p>
+                Σε πολλές περιπτώσεις δεν υπάρχουν όλα στο αρχείο του e-ΕΦΚΑ. Άλλοτε
+                λείπουν χρόνια, άλλοτε υπάρχουν ποσά που δεν αντιστοιχούν στις αποδοχές.
+                Δεν φαίνεται από το αρχείο. Φαίνεται όταν ελεγχθεί.
+              </p>
+              <p className="rg-strong-line">
+                Δεν χρειάζεται να τα βρείτε πριν μας γράψετε. Στείλτε πρώτα ό,τι έχετε.
+                Αν λείπουν, θα σας πούμε τι ακριβώς χρειάζεται και θα σας βοηθήσουμε να
+                το αναζητήσετε. Οι πηγές που συνήθως το δίνουν:
+              </p>
+            </div>
+
+            <div className="rg-sources">
+              {PIGES_APODOCHON.map((pigi) => (
+                <div key={pigi.title} className="rg-source">
+                  <div className="rg-source-title">{pigi.title}</div>
+                  <p>{pigi.text}</p>
                 </div>
               ))}
             </div>
-          </aside>
-        </section>
 
-        <section className="report-guide-section">
-          <div className="report-guide-header-with-image">
-            <div className="report-guide-header-content">
-              <div className="report-guide-kicker">1. ΤΙ ΠΕΡΙΛΑΜΒΑΝΕΙ ΤΟ REPORT</div>
-              <h2>Ξεκάθαρη εικόνα για τα δεδομένα σας</h2>
+            <div className="rg-note">
+              Χρειαζόμαστε <strong>μικτά ποσά</strong>, όχι καθαρά.
+            </div>
+
+            <div className="rg-highlight">
+              Τα ίδια στοιχεία θα σας ζητούσε οποιοσδήποτε έκανε αυτή τη δουλειά.
+              Χωρίς τις αποδοχές σας, η σύνταξη δεν υπολογίζεται από κανέναν.
+            </div>
+          </div>
+
+          {/* 2β — Έγγραφα */}
+          <div className="rg-block rg-block-cool">
+            <h3>Τα έγγραφά σας</h3>
+
+            <div className="rg-copy">
               <p>
-                Με την ολοκλήρωση της ανάλυσης, λαμβάνετε ένα οργανωμένο έγγραφο PDF με τα 
-                βασικά στοιχεία που χρειάζεστε, χωρίς να προσπαθείτε να αποκρυπτογραφήσετε 
-                μόνοι σας το ιστορικό.
+                <strong>Το βιογραφικό του e-ΕΦΚΑ όπως κατέβηκε</strong> από την πλατφόρμα.
+                Το πρωτότυπο αρχείο, όχι εκτυπωμένο και σαρωμένο ή φωτογραφημένο.
               </p>
-            </div>
-            
-            <div className="report-guide-header-badges">
-              <div className="report-guide-price-badge">10€</div>
-              <span className="report-guide-chip">Τι αφορά</span>
-            </div>
-          </div>
-
-          <div className="report-guide-card-grid report-guide-card-grid-2">
-            {reportIncludes.map((item, index) => (
-              <article key={item.title} className={`report-guide-card tone-${(index % 4) + 1}`}>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="report-guide-section report-guide-process-section">
-          <div className="report-guide-section-head report-guide-section-head-simple">
-            <div>
-              <div className="report-guide-kicker">2. ΔΙΑΔΙΚΑΣΙΑ & ΠΛΗΡΩΜΗ</div>
-              <h2>Πώς λειτουργεί η υπηρεσία βήμα προς βήμα</h2>
-            </div>
-          </div>
-
-          <div className="report-process-layout">
-            <div className="report-process-grid">
-              {processSteps.map((step, index) => (
-                <article key={step.title} className={`report-process-card process-tone-${index + 1}`}>
-                  <div className="report-process-number">{index + 1}</div>
-                  
-                  <div className="report-process-content">
-                    <h3>{step.title}</h3>
-                    <p>{step.text}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <aside className="report-guide-side-card report-guide-emphasis-card report-guide-side-card-centered">
-              <div className="report-guide-side-label">Τι σημαίνει πρακτικά</div>
-              <h3>Δεν ρισκάρετε να πληρώσετε για λάθος αρχείο</h3>
               <p>
-                Το βασικό σημείο εμπιστοσύνης είναι απλό: η χρέωση δεν συνδέεται απλώς με το
-                πάτημα ενός κουμπιού, αλλά με την επιβεβαίωση ότι το PDF και τα στοιχεία σας
-                είναι σωστά και μπορούν να αξιοποιηθούν.
+                <strong>Ό,τι άλλο αποδεικνύει χρόνο εργασίας ή αποδοχές:</strong> καρτέλες,
+                μηχανογραφημένα δελτία, βιβλιάρια ΤΕΒΕ, βεβαιώσεις αποδοχών.
               </p>
-              <div className="report-guide-side-divider" />
-              <p className="report-guide-emphasis-line">
-                Αν έχει σταλεί λάθος αρχείο, σας ενημερώνουμε και δεν γίνεται χρέωση.
-              </p>
-            </aside>
-          </div>
-        </section>
-
-        <section className="report-guide-section">
-          <div className="report-guide-section-head-simple">
-            <div className="report-guide-kicker">3. ΤΙ ΘΑ ΧΡΕΙΑΣΤΟΥΜΕ</div>
-            <h2>Τα κοινά στοιχεία που ζητούνται σήμερα</h2>
-            <p>
-              Στις κατηγορίες που υποστηρίζονται σήμερα, αυτά είναι τα πρώτα στοιχεία που
-              ζητούνται από όλους. Ο στόχος είναι να γνωρίζετε από πριν τι θα χρειαστεί,
-              ώστε να μη βρεθείτε στη μέση της διαδικασίας με ελλιπή δεδομένα.
-            </p>
-          </div>
-
-          <div className="report-guide-card-grid report-guide-card-grid-3">
-            {commonRequirements.map((item, index) => (
-              <article key={item.title} className={`report-guide-card tone-${(index % 4) + 1}`}>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-
-          <div className="report-guide-note">
-            <strong>Σημείωση:</strong> Το ασφαλιστικό ιστορικό ΕΦΚΑ ανήκει στα κοινά στοιχεία,
-            αλλά είναι τόσο σημαντικό που ξεχωρίζει και εξηγείται αναλυτικότερα αμέσως παρακάτω.
-          </div>
-        </section>
-
-        <section className="report-guide-section report-guide-section-split">
-          <div className="report-guide-copy">
-            <div className="report-guide-kicker">4. ΑΣΦΑΛΙΣΤΙΚΟ ΙΣΤΟΡΙΚΟ ΕΦΚΑ</div>
-            <h2>Το απαραίτητο έγγραφο για την άντληση των δεδομένων</h2>
-            <p>
-              Όλα τα στοιχεία είναι υποχρεωτικά για να βγει το σωστό αποτέλεσμα, αλλά το 
-              ιστορικό του ΕΦΚΑ είναι η «καρδιά» των αριθμητικών δεδομένων. Είναι επίσης το σημείο 
-              όπου οι περισσότεροι δυσκολεύονται: είτε δεν έχουν κατεβάσει το σωστό αρχείο, είτε 
-              προσπαθούν να στείλουν φωτογραφίες.
-            </p>
-
-            <ul className="report-guide-list">
-              {efkaChecklist.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-
-            <div className="report-guide-note">
-              <strong>Σημαντικό:</strong> Αν το αρχείο δεν είναι το σωστό ή δεν είναι σε PDF,
-              θα χρειαστεί να το αποκτήσετε ξανά σωστά πριν μπορέσει να προχωρήσει η υπηρεσία.
-            </div>
-          </div>
-
-          <aside className="report-guide-panel report-guide-panel-dark report-guide-panel-cta">
-            <div className="report-guide-panel-label">Ο πιο συχνός κόμπος</div>
-            <h3>Οι περισσότεροι είτε δεν το έχουν είτε δεν μπορούν να το αξιοποιήσουν</h3>
-            <p>
-              Γι’ αυτό υπάρχει ξεχωριστός οδηγός λήψης, ώστε να μπορέσετε να αποκτήσετε το
-              σωστό αρχείο χωρίς άσκοπη ταλαιπωρία.
-            </p>
-
-            <div className="report-guide-actions report-guide-panel-actions">
-              <Link to="/start" className="report-guide-button report-guide-button-light">
-                Οδηγός λήψης PDF
-              </Link>
-
-              <a
-                href="https://apps.e-efka.gov.gr/eAccess/login.xhtml"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="report-guide-button report-guide-button-outline-light"
-              >
-                Πλατφόρμα e-ΕΦΚΑ &rarr;
-              </a>
-            </div>
-          </aside>
-        </section>
-
-        <section className="report-guide-section report-guide-section-split">
-          <div className="report-guide-copy">
-            <div className="report-guide-kicker">5. ΕΠΙΠΛΕΟΝ ΑΝΑΓΚΕΣ</div>
-            <h2>Τι γίνεται αν χρειάζεστε κάτι πιο εξειδικευμένο;</h2>
-            <p>
-              Η βασική ανάλυση των 10€ καλύπτει τις περισσότερες περιπτώσεις. Αν όμως 
-              γνωρίζετε ότι η περίπτωσή σας έχει ιδιαιτερότητες ή θέλετε κάποιον επιπλέον 
-              υπολογισμό, είμαστε εδώ για να βοηθήσουμε.
-            </p>
-
-            <ul className="report-guide-list">
-              {complexCases.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-
-          <aside className="report-guide-panel report-guide-panel-emphasis">
-            <span className="report-guide-chip">Εύκολη επικοινωνία</span>
-            <h3>Στείλτε μας το αίτημά σας</h3>
-            <p>
-              Αν δεν είστε σίγουροι αν σας καλύπτει το βασικό πακέτο, περιγράψτε μας 
-              με ένα email τι ακριβώς χρειάζεστε.
-            </p>
-
-            <div className="report-guide-note report-guide-note-compact">
-              Θα εξετάσουμε το αίτημά σας και θα σας ενημερώσουμε άμεσα για το 
-              αν μπορεί να γίνει και με ποια (μικρή) επιπλέον χρέωση, χωρίς καμία δέσμευση.
-            </div>
-          </aside>
-        </section>
-
-        <section className="report-guide-cta">
-          <div className="report-guide-cta-grid">
-            
-            <div className="report-guide-cta-text">
-              <div className="report-guide-kicker report-guide-kicker-light">ΕΠΟΜΕΝΟ ΒΗΜΑ</div>
-              <h2>Είστε έτοιμοι να ξεκινήσετε;</h2>
               <p>
-                Αν έχετε ήδη συγκεντρώσει τα βασικά στοιχεία και το ασφαλιστικό ιστορικό ΕΦΚΑ (PDF),
-                μπορείτε να ξεκινήσετε τη διαδικασία. Αν όχι, δείτε πρώτα τον οδηγό λήψης.
+                Ο ευκολότερος δρόμος είναι η σάρωση. Σε οποιοδήποτε φωτοτυπείο ή βιβλιοπωλείο,
+                τα χαρτιά σας γίνονται καθαρά ψηφιακά αρχεία. Η σάρωση δίνει καλύτερη
+                ευκρίνεια από τη φωτογραφία και δεν δημιουργεί πρόβλημα μεγέθους.
               </p>
-
-              <div className="report-guide-cta-assurance">
-                Ανεβάζετε το αρχείο • Το ελέγχουμε • Μόνο τότε προχωρά η χρέωση
-              </div>
+              <p>
+                Φωτογραφίες από κινητό γίνονται δεκτές. Φροντίστε να είναι σε καλό φως,
+                με ολόκληρη τη σελίδα μέσα στο κάδρο και χωρίς σκιές.
+              </p>
             </div>
 
-            <div className="report-guide-cta-actions-wrapper">
-              <Link to="/premium-upload" className="report-guide-button report-guide-button-light report-guide-button-large">
-                Ανέβασμα PDF & Στοιχείων
-              </Link>
-
-              <Link to="/start" className="report-guide-button report-guide-button-outline-light">
-                Οδηγός λήψης ΕΦΚΑ
-              </Link>
+            <div className="rg-limit">
+              Η φόρμα δέχεται έως {MEGISTA_ARCHEIA} αρχεία, συνολικά έως {MEGISTO_MEGETHOS}.
             </div>
+          </div>
 
+          {/* 2γ — Πού και πότε εργαστήκατε */}
+          <div className="rg-block rg-block-cool">
+            <h3>Πού και πότε εργαστήκατε</h3>
+
+            <div className="rg-copy">
+              <p>
+                Στη φόρμα θα συμπληρώσετε μια σύντομη λίστα: φορέας, χρονικό διάστημα,
+                είδος ενσήμων, ημέρες κατά προσέγγιση. Δεν χρειάζονται ακριβή νούμερα —
+                αρκεί να ξέρουμε τι ψάχνουμε.
+              </p>
+              <p>
+                Είναι το στοιχείο που δεν βγαίνει πάντα από το αρχείο, ιδίως αν ήσασταν
+                ασφαλισμένος σε δύο φορείς την ίδια περίοδο.
+              </p>
+            </div>
           </div>
         </section>
+
+        {/* ---------------- CTA ---------------- */}
+        <section className="rg-cta">
+          <div className="rg-eyebrow rg-eyebrow-light">ΕΠΟΜΕΝΟ ΒΗΜΑ</div>
+          <h2>Ξεκινήστε</h2>
+          <p>
+            Συγκεντρώστε ό,τι έχετε και στείλτε το. Θα δούμε τι υπάρχει και τι λείπει,
+            και θα σας πούμε πριν πληρώσετε.
+          </p>
+
+          <div className="rg-cta-actions">
+            <Link to={DIADROMES.apostoli} className="rg-button rg-button-primary">
+              Αποστολή εγγράφων
+            </Link>
+            <Link to={DIADROMES.odigosPdf} className="rg-button rg-button-outline">
+              Οδηγός λήψης PDF
+            </Link>
+          </div>
+        </section>
+
       </div>
     </main>
   );

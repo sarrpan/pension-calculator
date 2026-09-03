@@ -1,8 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ref, get } from "firebase/database";
+import { Elements } from '@stripe/react-stripe-js';
 import { db } from "../firebase";
+import stripePromise from '../services/stripe/stripeService';
+import StripePaymentForm from '../components/stripe/StripePaymentForm';
+import { katagrafiPliromis } from '../services/stripe/premiumService';
 import './ReportRecoveryPage.css';
+
+/* Η τιμή της υπηρεσίας. Πρέπει να συμφωνεί με το ReportGuidePage.jsx
+   και το PremiumUploadPage.jsx. */
+const TIMI = '20 €';
 
 /* ══════════════════════════════════════════════════════════════
    ΑΛΛΑΞΕ ΕΔΩ ΤΟ ΚΕΙΜΕΝΟ ΓΙΑ ΤΟ ΠΟΥ ΒΡΙΣΚΕΙ Ο ΧΡΗΣΤΗΣ ΤΟΝ ΚΩΔΙΚΟ
@@ -12,32 +20,57 @@ import './ReportRecoveryPage.css';
    'Θα τον βρείτε στο email που λάβατε μόλις ολοκληρώθηκε η αποστολή.'
    ══════════════════════════════════════════════════════════════ */
 const KEIMENO_VOITHEIAS_PIN =
-  'Ο κωδικός εμφανίστηκε στην οθόνη μόλις ολοκληρώθηκε η αποστολή του αρχείου σας. Αποτελείται από έξι ψηφία.';
-
-/* Τα τέσσερα στάδια, με τη σειρά που εμφανίζονται */
-const STADIA = ['Παραλήφθηκε', 'Έλεγχος αρχείου', 'Επεξεργασία', 'Απεστάλη'];
+  'Ο κωδικός εμφανίστηκε στην οθόνη μόλις ολοκληρώθηκε η αποστολή των εγγράφων σας. Αποτελείται από έξι ψηφία.';
 
 /* ══════════════════════════════════════════════════════════════
-   ΑΝΤΙΣΤΟΙΧΙΑ: κατάσταση στον πίνακα διαχείρισης  ->  τι βλέπει ο πελάτης
+   ΤΑ ΤΕΣΣΕΡΑ ΣΤΑΔΙΑ
 
-   Αν κάποια στιγμή προσθέσεις νέα κατάσταση στον πίνακα διαχείρισης,
-   πρόσθεσέ την κι εδώ. Αν την ξεχάσεις, η σελίδα ΔΕΝ σπάει -
-   δείχνει τα δύο πρώτα στάδια και την κατάσταση όπως τη γράφεις εσύ.
+   Είναι η κανονική πορεία μιας αίτησης, με τη σειρά.
+
+   Η κατάσταση «Χρειάζονται επιπλέον στοιχεία» ΔΕΝ είναι στάδιο.
+   Είναι παρέκκλιση που μπορεί να συμβεί ή όχι, γι' αυτό δεν μπαίνει
+   στη γραμμή προόδου — εμφανίζεται ως σημείωση κάτω από αυτήν.
+   ══════════════════════════════════════════════════════════════ */
+const STADIA = ['Παραλήφθηκαν', 'Αναμονή πληρωμής', 'Επεξεργασία', 'Παραδόθηκε'];
+
+/* ══════════════════════════════════════════════════════════════
+   ΑΝΤΙΣΤΟΙΧΙΑ: κατάσταση στη βάση  ->  τι βλέπει ο πελάτης
+
+   Οι κωδικοί είναι οι ίδιοι με το premiumService.js και με τον
+   πίνακα διαχείρισης. Αν αλλάξει ένας, αλλάζουν και στα τρία.
+
+   Το «stadio» είναι η θέση στη γραμμή προόδου, μετρώντας από το 0.
+   Αν κάποια κατάσταση λείπει από εδώ, η σελίδα ΔΕΝ σπάει - δείχνει
+   το πρώτο στάδιο και την κατάσταση όπως είναι γραμμένη στη βάση.
    ══════════════════════════════════════════════════════════════ */
 const KATASTASEIS = {
-  pending_payment: {
-    stadio: 1, // βρισκόμαστε στο "Έλεγχος αρχείου"
-    perigrafi: 'Η αίτησή σας καταχωρήθηκε. Ελέγχουμε το αρχείο και τα στοιχεία που στείλατε.',
+  documents_received: {
+    stadio: 0,
+    perigrafi: 'Τα έγγραφά σας παραλήφθηκαν. Τα ελέγχουμε και θα σας ενημερώσουμε.',
+  },
+  needs_more_info: {
+    stadio: 0,
+    perigrafi: 'Ελέγξαμε τα έγγραφά σας και χρειαζόμαστε κάποια επιπλέον στοιχεία.',
+    simeiosi: 'Σας έχουμε στείλει email με το τι ακριβώς χρειάζεται. Αν δεν το βρίσκετε, ελέγξτε και τον φάκελο ανεπιθύμητων ή επικοινωνήστε μαζί μας.',
+  },
+  awaiting_payment: {
+    stadio: 1,
+    perigrafi: 'Ο φάκελός σας είναι πλήρης και μπορεί να γίνει ο υπολογισμός.',
+    simeiosi: 'Η επεξεργασία ξεκινά μόλις ολοκληρωθεί η πληρωμή.',
   },
   processing: {
-    stadio: 2, // βρισκόμαστε στην "Επεξεργασία"
-    perigrafi: 'Το αρχείο σας ελέγχθηκε. Γίνεται ο υπολογισμός της σύνταξής σας.',
+    stadio: 2,
+    perigrafi: 'Γίνεται ο υπολογισμός της σύνταξής σας και συντάσσεται η έκθεση.',
   },
-  completed: {
-    stadio: 3, // ολοκληρώθηκε
+  delivered: {
+    stadio: 3,
     perigrafi: 'Ο υπολογισμός ολοκληρώθηκε. Μπορείτε να κατεβάσετε την αναλυτική έκθεση.',
   },
 };
+
+/* Η κατάσταση που σημαίνει «τελείωσε». Χρησιμοποιείται και για το
+   πράσινο χρώμα του τελευταίου σταδίου και για το κουμπί λήψης. */
+const KATASTASI_TELOUS = 'delivered';
 
 /* ══════════════════════════════════════════════════════════════
    ΤΑ ΜΗΝΥΜΑΤΑ ΣΦΑΛΜΑΤΟΣ
@@ -63,7 +96,12 @@ const MINYMATA = {
   },
   denVrethike: {
     titlos: 'Δεν βρέθηκε αίτηση με αυτά τα στοιχεία',
-    keimeno: 'Ελέγξτε ότι ο κωδικός έχει έξι ψηφία και ότι το email είναι ακριβώς αυτό που δηλώσατε όταν στείλατε το αρχείο σας. Αν κάποιο από τα δύο δεν ταιριάζει, η αίτηση δεν εμφανίζεται.',
+    keimeno: 'Ελέγξτε ότι ο κωδικός έχει έξι ψηφία και ότι το email είναι ακριβώς αυτό που δηλώσατε όταν στείλατε τα έγγραφά σας. Αν κάποιο από τα δύο δεν ταιριάζει, η αίτηση δεν εμφανίζεται.',
+    epikoinonia: true,
+  },
+  apotixiaKatagrafis: {
+    titlos: 'Η πληρωμή έγινε, αλλά δεν καταγράφηκε',
+    keimeno: 'Τα χρήματα χρεώθηκαν κανονικά. Η αίτησή σας όμως δεν ενημερώθηκε, οπότε μπορεί να εμφανίζεται ακόμη ως απλήρωτη. ΜΗΝ πληρώσετε ξανά. Στείλτε μας τον κωδικό σας και το τακτοποιούμε εμείς.',
     epikoinonia: true,
   },
   provlimaSyndesis: {
@@ -79,6 +117,8 @@ const ReportRecoveryPage = () => {
   const [reportData, setReportData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [deixePliromi, setDeixePliromi] = useState(false);
+  const [pinAitisis, setPinAitisis] = useState(null);
 
   // Σημεία της σελίδας όπου θα κατέβει αυτόματα η οθόνη
   const errorRef = useRef(null);
@@ -104,6 +144,7 @@ const ReportRecoveryPage = () => {
     e.preventDefault();
     setError(null);
     setReportData(null);
+    setDeixePliromi(false);
 
     // Καθαρίζουμε το PIN: κενά, πεζά/κεφαλαία, και το "PIN-" αν το έγραψε κι αυτός
     const cleanPin = pin.trim().toUpperCase().replace(/^PIN[-\s]*/, '');
@@ -138,6 +179,7 @@ const ReportRecoveryPage = () => {
         return;
       }
 
+      setPinAitisis(`PIN-${cleanPin}`);
       setReportData(data);
     } catch (err) {
       console.error(err);
@@ -147,17 +189,41 @@ const ReportRecoveryPage = () => {
     }
   };
 
+  /* Καλείται από τη φόρμα κάρτας όταν η πληρωμή περάσει.
+     Καταγράφει την πληρωμή στην αίτηση και προχωράει την κατάσταση.
+
+     Σήμερα δεν φτάνει ποτέ εδώ: η φόρμα σταματά νωρίτερα, γιατί ο
+     server των πληρωμών δεν λειτουργεί χωρίς πλάνο Blaze. */
+  const meta_tin_pliromi = async (paymentIntentId, epipleon) => {
+    const kodikos = reportData?.pin || pinAitisis;
+    const apotelesma = await katagrafiPliromis(kodikos, paymentIntentId, epipleon);
+
+    /* Αν η εγγραφή στη βάση απέτυχε, η οθόνη ΔΕΝ προχωράει. Τα χρήματα
+       έχουν φύγει και ο πελάτης πρέπει να το μάθει, όχι να δει ότι όλα
+       πήγαν καλά και μετά να του ζητηθεί δεύτερη πληρωμή. */
+    if (!apotelesma?.success) {
+      setDeixePliromi(false);
+      setError(MINYMATA.apotixiaKatagrafis);
+      return;
+    }
+
+    setDeixePliromi(false);
+    setReportData({ ...reportData, status: 'processing', paymentStatus: 'paid' });
+  };
+
   // Υπολογισμός σταδίου με βάση την κατάσταση της αίτησης
   const katastasi = reportData ? KATASTASEIS[reportData.status] : null;
-  const trexonStadio = katastasi ? katastasi.stadio : 1;
-  const oloklirothike = reportData?.status === 'completed';
+  const trexonStadio = katastasi ? katastasi.stadio : 0;
+  const oloklirothike = reportData?.status === KATASTASI_TELOUS;
   const perigrafi = katastasi ? katastasi.perigrafi : reportData?.status;
+  const simeiosi = katastasi ? katastasi.simeiosi : null;
+  const zitisiPliromis = reportData?.status === 'awaiting_payment';
 
   return (
     <div className="recovery-page">
       <div className="recovery-inner">
 
-        <span className="recovery-eyebrow">Παρακολούθηση Αίτησης</span>
+        <span className="recovery-eyebrow">ΠΑΡΑΚΟΛΟΥΘΗΣΗ ΑΙΤΗΣΗΣ</span>
         <h1 className="recovery-title">Δείτε πού βρίσκεται η αίτησή σας</h1>
         <p className="recovery-subtitle">
           Συμπληρώστε τον κωδικό της αίτησης και το email που δηλώσατε, για να
@@ -204,7 +270,7 @@ const ReportRecoveryPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
               />
               <p className="field-help">
-                Το email που δώσατε όταν στείλατε το αρχείο σας.
+                Το email που δώσατε όταν στείλατε τα έγγραφά σας.
               </p>
             </div>
 
@@ -246,7 +312,7 @@ const ReportRecoveryPage = () => {
         {/* --- Αποτέλεσμα --- */}
         {reportData && (
           <div className="status-box" aria-live="polite" ref={resultRef}>
-            <span className="status-eyebrow">Κατάσταση αίτησης</span>
+            <span className="status-eyebrow">ΚΑΤΑΣΤΑΣΗ ΑΙΤΗΣΗΣ</span>
 
             <ol className="stages">
               {STADIA.map((onoma, i) => {
@@ -281,6 +347,42 @@ const ReportRecoveryPage = () => {
             </ol>
 
             <p className="status-text">{perigrafi}</p>
+
+            {simeiosi && <p className="status-note">{simeiosi}</p>}
+
+            {/* ── Πληρωμή, μόνο στην κατάσταση «Αναμονή πληρωμής» ──
+                Μόλις η κατάσταση αλλάξει, το κομμάτι αυτό εξαφανίζεται
+                μόνο του. Έτσι κανείς δεν πληρώνει δεύτερη φορά. */}
+            {zitisiPliromis && !deixePliromi && (
+              <div className="pay-block">
+                <p className="pay-intro">
+                  Η αναλυτική έκθεση κοστίζει <strong>{TIMI}</strong>, εφάπαξ.
+                  Η πληρωμή γίνεται με κάρτα, μέσω Stripe.
+                </p>
+                <button
+                  type="button"
+                  className="pay-btn"
+                  onClick={() => setDeixePliromi(true)}
+                >
+                  Πληρωμή {TIMI}
+                </button>
+              </div>
+            )}
+
+            {zitisiPliromis && deixePliromi && (
+              <div className="pay-block">
+                <Elements stripe={stripePromise} options={{ locale: 'el' }}>
+                  <StripePaymentForm onFileSubmit={meta_tin_pliromi} timi={TIMI} />
+                </Elements>
+                <button
+                  type="button"
+                  className="pay-cancel"
+                  onClick={() => setDeixePliromi(false)}
+                >
+                  Ακύρωση
+                </button>
+              </div>
+            )}
 
             {oloklirothike && reportData.finalReportUrl && (
               <a

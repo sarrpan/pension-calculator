@@ -1,162 +1,381 @@
-.contact-page {
-  padding: 3rem 1rem;
-  background-color: #f8fafc;
-  min-height: 80vh;
+/* ==========================================================
+   Επικοινωνία — ContactPage
+   Κλάσεις με πρόθεμα .ct- ώστε να μη συγκρούονται με άλλες
+   σελίδες. Κλίμακα αποστάσεων: 8 / 16 / 24 / 32 / 48 / 80
+
+   Χρώματα: var(--accent, #ea580c) και var(--primary, #0f172a),
+   δηλαδή με εφεδρική τιμή, ώστε να μη σβήνει το κείμενο αν
+   λείψει η μεταβλητή από το index.css.
+   ========================================================== */
+
+.ct-page {
+  background-color: #f1f5f9;
+  padding: 48px 24px 80px;
 }
 
-.contact-header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.contact-header h1 {
-  font-size: 2.2rem;
-  color: #1e293b; /* Πιο σκούρο για επαγγελματισμό */
-  margin-bottom: 0.8rem;
-}
-
-.contact-header p {
-  color: #64748b;
-  font-size: 1.1rem;
-  max-width: 600px;
+.ct-inner {
+  max-width: 1060px;
   margin: 0 auto;
 }
 
-.contact-grid {
+/* ── Επικεφαλίδα ───────────────────────────────────────── */
+.ct-header {
+  margin-bottom: 32px;
+}
+
+/* Το κείμενο γράφεται ήδη κεφαλαίο και άτονο στο JSX.
+   Δεν μπαίνει text-transform: uppercase, γιατί χάνονται
+   οι τόνοι στα ελληνικά κεφαλαία. */
+.ct-eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent, #ea580c);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+}
+
+.ct-title {
+  margin: 0 0 16px;
+  color: var(--primary, #0f172a);
+  font-size: 2rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+/* Ίδιες αναλογίες και ίδιο κενό με το .ct-grid από κάτω,
+   ώστε οι δύο παράγραφοι να ευθυγραμμίζονται με τις στήλες. */
+.ct-header-cols {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr; /* Πιο ισορροπημένο */
-  gap: 3rem;
-  max-width: 1100px;
-  margin: 0 auto;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 24px;
   align-items: start;
 }
 
-/* ΦΟΡΜΑ: Διόρθωση των πεδίων */
-.contact-form-card {
-  background: #ffffff;
-  padding: 2.5rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
-}
-
-.input-group {
-  margin-bottom: 1.5rem;
-  display: flex;
-  flex-direction: column; /* Τα βάζει το ένα κάτω από το άλλο */
+.ct-subtitle {
+  margin: 0;
+  color: #475569;
+  font-size: 1.05rem;
+  line-height: 1.6;
   text-align: left;
 }
 
-.input-group label {
-  display: block;
+/* Το όριο του αντικειμένου. Πιο ήπιο από το subtitle,
+   ώστε να μη διαβάζεται ως προειδοποίηση. */
+.ct-note {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* ── Πλέγμα ────────────────────────────────────────────── */
+.ct-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.ct-side {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Κάρτες ────────────────────────────────────────────── */
+.ct-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 32px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* Οι πλαϊνές κάρτες είναι δευτερεύουσες: μικρότερο περιθώριο.
+   Εκτός από την ιεραρχία, ισοσκελίζει και το ύψος των δύο
+   στηλών — τρεις κάρτες × 16px επάνω/κάτω = 48px λιγότερα. */
+.ct-side .ct-card {
+  padding: 24px;
+}
+
+/* ── Φόρμα ─────────────────────────────────────────────── */
+.ct-field {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ct-label {
+  margin-bottom: 8px;
+  color: var(--primary, #0f172a);
   font-weight: 600;
-  margin-bottom: 0.6rem;
-  color: #334155;
   font-size: 0.95rem;
 }
 
-/* SOS: Εξασφαλίζουμε ότι τα input πιάνουν όλο το πλάτος */
-.input-group input, 
-.input-group textarea {
-  width: 100% !important; /* Επιβολή πλάτους */
-  box-sizing: border-box !important; /* Περιλαμβάνει το padding στο πλάτος */
-  padding: 0.9rem !important;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 10px !important;
-  font-size: 1rem !important;
-  background-color: #ffffff !important;
-  color: #1e293b !important;
-}
-
-.btn-submit {
-  background: #ff6b00; /* Το πορτοκαλί σου */
-  color: white;
-  border: none;
-  padding: 1.1rem;
-  font-weight: 700;
-  border-radius: 10px;
-  cursor: pointer;
+.ct-input {
   width: 100%;
-  font-size: 1.05rem;
-  transition: all 0.2s ease;
-  margin-top: 1rem;
+  box-sizing: border-box;
+  padding: 13px 15px;
+  font-size: 1rem;
+  font-family: inherit;
+  /* Ρητή αριστερή στοίχιση: αλλού στο project υπάρχει justified
+     που κληρονομούνταν και μέσα στα πεδία. */
+  text-align: left;
+  color: var(--primary, #0f172a);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.btn-submit:hover {
-  background: #e65100;
-  transform: translateY(-2px);
+.ct-input::placeholder {
+  color: #94a3b8;
+  text-align: left;
 }
 
-/* SIDEBAR: Καθαρισμός */
-.sidebar-info h3 {
-  color: #1e293b;
-  margin: 0 0 1.5rem 0;
-  font-size: 1.25rem;
+.ct-input:focus {
+  outline: none;
+  border-color: var(--accent, #ea580c);
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
 }
 
-.info-item {
+.ct-textarea {
+  resize: vertical;
+  min-height: 140px;
+  line-height: 1.6;
+}
+
+.ct-field-hint {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.ct-submit {
+  width: 100%;
+  padding: 14px 28px;
+  background: var(--accent, #ea580c);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.ct-submit:hover {
+  background: #c2410c;
+}
+
+.ct-form-foot {
+  margin: 16px 0 0;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  text-align: left;
+}
+
+/* ── Μηνύματα ──────────────────────────────────────────── */
+.ct-notice {
   display: flex;
-  gap: 15px;
-  margin-bottom: 1.8rem;
   align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  margin-bottom: 24px;
 }
 
-.info-icon {
-  font-size: 1.6rem;
-  min-width: 48px;
-  height: 48px;
-  background: #eff6ff;
-  border-radius: 12px;
+.ct-notice p {
+  margin: 0;
+}
+
+.ct-notice svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ct-notice-title {
+  font-weight: 700;
+  margin-bottom: 2px !important;
+}
+
+.ct-notice--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+/* ── Οθόνη μετά την αποστολή ───────────────────────────── */
+.ct-sent {
+  text-align: center;
+}
+
+.ct-sent-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--accent, #ea580c);
+  margin-bottom: 16px;
+}
+
+.ct-sent-title {
+  margin: 0 0 16px;
+  color: var(--primary, #0f172a);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.ct-sent p {
+  margin: 0 0 12px;
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.ct-again {
+  margin-top: 24px;
+  padding: 12px 24px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: var(--primary, #0f172a);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ct-again:hover {
+  background: #f1f5f9;
+}
+
+/* ── Πλαϊνή στήλη ──────────────────────────────────────── */
+.ct-side-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--primary, #0f172a);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.ct-side-title svg {
+  color: #64748b;
+}
+
+.ct-side-note {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.ct-email-link {
+  display: inline-block;
+  color: var(--accent, #ea580c);
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.ct-email-link:hover {
+  text-decoration: underline;
+}
+
+.ct-themes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ct-themes li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ct-theme-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #475569;
 }
 
-.info-item h4 {
-  margin: 0 0 4px 0;
-  color: #334155;
-  font-size: 1rem;
+.ct-theme-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
-.info-item p {
+.ct-theme-title {
+  margin: 0 0 2px;
+  color: var(--primary, #0f172a);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.ct-theme-text {
   margin: 0;
   color: #64748b;
-  font-size: 0.88rem;
-  line-height: 1.5;
+  font-size: 0.86rem;
+  line-height: 1.55;
 }
 
-/* SECURITY BANNER */
-.security-banner {
-  margin-top: 2rem;
-  background: #ffffff;
-  border: 1px dashed #cbd5e1;
-  padding: 1.5rem;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
+.ct-security {
+  background: #f8fafc;
 }
 
-.security-badge {
-  font-size: 2rem;
+/* ── Εικονίδια ─────────────────────────────────────────── */
+.ct-icon {
+  width: 20px;
+  height: 20px;
 }
 
-.security-text h4 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 0.9rem;
-  text-transform: uppercase;
+.ct-icon-sm {
+  width: 17px;
+  height: 17px;
 }
 
-.security-text p {
-  margin: 4px 0 0 0;
-  font-size: 0.82rem;
-  color: #64748b;
-}
-
-@media (max-width: 850px) {
-  .contact-grid {
+/* ── Κινητά ────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .ct-header-cols,
+  .ct-grid {
     grid-template-columns: 1fr;
-    gap: 2.5rem;
+  }
+
+  .ct-header-cols {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .ct-page {
+    padding: 32px 16px 48px;
+  }
+
+  .ct-card,
+  .ct-side .ct-card {
+    padding: 24px 20px;
+  }
+
+  .ct-title {
+    font-size: 1.6rem;
+  }
+
+  .ct-subtitle {
+    font-size: 1rem;
   }
 }

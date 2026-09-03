@@ -365,6 +365,67 @@
   color: var(--text-muted);
 }
 
+/* --- Πληρωμή (εμφανίζεται μόνο στο στάδιο «Αναμονή πληρωμής») --- */
+
+.pay-block {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.pay-intro {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-dark);
+  margin-bottom: 16px;
+}
+
+.pay-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 15px;
+  background-color: var(--accent);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.pay-btn:hover {
+  background-color: #c2410c;
+}
+
+.pay-btn:focus-visible,
+.pay-cancel:focus-visible {
+  outline: 3px solid rgba(234, 88, 12, 0.45);
+  outline-offset: 2px;
+}
+
+.pay-cancel {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.pay-cancel:hover {
+  color: var(--primary);
+}
+
 /* --- Κουμπί λήψης --- */
 
 .download-btn {

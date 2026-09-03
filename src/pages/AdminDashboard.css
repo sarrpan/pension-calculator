@@ -17,6 +17,7 @@
   border: 1px solid #ddd;
   padding: 12px;
   text-align: left;
+  vertical-align: top;
 }
 
 .admin-table th {
@@ -33,19 +34,36 @@
   border-radius: 4px;
 }
 
-/* ΟΜΟΡΦΟ ΚΟΥΜΠΙ ΠΡΟΒΟΛΗΣ PDF */
+/* ΛΙΣΤΑ ΑΡΧΕΙΩΝ ΠΕΛΑΤΗ
+   Ένα κουμπί ανά αρχείο, το ένα κάτω από το άλλο. */
+.admin-file-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 260px;
+}
+
+/* ΚΟΥΜΠΙ ΠΡΟΒΟΛΗΣ ΑΡΧΕΙΟΥ */
 .admin-view-pdf {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  max-width: 100%;
   background-color: #f1f5f9;
   color: #0f172a;
   padding: 6px 12px;
   border-radius: 6px;
   text-decoration: none;
+  font-family: inherit;
   font-size: 13px;
   font-weight: 600;
+  text-align: left;
   border: 1px solid #e2e8f0;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   transition: all 0.2s;
 }
 

@@ -1,5 +1,5 @@
 /* ==========================================================
-   Αποστολή Ιστορικού — PremiumUploadPage
+   Αποστολή Εγγράφων — PremiumUploadPage
    Όλες οι κλάσεις έχουν πρόθεμα .pu- ώστε να μην συγκρούονται
    με τα global στυλ άλλων σελίδων (π.χ. .submit-btn).
    Κλίμακα αποστάσεων: 8 / 16 / 24 / 32 / 48 / 80
@@ -66,7 +66,7 @@
   font-weight: 700;
 }
 
-/* ── Σύνοψη παραγγελίας ────────────────────────────────── */
+/* ── Η ροή και η τιμή ──────────────────────────────────── */
 .pu-order-head {
   display: flex;
   justify-content: space-between;
@@ -133,12 +133,21 @@
 }
 
 .pu-order-foot {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   margin: 16px 0 0;
   padding-top: 16px;
   border-top: 1px solid #e2e8f0;
   color: #64748b;
   font-size: 0.88rem;
   line-height: 1.55;
+}
+
+.pu-order-foot svg {
+  color: #94a3b8;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 /* ── Φόρμα ─────────────────────────────────────────────── */
@@ -159,6 +168,14 @@
   color: #0f172a;
   font-weight: 600;
   font-size: 0.95rem;
+}
+
+/* Η ένδειξη «προαιρετικό» δίπλα στην ετικέτα */
+.pu-optional {
+  margin-left: 6px;
+  color: #94a3b8;
+  font-weight: 500;
+  font-size: 0.85rem;
 }
 
 .pu-input {
@@ -203,7 +220,7 @@
   border: 0;
 }
 
-/* ── Περιοχή επιλογής αρχείου ──────────────────────────── */
+/* ── Περιοχή επιλογής αρχείων ──────────────────────────── */
 .pu-drop {
   display: flex;
   flex-direction: column;
@@ -241,6 +258,16 @@
 .pu-drop-sub {
   color: #64748b;
   font-size: 0.85rem;
+}
+
+/* ── Λίστα επιλεγμένων αρχείων ─────────────────────────── */
+.pu-file-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .pu-file {
@@ -301,7 +328,48 @@
   background: #fef2f2;
 }
 
-/* ── Επιβεβαίωση (checkbox) ────────────────────────────── */
+/* Μετρητής αρχείων και κουμπί προσθήκης, κάτω από τη λίστα */
+.pu-files-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+
+.pu-files-count {
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.pu-add-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.pu-add-more:hover {
+  border-color: #e85d24;
+  background: #fff7f3;
+}
+
+.pu-add-more svg {
+  color: #e85d24;
+}
+
+/* ── Συναίνεση (checkbox) ──────────────────────────────── */
 .pu-confirm {
   display: flex;
   align-items: flex-start;
@@ -362,6 +430,17 @@
   color: #334155;
   font-size: 0.92rem;
   line-height: 1.55;
+}
+
+.pu-confirm-text a {
+  color: #0f172a;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pu-confirm-text a:hover {
+  color: #e85d24;
 }
 
 /* ── Λίστα προϋποθέσεων ────────────────────────────────── */
@@ -447,6 +526,15 @@
   color: #9a3412;
   text-align: left;
   margin-top: 24px;
+}
+
+/* Ένδειξη προόδου κατά το ανέβασμα */
+.pu-progress {
+  margin: 0;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.55;
 }
 
 /* ── Κουμπιά ───────────────────────────────────────────── */
@@ -547,52 +635,6 @@
   margin-top: 2px;
 }
 
-/* ── Οθόνη πληρωμής ────────────────────────────────────── */
-.pu-review {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 24px;
-}
-
-.pu-review-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-  padding: 12px 16px;
-  font-size: 0.92rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.pu-review-row:last-child {
-  border-bottom: none;
-}
-
-.pu-review-row span {
-  color: #64748b;
-  flex-shrink: 0;
-}
-
-.pu-review-row strong {
-  color: #0f172a;
-  text-align: right;
-  word-break: break-all;
-}
-
-.pu-review-total {
-  background: #f8fafc;
-}
-
-.pu-review-total strong {
-  color: #e85d24;
-  font-size: 1.1rem;
-}
-
-.pu-payment {
-  animation: pu-fade 0.3s ease-out;
-}
-
 /* ── Οθόνη επιτυχίας ───────────────────────────────────── */
 .pu-pin-card {
   text-align: center;
@@ -675,6 +717,59 @@
   height: 17px;
 }
 
+/* ══════════════════════════════════════════════════════════
+   ΑΧΡΗΣΙΜΟΠΟΙΗΤΑ ΣΗΜΕΡΑ — ΟΘΟΝΗ ΠΛΗΡΩΜΗΣ
+
+   Η πληρωμή δεν γίνεται πλέον σε αυτή τη σελίδα. Τα στυλ μένουν
+   γιατί θα χρειαστούν όταν φτιαχτεί το κανάλι πληρωμής. Αν
+   αποφασιστεί ότι η πληρωμή θα γίνεται σε άλλη σελίδα, μεταφέρονται
+   εκεί με το πρόθεμα εκείνης της σελίδας και σβήνονται από εδώ.
+   ══════════════════════════════════════════════════════════ */
+.pu-review {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.pu-review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 16px;
+  font-size: 0.92rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pu-review-row:last-child {
+  border-bottom: none;
+}
+
+.pu-review-row span {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.pu-review-row strong {
+  color: #0f172a;
+  text-align: right;
+  word-break: break-all;
+}
+
+.pu-review-total {
+  background: #f8fafc;
+}
+
+.pu-review-total strong {
+  color: #e85d24;
+  font-size: 1.1rem;
+}
+
+.pu-payment {
+  animation: pu-fade 0.3s ease-out;
+}
+
 /* ── Κινητά ────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .pu-wrapper {
@@ -708,6 +803,15 @@
 
   .pu-file {
     flex-wrap: wrap;
+  }
+
+  .pu-files-foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pu-add-more {
+    justify-content: center;
   }
 
   .pu-actions > * {

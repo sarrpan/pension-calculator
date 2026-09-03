@@ -1,10 +1,10 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import './index.css';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import HomePage from './pages/HomePage';
-import StartPage from './pages/StartPage';
+import PdfGuidePage from './pages/PdfGuidePage';
 import ContactPage from './pages/ContactPage';
 import TermsPage from './pages/legal/TermsPage';
 import PrivacyPage from './pages/legal/PrivacyPage';
@@ -30,7 +30,8 @@ function App() {
       <main className="app-main">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/start" element={<StartPage />} />
+          <Route path="/pdf-guide" element={<PdfGuidePage />} />
+          <Route path="/start" element={<Navigate to="/pdf-guide" replace />} />
 
           <Route path="/free-guide" element={<FreeGuidePage />} />
           <Route path="/report-guide" element={<ReportGuidePage />} />

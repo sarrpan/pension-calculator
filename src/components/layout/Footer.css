@@ -1,46 +1,185 @@
-.footer {
-  background-color: #0f172a;
-  color: white;
-  padding: 50px 0 0 0;
-  margin-top: 60px;
+/* ==================================================================
+   FOOTER
+   Όλες οι κλάσεις έχουν πρόθεμα ft- ώστε να μη συγκρούονται με άλλα
+   αρχεία CSS που φορτώνονται καθολικά.
+   Τα χρώματα γράφονται με εφεδρική τιμή, ώστε να μη σβήνει τίποτα
+   αν λείψει κάποια μεταβλητή.
+================================================================== */
+
+.ft-footer {
+  background-color: var(--primary, #0F172A);
+  color: #cbd5e1;
+  margin-top: 80px;
   border-top: 1px solid #1e293b;
 }
 
-.footer-grid {
+/* ---------- Πλέγμα ---------- */
+
+.ft-grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr;
-  gap: 40px;
-  padding-bottom: 40px;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  gap: 48px;
+  padding: 56px 0 40px 0;
+  align-items: start;
 }
 
-/* ΠΟΡΤΟΚΑΛΙ ΤΙΤΛΟΙ */
-.footer-brand h4, .footer-links h5 {
-  color: #ff6b00; /* Το πορτοκαλί σου */
+/* ---------- Στήλη ταυτότητας ---------- */
+
+.ft-logo {
+  display: block;
+  height: 40px;
+  width: auto;
   margin-bottom: 20px;
+}
+
+/* Ουδέτερο πλαίσιο στη θέση του λογοτύπου, όσο δεν υπάρχει αρχείο. */
+.ft-logo-thesi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 18px;
+  margin-bottom: 20px;
+  border: 1px dashed #334155;
+  border-radius: 4px;
+  color: #475569;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+}
+
+.ft-brand-title {
+  color: var(--accent, #ea580c);
+  margin: 0 0 12px 0;
   font-size: 1.1rem;
   font-weight: 700;
   text-transform: none;
 }
 
-.footer-links a {
+.ft-brand-text {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 0.95rem;
+  line-height: 1.7;
   color: #94a3b8;
+  text-align: left; /* ποτέ justified σε ελληνικό κείμενο */
+}
+
+.ft-etaireia {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 24px;
+  font-style: normal;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+/* ---------- Στήλες συνδέσμων ---------- */
+
+.ft-title {
+  color: var(--accent, #ea580c);
+  margin: 0 0 20px 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.ft-links ul {
+  list-style: none;   /* έσβηνε τις κουκκίδες που φαίνονταν στο screenshot */
+  margin: 0;
+  padding: 0;
+}
+
+.ft-links li {
+  margin-bottom: 12px;
+}
+
+.ft-links li:last-child {
+  margin-bottom: 0;
+}
+
+.ft-links a {
+  color: #cbd5e1;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  transition: color 0.15s ease;
 }
 
-/* ΓΑΛΑΖΙΟ PREMIUM */
-.footer-links a.premium-accent {
-  color: #38bdf8 !important; /* Φωτεινό γαλάζιο */
-  font-weight: 800;
-}
-
-.footer-links a.premium-accent:hover {
-  color: white !important;
+.ft-links a:hover,
+.ft-links a:focus-visible {
+  color: var(--accent, #ea580c);
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.footer-bottom {
+.ft-links a:focus-visible {
+  outline: 2px solid var(--accent, #ea580c);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---------- Κάτω μπάρα ---------- */
+
+.ft-bottom {
   background-color: #020617;
   padding: 20px 0;
   text-align: center;
+  border-top: 1px solid #1e293b;
+}
+
+.ft-disclaimer {
+  margin: 0 0 6px 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #94a3b8;
+}
+
+.ft-copyright {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* ==================================================================
+   ΜΙΚΡΕΣ ΟΘΟΝΕΣ
+================================================================== */
+
+/* Τάμπλετ: δύο στήλες */
+@media (max-width: 900px) {
+  .ft-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px 32px;
+    padding: 48px 0 32px 0;
+  }
+
+  .ft-brand {
+    grid-column: 1 / -1;
+  }
+
+  .ft-brand-text {
+    max-width: 52ch;
+  }
+}
+
+/* Κινητό: μία στήλη */
+@media (max-width: 600px) {
+  .ft-footer {
+    margin-top: 56px;
+  }
+
+  .ft-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 40px 0 28px 0;
+  }
+
+  .ft-title {
+    margin-bottom: 14px;
+  }
+
+  .ft-links li {
+    margin-bottom: 14px; /* μεγαλύτερη επιφάνεια αφής */
+  }
 }

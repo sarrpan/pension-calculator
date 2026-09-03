@@ -6,45 +6,37 @@ const Hero = () => {
   return (
     <section className="hero-section">
       <div className="container hero-vertical-layout">
-        
-        {/* Επάνω μέρος: Κεντραρισμένα Κείμενα */}
-        <div className="hero-content-centered">
-          <div className="trust-badge">Έγκυρος Υπολογισμός 2026</div>
 
-          <h1>Μάθετε τη σύνταξή σας με ακρίβεια</h1>
+        <div className="hero-content-centered">
+          <div className="trust-badge">Συντελεστές 2026</div>
+
+          <h1>Δείτε πότε μπορείτε να βγείτε και με τι ποσό</h1>
 
           <p>
-            Ο σωστός υπολογισμός σύνταξης δεν γίνεται στο περίπου.
-            Χρειάζονται βασικά ασφαλιστικά στοιχεία, με ιδιαίτερη σημασία στα 
-            ένσημα και τις μικτές αποδοχές σας ανά έτος από το 2002 και μετά. 
-            Αν τα έχετε συγκεντρωμένα, κάντε μόνοι σας μια δωρεάν πρώτη εκτίμηση. 
-            Αν όχι, στείλτε μας τα στοιχεία σας και θα σας ετοιμάσουμε ένα έγκυρο, αναλυτικό report.
+            Ο υπολογισμός σύνταξης δεν γίνεται στο περίπου. Χρειάζονται τα ένσημα και οι μικτές
+            αποδοχές σας ανά έτος, από το 2002 και μετά. Αν τα έχετε συγκεντρωμένα, κάντε μόνοι σας
+            μια δωρεάν πρώτη εκτίμηση. Αν όχι, στείλτε μας το ασφαλιστικό σας ιστορικό και
+            αναλαμβάνουμε εμείς.
           </p>
-
-          <div className="hero-stats">
-            <span><strong>2 καθαρές</strong> επιλογές</span>
-            <span><strong>Χωρίς</strong> περιττή σύγχυση</span>
-          </div>
         </div>
 
-        {/* Κάτω μέρος: Οι 2 επιλογές δίπλα-δίπλα */}
         <div className="hero-cards-row">
-          
+
           {/* ΚΑΡΤΑ 1: ΔΩΡΕΑΝ */}
           <div className="option-card free">
             <div className="card-header">
               <h3>Βασική Εκτίμηση</h3>
-              <span className="price-tag free-tag">Δωρεάν</span>
+              <span className="price-tag price-free">Δωρεάν</span>
             </div>
 
             <p className="option-intro">
-              Ιδανικό για εσάς που γνωρίζετε ήδη τα ένσημα και τις αποδοχές σας ανά έτος.
+              Για εσάς που γνωρίζετε ήδη τα ένσημα και τις αποδοχές σας ανά έτος.
             </p>
 
             <ul>
-              <li>Συμπλήρωση πεδίων (ένσημα/αποδοχές)</li>
-              <li>Βασική εκτίμηση κύριας σύνταξης</li>
-              <li>Άμεσο αποτέλεσμα </li>
+              <li>Συμπληρώνετε μόνοι σας τα πεδία</li>
+              <li>Εκτίμηση κύριας σύνταξης</li>
+              <li>Άμεσο αποτέλεσμα στην οθόνη</li>
             </ul>
 
             <Link to="/free-guide" className="btn-secondary">
@@ -56,21 +48,21 @@ const Hero = () => {
 
           {/* ΚΑΡΤΑ 2: PREMIUM */}
           <div className="option-card premium">
-            <div className="recommended-tag">Χωρίς Κόπο</div>
+            <div className="recommended-tag">Πλήρης ανάλυση</div>
 
             <div className="card-header">
               <h3>Αναλυτικό Report</h3>
-              <span className="price-tag free-tag">10€</span>
+              <span className="price-tag price-paid">20 €</span>
             </div>
 
             <p className="option-intro">
-              Μην παιδεύεστε να ενώσετε τα κομμάτια του παζλ. Εμείς κάνουμε τους υπολογισμούς.
+              Στέλνετε το ασφαλιστικό σας ιστορικό και τους υπολογισμούς τους κάνουμε εμείς.
             </p>
 
             <ul>
-              <li>Αποστολή του ασφαλιστικού ιστορικού (PDF ΕΦΚΑ)</li>
-              <li>Προσθήκη επιπλέον βεβαιώσεων (αν χρειάζονται)</li>
-              <li>Έτοιμο, καθαρό report συνταξιοδότησης</li>
+              <li>Αποστολή του ιστορικού (PDF από τον e-ΕΦΚΑ)</li>
+              <li>Μας δηλώνετε χρόνο που δεν φαίνεται στο ιστορικό</li>
+              <li>Εκτίμηση ποσού και σύγκριση σεναρίων εξόδου</li>
             </ul>
 
             <Link to="/report-guide" className="btn-primary">

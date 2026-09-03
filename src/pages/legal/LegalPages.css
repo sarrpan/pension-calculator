@@ -1,63 +1,351 @@
-.legal-page {
-  padding: 4rem 0;
-  background-color: var(--bg-light);
+/* ============================================================
+   LegalPages.css
+   Κοινό αρχείο για τις τρεις νομικές σελίδες.
+
+   ΔΥΟ ΜΕΡΗ:
+   Α) Νέο σύστημα με πρόθεμα lg-  → Όροι Χρήσης + Αποποίηση Ευθύνης.
+   Β) Παλιό σύστημα legal-*       → μόνο η Πολιτική Απορρήτου.
+      ΔΙΑΓΡΑΦΕΤΑΙ μόλις ξαναγραφτεί και αυτή.
+
+   Αλλαγές 01/09 (β):
+   - Επέστρεψε το πορτοκαλί: πάνω γραμμή στις κάρτες και στην
+     κεφαλίδα, μικρή γραμμή πάνω από κάθε τίτλο ενότητας,
+     αριθμοί στα Περιεχόμενα.
+   - Το ενιαίο λευκό κουτί του κειμένου έσπασε σε ξεχωριστές
+     κάρτες ανά ενότητα, με γκρι ανάμεσά τους.
+   Και τα δύο γίνονται μόνο από εδώ — το JSX δεν αλλάζει.
+
+   Χρώματα: πάντα με εφεδρική τιμή.
+   Κλίμακα αποστάσεων: 8 / 16 / 24 / 48 / 80 px.
+   ============================================================ */
+
+
+/* ============================================================
+   Α) ΝΕΟ ΣΥΣΤΗΜΑ — πρόθεμα lg-
+   ============================================================ */
+
+.lg-page {
+  background-color: var(--bg-light, #f8fafc);
+  padding: 48px 0 80px;
+  color: var(--primary, #0f172a);
+  text-align: left;          /* καμία στοίχιση justify σε ελληνικό κείμενο */
 }
 
-.legal-header {
-  background: var(--white);
-  padding: 3rem;
-  border-radius: var(--radius);
-  margin-bottom: 3rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+/* ── Κεφαλίδα ── */
+
+.lg-header {
+  background: var(--white, #ffffff);
+  padding: 48px 32px;
+  border-radius: var(--radius, 12px);
+  margin-bottom: 48px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  border-top: 4px solid var(--accent, #ea580c);
   text-align: center;
 }
 
-.legal-tag {
+.lg-eyebrow {
   display: inline-block;
-  background: #fef2f2;
-  color: var(--accent);
-  padding: 0.4rem 1rem;
+  background: #fff7ed;
+  color: var(--accent, #ea580c);
+  padding: 6px 16px;
   border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-bottom: 16px;
 }
 
-.legal-header h1 {
-  color: var(--primary);
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
+.lg-header h1 {
+  color: var(--primary, #0f172a);
+  font-size: 2.4rem;
+  line-height: 1.2;
+  margin: 0 0 16px;
 }
 
-.legal-grid {
+.lg-intro {
+  color: var(--text-muted, #475569);
+  font-size: 1.05rem;
+  line-height: 1.7;
+  max-width: 620px;
+  margin: 0 auto 24px;
+}
+
+.lg-date {
+  color: var(--text-muted, #64748b);
+  font-size: 0.9rem;
+  margin: 0;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  display: inline-block;
+}
+
+/* ── Οι τρεις κάρτες περίληψης ── */
+
+.lg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.lg-card {
+  background: var(--white, #ffffff);
+  padding: 32px 24px;
+  border-radius: var(--radius, 12px);
+  border-top: 5px solid var(--accent, #ea580c);
+  box-shadow: 0 4px 10px -4px rgba(15, 23, 42, 0.10);
+}
+
+.lg-card-num {
+  display: block;
+  color: var(--accent, #ea580c);
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.lg-card h3 {
+  color: var(--primary, #0f172a);
+  font-size: 1.15rem;
+  margin: 0 0 8px;
+}
+
+.lg-card p {
+  color: var(--text-muted, #475569);
+  line-height: 1.7;
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+/* ── Περιεχόμενα ── */
+
+.lg-toc {
+  background: var(--white, #ffffff);
+  border-radius: var(--radius, 12px);
+  padding: 32px;
+  margin-bottom: 48px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.lg-toc-title {
+  font-size: 1.1rem;
+  color: var(--primary, #0f172a);
+  margin: 0 0 24px;
+}
+
+.lg-toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  gap: 8px 32px;
 }
 
-.legal-card {
-  background: var(--white);
-  padding: 2rem;
-  border-radius: var(--radius);
-  border-top: 5px solid var(--accent); /* Διακριτική λεπτομέρεια με το χρώμα σου */
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
+.lg-toc-list a {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 0;
+  color: var(--primary, #0f172a);
+  text-decoration: none;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.card-num {
-  color: var(--accent);
-  font-weight: bold;
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
+.lg-toc-list a:hover {
+  color: var(--accent, #ea580c);
+}
+
+.lg-toc-num {
+  flex: 0 0 24px;
+  color: var(--accent, #ea580c);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* ── Κύριο κείμενο: κάθε ενότητα δική της κάρτα ── */
+
+.lg-prose {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.lg-section {
+  background: var(--white, #ffffff);
+  border-radius: var(--radius, 12px);
+  padding: 40px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  scroll-margin-top: 100px;   /* να μην κρύβεται ο τίτλος κάτω από το μενού */
+}
+
+.lg-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Η μικρή πορτοκαλί γραμμή πάνω από κάθε τίτλο */
+.lg-prose h2::before {
+  content: '';
   display: block;
+  width: 40px;
+  height: 3px;
+  background: var(--accent, #ea580c);
+  border-radius: 2px;
+  margin-bottom: 16px;
 }
 
-.legal-card h3 {
-  color: var(--primary);
-  margin-bottom: 1rem;
+.lg-prose h2 {
+  color: var(--primary, #0f172a);
+  font-size: 1.3rem;
+  line-height: 1.4;
+  margin: 0 0 24px;          /* το κενό που έλειπε ανάμεσα σε τίτλο και κείμενο */
 }
 
-.legal-card p {
-  color: var(--text-muted);
-  line-height: 1.6;
+.lg-prose p {
+  color: #334155;
+  font-size: 1.02rem;
+  line-height: 1.85;
+  margin: 0 0 16px;
+}
+
+.lg-prose p:last-child {
+  margin-bottom: 0;
+}
+
+/* Πρώτη, βαριά πρόταση μιας ενότητας */
+.lg-lead {
+  font-size: 1.15rem !important;
+  font-weight: 600;
+  color: var(--primary, #0f172a) !important;
+  line-height: 1.6 !important;
+}
+
+.lg-prose a {
+  color: var(--primary, #0f172a);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lg-prose a:hover {
+  color: var(--accent, #ea580c);
+}
+
+.lg-list,
+.lg-steps {
+  margin: 0 0 16px;
+  padding-left: 24px;
+  color: #334155;
+  font-size: 1.02rem;
+  line-height: 1.85;
+}
+
+.lg-list:last-child,
+.lg-steps:last-child {
+  margin-bottom: 0;
+}
+
+.lg-list li,
+.lg-steps li {
+  margin-bottom: 8px;
+}
+
+.lg-list li::marker {
+  color: var(--accent, #ea580c);
+}
+
+.lg-steps li::marker {
+  font-weight: 700;
+  color: var(--primary, #0f172a);
+}
+
+.lg-note {
+  background: #fff7ed;
+  border-left: 3px solid var(--accent, #ea580c);
+  padding: 16px 24px;
+  border-radius: 0 6px 6px 0;
+  color: #7c2d12 !important;
+  font-size: 0.96rem !important;
+}
+
+/* ── Σύνδεσμοι στα άλλα νομικά κείμενα ── */
+
+.lg-related {
+  margin-top: 48px;
+  text-align: center;
+}
+
+.lg-related-label {
+  display: block;
+  color: var(--text-muted, #64748b);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+
+.lg-related-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.lg-related-links a {
+  color: var(--primary, #0f172a);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.98rem;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 4px;
+}
+
+.lg-related-links a:hover {
+  border-bottom-color: var(--accent, #ea580c);
+}
+
+/* ── Κινητά ── */
+
+@media (max-width: 768px) {
+  .lg-page {
+    padding: 24px 0 48px;
+  }
+
+  .lg-header {
+    padding: 32px 24px;
+    margin-bottom: 24px;
+  }
+
+  .lg-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .lg-grid,
+  .lg-toc {
+    margin-bottom: 24px;
+  }
+
+  .lg-toc {
+    padding: 24px;
+  }
+
+  .lg-section {
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .lg-prose h2 {
+    font-size: 1.15rem;
+  }
+
+  .lg-prose p,
+  .lg-list,
+  .lg-steps {
+    font-size: 1rem;
+  }
+
+  .lg-lead {
+    font-size: 1.08rem !important;
+  }
 }
