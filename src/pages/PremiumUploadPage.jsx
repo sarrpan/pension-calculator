@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './PremiumUploadPage.css';
-import { anevasmaAitisis } from '../services/stripe/premiumService';
+import {
+  anevasmaAitisis,
+  prosthikiSeAitisi,
+  elegxosYparxousasAitisis,
+} from '../services/stripe/premiumService';
 // ΓΡΑΜΜΗ ΔΟΚΙΜΩΝ 1 από 4 — σβήνεται μαζί με το αρχείο dokimastikiApostoli.jsx
 import { DOKIMASTIKI_LEITOURGIA, dokimastikoAnevasma, DokimastikiPliromi } from '../services/stripe/dokimastikiApostoli';
 
@@ -156,14 +160,40 @@ const PremiumUploadPage = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  /* ── Συμπληρωματικά έγγραφα σε υπάρχουσα αίτηση ──
+     Ο κωδικός είναι ΠΡΟΑΙΡΕΤΙΚΟΣ και κενός. Όποιος στέλνει για
+     πρώτη φορά τον προσπερνά χωρίς να χρειαστεί να αποφασίσει
+     τίποτα. */
+  const [kodikosAitisis, setKodikosAitisis] = useState('');
+
+  /* Εμφανίζεται μόνο αν βρεθεί άλλη αίτηση με το ίδιο email, και
+     μόνο τη στιγμή της υποβολής. */
+  const [diploEmail, setDiploEmail] = useState(false);
+
+  /* Ο χρήστης δήλωσε ότι πρόκειται για άλλο άτομο. Τότε δεν
+     ξαναρωτάμε. */
+  const [alloAtomo, setAlloAtomo] = useState(false);
+
+  /* Δείχνει αν η τελευταία αποστολή ήταν συμπλήρωση υπάρχουσας
+     αίτησης — αλλάζει την οθόνη επιτυχίας. */
+  const [itanSymplirosi, setItanSymplirosi] = useState(false);
+
   const successRef = useRef(null);
   const inputProsthikis = useRef(null);
 
   const emailIsValid = EMAIL_PATTERN.test(email.trim());
   const tilefonoIsValid = tilefono.trim() === '' || psifia(tilefono).length >= 8;
+
+  /* Ο κωδικός είναι έγκυρος είτε αν είναι κενός είτε αν έχει ακριβώς
+     έξι ψηφία. Ό,τι ενδιάμεσο είναι λάθος πληκτρολόγηση. */
+  const kodikosPsifia = psifia(kodikosAitisis);
+  const kodikosIsValid = kodikosPsifia === '' || kodikosPsifia.length === 6;
+  const exeiKodiko = kodikosPsifia.length === 6;
+
   const synolikoMegethos = files.reduce((s, f) => s + f.size, 0);
 
-  const canContinue = emailIsValid && tilefonoIsValid && files.length > 0 && isConfirmed;
+  const canContinue =
+    emailIsValid && tilefonoIsValid && kodikosIsValid && files.length > 0 && isConfirmed;
 
   const requirements = [
     { id: 'email', label: 'Το email σας για την παράδοση', done: emailIsValid },
@@ -176,6 +206,12 @@ const PremiumUploadPage = () => {
       successRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [generatedPin]);
+
+  /* Αν αλλάξει το email, οι προηγούμενες απαντήσεις δεν ισχύουν πια. */
+  useEffect(() => {
+    setDiploEmail(false);
+    setAlloAtomo(false);
+  }, [email]);
 
   /* ── Διαχείριση αρχείων ── */
   const prosthikiArxeion = (epilegmena) => {
@@ -231,13 +267,25 @@ const PremiumUploadPage = () => {
     setError('');
   };
 
-  /* ── Υποβολή ── */
+  /* ══════════════════════════════════════════════
+     ΥΠΟΒΟΛΗ
+
+     Τρεις δρόμοι:
+     α) Ο χρήστης έδωσε κωδικό  -> τα αρχεία μπαίνουν στην ίδια αίτηση.
+     β) Δεν έδωσε, αλλά υπάρχει άλλη αίτηση με το ίδιο email
+        -> σταματάμε και ρωτάμε μία φορά.
+     γ) Σε κάθε άλλη περίπτωση -> νέα αίτηση, όπως πάντα.
+     ══════════════════════════════════════════════ */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (!emailIsValid) {
       setError('Συμπληρώστε ένα έγκυρο email. Εκεί θα σας ενημερώσουμε για τη συνέχεια.');
+      return;
+    }
+    if (!kodikosIsValid) {
+      setError('Ο κωδικός αίτησης έχει έξι ψηφία. Συμπληρώστε τα όλα ή αφήστε το πεδίο κενό.');
       return;
     }
     if (!tilefonoIsValid) {
@@ -254,6 +302,46 @@ const PremiumUploadPage = () => {
     }
 
     setIsSubmitting(true);
+
+    /* ── (α) Συμπλήρωση υπάρχουσας αίτησης ── */
+    if (exeiKodiko) {
+      setProodos({ trexon: 1, synolo: files.length });
+
+      const apotelesma = await prosthikiSeAitisi(
+        kodikosPsifia,
+        email.trim(),
+        files,
+        (trexon, synolo) => setProodos({ trexon, synolo })
+      );
+
+      setIsSubmitting(false);
+      setProodos(null);
+
+      if (!apotelesma.success) {
+        setError(apotelesma.error);
+        return;
+      }
+
+      setItanSymplirosi(true);
+      setGeneratedPin(apotelesma.pin);
+      return;
+    }
+
+    /* ── (β) Υπάρχει ήδη αίτηση με αυτό το email; ──
+       Ρωτάμε μία φορά. Αν ο χρήστης πει ότι είναι για άλλο άτομο,
+       δεν ξαναρωτάμε. Αν η υπηρεσία δεν απαντήσει, προχωράμε
+       κανονικά: ο έλεγχος είναι βοήθεια, όχι φραγμός. */
+    if (!alloAtomo) {
+      const yparxei = await elegxosYparxousasAitisis(email.trim());
+
+      if (yparxei) {
+        setDiploEmail(true);
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    /* ── (γ) Νέα αίτηση ── */
     setProodos({ trexon: 1, synolo: files.length });
 
     // ΓΡΑΜΜΗ ΔΟΚΙΜΩΝ 2 από 4 — σβήνεται και μένει σκέτο: const apostoli = anevasmaAitisis;
@@ -273,6 +361,7 @@ const PremiumUploadPage = () => {
       return;
     }
 
+    setItanSymplirosi(false);
     setGeneratedPin(apotelesma.pin);
   };
 
@@ -292,6 +381,54 @@ const PremiumUploadPage = () => {
   if (generatedPin) {
     const pinNumber = String(generatedPin).replace(/^PIN-/i, '');
 
+    /* ── Συμπλήρωση υπάρχουσας αίτησης ──
+       Ο πελάτης έχει ήδη τον κωδικό του. Δεν του τον ξαναδίνουμε σαν
+       καινούριο, και δεν του λέμε «σημειώστε τον τώρα». */
+    if (itanSymplirosi) {
+      return (
+        <div className="pu-wrapper" ref={successRef}>
+          <div className="pu-inner">
+            <header className="pu-header">
+              <p className="pu-eyebrow">ΑΠΟΣΤΟΛΗ ΕΓΓΡΑΦΩΝ</p>
+              <h1 className="pu-title">Τα επιπλέον έγγραφα παραλήφθηκαν</h1>
+              <p className="pu-subtitle">
+                Προστέθηκαν στην αίτηση <strong>{generatedPin}</strong>. Δεν άνοιξε
+                νέα αίτηση και ο κωδικός σας μένει ο ίδιος.
+              </p>
+            </header>
+
+            <section className="pu-card">
+              <h2 className="pu-card-title">Τι ακολουθεί</h2>
+              <ol className="pu-next-steps">
+                <li>
+                  Ελέγχουμε τον φάκελο ξανά, με τα νέα έγγραφα. Θα σας
+                  ενημερώσουμε στο <strong>{email.trim()}</strong>.
+                </li>
+                <li>
+                  Μόλις επιβεβαιωθεί ότι ο φάκελος επαρκεί, σας στέλνουμε τον
+                  τρόπο πληρωμής των {TIMI}.
+                </li>
+                <li>
+                  Η έκθεση ετοιμάζεται το αργότερο εντός {XRONOS_PARADOSIS} εργάσιμων
+                  ημερών από την πληρωμή.
+                </li>
+              </ol>
+
+              <div className="pu-actions">
+                <Link to={DIADROMES.parakolouthisi} className="pu-btn-primary">
+                  Παρακολούθηση αίτησης
+                </Link>
+                <Link to={DIADROMES.epikoinonia} className="pu-btn-secondary">
+                  Επικοινωνία
+                </Link>
+              </div>
+            </section>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Νέα αίτηση ── */
     return (
       <div className="pu-wrapper" ref={successRef}>
         <div className="pu-inner">
@@ -318,7 +455,7 @@ const PremiumUploadPage = () => {
               <div>
                 <p className="pu-notice-title">Σημειώστε τον κωδικό τώρα</p>
                 <p>
-                  Εμφανίζεται μόνο σε αυτή την οθόνη. Με αυτόν βλέπετε την πορεία της
+                  Σας τον στέλνουμε και με email. Με αυτόν βλέπετε την πορεία της
                   αίτησής σας και, αργότερα, παραλαμβάνετε την έκθεση.
                 </p>
               </div>
@@ -391,6 +528,7 @@ const PremiumUploadPage = () => {
               <p>
                 Τα αρχεία ΔΕΝ ανεβαίνουν. Η αίτηση καταχωρείται κανονικά στη βάση,
                 με ψεύτικες διαδρομές αρχείων. Ορατό μόνο σε αυτή την οθόνη.
+                Η συμπλήρωση υπάρχουσας αίτησης με κωδικό ανεβάζει κανονικά.
               </p>
             </div>
           </div>
@@ -436,6 +574,34 @@ const PremiumUploadPage = () => {
           <h2 className="pu-card-title">Τα στοιχεία σας</h2>
 
           <form onSubmit={handleSubmit} className="pu-form" noValidate>
+            {/* ── Κωδικός υπάρχουσας αίτησης ──
+                Πρώτο πεδίο, προαιρετικό και κενό. Όποιος στέλνει για
+                πρώτη φορά το προσπερνά χωρίς να χρειαστεί απόφαση. */}
+            <div className="pu-field">
+              <label className="pu-label" htmlFor="pu-kodikos">
+                Έχετε ήδη κωδικό αίτησης; <span className="pu-optional">προαιρετικό</span>
+              </label>
+              <div className="pu-pin-group">
+                <span className="pu-pin-prefix">PIN-</span>
+                <input
+                  id="pu-kodikos"
+                  type="text"
+                  value={kodikosAitisis}
+                  onChange={(e) => setKodikosAitisis(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="123456"
+                  className="pu-input pu-pin-input"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={6}
+                />
+              </div>
+              <p className="pu-field-hint">
+                Συμπληρώστε τον μόνο αν μας στέλνετε επιπλέον έγγραφα για αίτηση
+                που έχετε ήδη κάνει. Έτσι θα μπουν στον ίδιο φάκελο. Αν στέλνετε
+                για πρώτη φορά, αφήστε το κενό.
+              </p>
+            </div>
+
             <div className="pu-field">
               <label className="pu-label" htmlFor="pu-email">Email</label>
               <input
@@ -448,7 +614,9 @@ const PremiumUploadPage = () => {
                 autoComplete="email"
               />
               <p className="pu-field-hint">
-                Εκεί θα σας ενημερώσουμε για τον φάκελο και εκεί θα σταλεί η έκθεση.
+                {exeiKodiko
+                  ? 'Το ίδιο email που είχατε δώσει στην αρχική σας αίτηση.'
+                  : 'Εκεί θα σας ενημερώσουμε για τον φάκελο και εκεί θα σταλεί η έκθεση.'}
               </p>
             </div>
 
@@ -580,6 +748,36 @@ const PremiumUploadPage = () => {
               </span>
             </label>
 
+            {/* ── Υπάρχει ήδη αίτηση με αυτό το email ──
+                Δεν μπλοκάρει. Δίνει δύο δρόμους, με απλά λόγια. */}
+            {diploEmail && (
+              <div className="pu-notice pu-notice--warn" role="alert">
+                <IconAlert className="pu-icon" />
+                <div>
+                  <p className="pu-notice-title">Φαίνεται ότι μας έχετε ξαναστείλει έγγραφα</p>
+                  <p>
+                    Αν στέλνετε τώρα κάτι που σας ζητήσαμε, γράψτε τον κωδικό της
+                    αίτησής σας στο πρώτο πεδίο της φόρμας. Έτσι τα νέα αρχεία θα
+                    μπουν στον ίδιο φάκελο.
+                  </p>
+                  <p>
+                    Αν κάνετε αίτηση για άλλο άτομο, πατήστε το κουμπί και
+                    συνεχίστε κανονικά.
+                  </p>
+                  <button
+                    type="button"
+                    className="pu-notice-btn"
+                    onClick={() => {
+                      setAlloAtomo(true);
+                      setDiploEmail(false);
+                    }}
+                  >
+                    Είναι για άλλο άτομο — συνέχεια
+                  </button>
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="pu-notice pu-notice--error" role="alert">
                 <IconAlert className="pu-icon" />
@@ -609,7 +807,11 @@ const PremiumUploadPage = () => {
               className="pu-btn-primary pu-btn-full"
               disabled={!canContinue || isSubmitting}
             >
-              {isSubmitting ? 'Γίνεται αποστολή…' : 'Αποστολή εγγράφων'}
+              {isSubmitting
+                ? 'Γίνεται αποστολή…'
+                : exeiKodiko
+                ? 'Αποστολή στην αίτηση PIN-' + kodikosPsifia
+                : 'Αποστολή εγγράφων'}
             </button>
 
             {proodos && (

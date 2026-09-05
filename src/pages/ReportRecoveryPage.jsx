@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ref, get } from "firebase/database";
 import { Elements } from '@stripe/react-stripe-js';
-import { db } from "../firebase";
 import stripePromise from '../services/stripe/stripeService';
 import StripePaymentForm from '../components/stripe/StripePaymentForm';
-import { katagrafiPliromis } from '../services/stripe/premiumService';
+import {
+  katastasiAitisis,
+  katagrafiPliromis,
+} from '../services/stripe/premiumService';
 import './ReportRecoveryPage.css';
 
 /* Η τιμή της υπηρεσίας. Πρέπει να συμφωνεί με το ReportGuidePage.jsx
@@ -13,14 +14,14 @@ import './ReportRecoveryPage.css';
 const TIMI = '20 €';
 
 /* ══════════════════════════════════════════════════════════════
-   ΑΛΛΑΞΕ ΕΔΩ ΤΟ ΚΕΙΜΕΝΟ ΓΙΑ ΤΟ ΠΟΥ ΒΡΙΣΚΕΙ Ο ΧΡΗΣΤΗΣ ΤΟΝ ΚΩΔΙΚΟ
+   ΠΟΥ ΒΡΙΣΚΕΙ Ο ΧΡΗΣΤΗΣ ΤΟΝ ΚΩΔΙΚΟ
 
-   Τώρα λέει ότι τον είδε στην οθόνη μετά την αποστολή.
-   Όταν φτιάξεις τα email επιβεβαίωσης, γράψε εδώ κάτι σαν:
-   'Θα τον βρείτε στο email που λάβατε μόλις ολοκληρώθηκε η αποστολή.'
+   Ο κωδικός δίνεται σε δύο σημεία: στην οθόνη αμέσως μετά την
+   αποστολή, και στο email «Τα έγγραφά σας παραλήφθηκαν».
+   Το email αναφέρεται πρώτο: μετά από μέρες, εκεί θα ψάξει.
    ══════════════════════════════════════════════════════════════ */
 const KEIMENO_VOITHEIAS_PIN =
-  'Ο κωδικός εμφανίστηκε στην οθόνη μόλις ολοκληρώθηκε η αποστολή των εγγράφων σας. Αποτελείται από έξι ψηφία.';
+  'Θα τον βρείτε στο email που λάβατε μόλις ολοκληρώθηκε η αποστολή των εγγράφων σας. Είχε εμφανιστεί και στην οθόνη εκείνη τη στιγμή. Αποτελείται από έξι ψηφία.';
 
 /* ══════════════════════════════════════════════════════════════
    ΤΑ ΤΕΣΣΕΡΑ ΣΤΑΔΙΑ
@@ -162,25 +163,25 @@ const ReportRecoveryPage = () => {
 
     setLoading(true);
 
+    /* Η αναζήτηση δεν γίνεται πια στη βάση από εδώ. Ρωτάμε την
+       υπηρεσία, που ελέγχει κωδικό και email μαζί και απαντά μόνο με
+       το στάδιο της αίτησης. Έτσι κανείς δεν μπορεί να δει αιτήσεις
+       που δεν είναι δικές του. */
     try {
-      const reportRef = ref(db, `premium_requests/PIN-${cleanPin}`);
-      const snapshot = await get(reportRef);
+      const apotelesma = await katastasiAitisis(cleanPin, cleanEmail);
 
-      if (!snapshot.exists()) {
+      if (!apotelesma.success) {
+        setError(MINYMATA.provlimaSyndesis);
+        return;
+      }
+
+      if (!apotelesma.vrethike) {
         setError(MINYMATA.denVrethike);
         return;
       }
 
-      const data = snapshot.val();
-
-      // Έλεγχος ασφαλείας: το email πρέπει να ταιριάζει με αυτό της αίτησης
-      if (data?.email?.trim().toLowerCase() !== cleanEmail) {
-        setError(MINYMATA.denVrethike);
-        return;
-      }
-
-      setPinAitisis(`PIN-${cleanPin}`);
-      setReportData(data);
+      setPinAitisis(apotelesma.aitisi.pin);
+      setReportData(apotelesma.aitisi);
     } catch (err) {
       console.error(err);
       setError(MINYMATA.provlimaSyndesis);
@@ -190,13 +191,16 @@ const ReportRecoveryPage = () => {
   };
 
   /* Καλείται από τη φόρμα κάρτας όταν η πληρωμή περάσει.
-     Καταγράφει την πληρωμή στην αίτηση και προχωράει την κατάσταση.
 
-     Σήμερα δεν φτάνει ποτέ εδώ: η φόρμα σταματά νωρίτερα, γιατί ο
-     server των πληρωμών δεν λειτουργεί χωρίς πλάνο Blaze. */
+     Η σελίδα ΔΕΝ γράφει η ίδια «πληρώθηκε». Στέλνει τον αριθμό της
+     συναλλαγής στην υπηρεσία, εκείνη τον επιβεβαιώνει με το Stripe,
+     και μόνο τότε προχωράει η αίτηση. */
   const meta_tin_pliromi = async (paymentIntentId, epipleon) => {
     const kodikos = reportData?.pin || pinAitisis;
-    const apotelesma = await katagrafiPliromis(kodikos, paymentIntentId, epipleon);
+    const apotelesma = await katagrafiPliromis(kodikos, paymentIntentId, {
+      ...epipleon,
+      email: reportData?.email,
+    });
 
     /* Αν η εγγραφή στη βάση απέτυχε, η οθόνη ΔΕΝ προχωράει. Τα χρήματα
        έχουν φύγει και ο πελάτης πρέπει να το μάθει, όχι να δει ότι όλα
@@ -372,7 +376,12 @@ const ReportRecoveryPage = () => {
             {zitisiPliromis && deixePliromi && (
               <div className="pay-block">
                 <Elements stripe={stripePromise} options={{ locale: 'el' }}>
-                  <StripePaymentForm onFileSubmit={meta_tin_pliromi} timi={TIMI} />
+                  <StripePaymentForm
+                    onFileSubmit={meta_tin_pliromi}
+                    timi={TIMI}
+                    pin={reportData?.pin || pinAitisis}
+                    email={reportData?.email}
+                  />
                 </Elements>
                 <button
                   type="button"

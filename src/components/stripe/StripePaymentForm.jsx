@@ -97,7 +97,7 @@ const IconCheck = (p) => (
    την έκθεση. Είναι χωριστό από κάθε άλλη αποδοχή όρων· αν ήταν
    ενωμένο, δεν θα μετρούσε ως ρητή δήλωση.
    ══════════════════════════════════════════════════════════════ */
-const StripePaymentForm = ({ onFileSubmit, timi = '20 €' }) => {
+const StripePaymentForm = ({ onFileSubmit, timi = '20 €', pin, email }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [paymentError, setPaymentError] = useState(null);
@@ -130,9 +130,12 @@ const StripePaymentForm = ({ onFileSubmit, timi = '20 €' }) => {
         throw new Error('Δεν έχει οριστεί η διεύθυνση δημιουργίας πληρωμής.');
       }
 
+      /* Ο κωδικός και το email ταξιδεύουν μαζί, ώστε η συναλλαγή στο
+         Stripe να μπορεί να αντιστοιχηθεί με την αίτηση. */
       const response = await fetch(CREATE_PAYMENT_INTENT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin, email }),
       });
       const data = await response.json();
 
