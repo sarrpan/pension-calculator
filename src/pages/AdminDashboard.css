@@ -311,3 +311,98 @@
 .delete-btn svg {
   vertical-align: -2px;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ΠΡΟΣΘΗΚΗ 2 — ΕΝΔΕΙΞΕΙΣ ΚΑΤΑΣΤΑΣΗΣ
+
+   Τέσσερα πράγματα που πριν έπρεπε να τα μαντέψεις:
+   ο κωδικός, η τελευταία αποστολή, το αν στάλθηκε η επιλεγμένη
+   κατάσταση, και ποια αρχεία ήρθαν μόλις τώρα.
+   ══════════════════════════════════════════════════════════════ */
+
+/* --- Η ένδειξη δίπλα στον κωδικό διαχείρισης --- */
+.ad-kodikos-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.ad-kodikos-akyros {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* --- Η τελευταία αποστολή της αίτησης --- */
+.ad-teleftaia {
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--primary, #0f172a);
+  background: #f8fafc;
+  border-left: 3px solid var(--accent, #ea580c);
+  border-radius: 4px;
+}
+
+.ad-teleftaia strong {
+  font-weight: 700;
+}
+
+.ad-teleftaia-ora {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.ad-teleftaia-kamia {
+  color: #64748b;
+  border-left-color: #cbd5e1;
+}
+
+/* --- Στάλθηκε ή όχι η επιλεγμένη κατάσταση --- */
+.ad-stalthike,
+.ad-den-stalthike {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ad-stalthike {
+  color: #166534;
+}
+
+.ad-den-stalthike {
+  color: #9a3412;
+}
+
+/* --- Αρχεία που έφτασαν με ανοιχτή τη σελίδα --- */
+.ad-arxeio-neo {
+  border-color: var(--accent, #ea580c);
+  background-color: #fdf3ea;
+}
+
+.ad-neo {
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  background: var(--accent, #ea580c);
+  border-radius: 999px;
+}

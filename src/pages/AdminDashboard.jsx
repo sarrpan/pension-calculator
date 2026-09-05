@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ref, onValue, update, remove } from "firebase/database";
 import { ref as sRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
@@ -73,6 +73,44 @@ const imerominia = (xronos) => {
 };
 
 /* ══════════════════════════════════════════════════════════════
+   Η ΛΙΣΤΑ ΤΩΝ ΑΡΧΕΙΩΝ ΜΙΑΣ ΑΙΤΗΣΗΣ
+
+   Βγήκε έξω από το ArxeiaPelati ώστε να μπορεί να τη διαβάσει και ο
+   έλεγχος για τα νέα αρχεία, χωρίς να γραφτεί δεύτερη φορά.
+
+   Δέχεται και τη ΠΑΛΙΑ μορφή (ένα πεδίο pdfUrl), για τις δοκιμαστικές
+   αιτήσεις που είχαν καταχωρηθεί πριν την αλλαγή.
+   ══════════════════════════════════════════════════════════════ */
+const listaArxeion = (req) => {
+  if (!req) return [];
+  if (Array.isArray(req.files) && req.files.length) return req.files;
+  if (req.pdfUrl) return [{ path: req.pdfUrl, name: 'Αρχείο πελάτη' }];
+  return [];
+};
+
+/* ══════════════════════════════════════════════════════════════
+   Η ΤΕΛΕΥΤΑΙΑ ΑΠΟΣΤΟΛΗ ΜΙΑΣ ΑΙΤΗΣΗΣ
+
+   Από όλο το ιστορικό κρατά μόνο την πιο πρόσφατη εγγραφή, ώστε να
+   φαίνεται σε μία γραμμή τι έγινε τελευταίο.
+   ══════════════════════════════════════════════════════════════ */
+const teleftaiaApostoli = (istoriko) => {
+  const kleidia = Object.keys(istoriko || {});
+  if (!kleidia.length) return null;
+
+  let korifi = kleidia[0];
+  kleidia.forEach((k) => {
+    if ((istoriko[k] || 0) > (istoriko[korifi] || 0)) korifi = k;
+  });
+
+  const katastasi = vresKatastasi(korifi);
+  return {
+    etiketa: katastasi ? katastasi.etiketa : korifi,
+    xronos: istoriko[korifi],
+  };
+};
+
+/* ══════════════════════════════════════════════════════════════
    ΕΙΚΟΝΙΔΙΑ
 
    Αντικαθιστούν τα emoji, όπως έγινε και στη φόρμα πληρωμής. Τα
@@ -129,18 +167,13 @@ const IconDiagrafi = (p) => (
    Ο σύνδεσμος λήψης παράγεται τη στιγμή που τον ζητάς, ώστε να μην
    γίνονται δεκάδες κλήσεις κάθε φορά που ανοίγει ο πίνακας.
 
-   Δέχεται και τη ΠΑΛΙΑ μορφή (ένα πεδίο pdfUrl), για τις δοκιμαστικές
-   αιτήσεις που είχαν καταχωρηθεί πριν την αλλαγή.
+   Όποιο αρχείο έφτασε ΑΦΟΥ άνοιξε η σελίδα παίρνει σήμανση ΝΕΟ.
    ══════════════════════════════════════════════════════════════ */
-const ArxeiaPelati = ({ req }) => {
+const ArxeiaPelati = ({ req, nea }) => {
   const [fortoni, setFortoni] = useState(null);
 
-  const lista =
-    Array.isArray(req.files) && req.files.length
-      ? req.files
-      : req.pdfUrl
-      ? [{ path: req.pdfUrl, name: 'Αρχείο πελάτη' }]
-      : [];
+  const lista = listaArxeion(req);
+  const neaSet = new Set(nea || []);
 
   if (!lista.length) {
     return <span className="ad-keno">—</span>;
@@ -160,18 +193,22 @@ const ArxeiaPelati = ({ req }) => {
 
   return (
     <div className="admin-file-list">
-      {lista.map((arxeio, index) => (
-        <button
-          key={arxeio.path || index}
-          type="button"
-          className="admin-view-pdf"
-          onClick={() => anoigma(arxeio, index)}
-          title={arxeio.name}
-        >
-          <IconArxeio />
-          {fortoni === index ? ' Άνοιγμα…' : ` ${index + 1}. ${arxeio.name}`}
-        </button>
-      ))}
+      {lista.map((arxeio, index) => {
+        const einaiNeo = neaSet.has(arxeio.path);
+        return (
+          <button
+            key={arxeio.path || index}
+            type="button"
+            className={einaiNeo ? 'admin-view-pdf ad-arxeio-neo' : 'admin-view-pdf'}
+            onClick={() => anoigma(arxeio, index)}
+            title={arxeio.name}
+          >
+            <IconArxeio />
+            {fortoni === index ? ' Άνοιγμα…' : ` ${index + 1}. ${arxeio.name}`}
+            {einaiNeo && <span className="ad-neo">ΝΕΟ</span>}
+          </button>
+        );
+      })}
     </div>
   );
 };
@@ -219,6 +256,11 @@ const AdminDashboard = () => {
      ήταν ορατός σε όποιον δει τον πηγαίο κώδικα της σελίδας. */
   const [kodikosSynartisis, setKodikosSynartisis] = useState('');
 
+  /* Γίνεται true μόλις ολοκληρωθεί η πρώτη επιτυχημένη ενέργεια.
+     Δεν υπάρχει τρόπος να ελεγχθεί ο κωδικός ενώ πληκτρολογείται —
+     μόνο η πρώτη αποστολή αποδεικνύει ότι είναι σωστός. */
+  const [kodikosOk, setKodikosOk] = useState(false);
+
   /* Οι επιλογές σου ανά αίτηση, μέχρι να πατήσεις αποθήκευση.
      Παλιότερα γράφονταν πάνω στο ίδιο το αντικείμενο της αίτησης
      (req.tempStatus). Το React δεν το παρακολουθούσε, οπότε κάθε
@@ -227,6 +269,12 @@ const AdminDashboard = () => {
   const [keimena, setKeimena] = useState({});
   const [stelnei, setStelnei] = useState(null);
   const [apotelesmata, setApotelesmata] = useState({});
+
+  /* Τα αρχεία που υπήρχαν τη στιγμή που πρωτοεμφανίστηκε η κάθε
+     αίτηση στην οθόνη. Ό,τι έρθει μετά σημαίνεται ως ΝΕΟ, μέχρι να
+     ανανεωθεί η σελίδα. */
+  const arxikaArxeia = useRef({});
+  const [neaArxeia, setNeaArxeia] = useState({});
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -239,7 +287,24 @@ const AdminDashboard = () => {
     if (!isAuthenticated) return;
     const adminRef = ref(db, 'premium_requests');
     return onValue(adminRef, (snapshot) => {
-      setRequests(snapshot.val() || {});
+      const dedomena = snapshot.val() || {};
+
+      const nea = {};
+      Object.keys(dedomena).forEach((pin) => {
+        const diadromes = listaArxeion(dedomena[pin]).map((a) => a.path);
+
+        if (!arxikaArxeia.current[pin]) {
+          arxikaArxeia.current[pin] = new Set(diadromes);
+          return;
+        }
+
+        const arxika = arxikaArxeia.current[pin];
+        const kainourgia = diadromes.filter((d) => d && !arxika.has(d));
+        if (kainourgia.length) nea[pin] = kainourgia;
+      });
+
+      setNeaArxeia(nea);
+      setRequests(dedomena);
       setLoading(false);
     });
   }, [isAuthenticated]);
@@ -344,6 +409,10 @@ const AdminDashboard = () => {
       const dedomena = await apantisi.json().catch(() => ({}));
 
       if (!apantisi.ok || dedomena.success === false) {
+        // Λάθος κωδικός: η ένδειξη πάνω στη σελίδα ξαναγίνεται «δεν επιβεβαιώθηκε».
+        if (apantisi.status === 401 || apantisi.status === 403) {
+          setKodikosOk(false);
+        }
         setApotelesmata((p) => ({
           ...p,
           [pin]: {
@@ -354,6 +423,9 @@ const AdminDashboard = () => {
         setStelnei(null);
         return;
       }
+
+      // Η ενέργεια πέρασε, άρα ο κωδικός είναι σωστός.
+      setKodikosOk(true);
 
       const minima = dedomena.emailStalthike
         ? `Η κατάσταση άλλαξε και το email στάλθηκε στο ${dedomena.paraliptis}.`
@@ -450,10 +522,22 @@ const AdminDashboard = () => {
           id="ad-kodikos"
           type="password"
           value={kodikosSynartisis}
-          onChange={(e) => setKodikosSynartisis(e.target.value)}
+          onChange={(e) => {
+            setKodikosSynartisis(e.target.value);
+            setKodikosOk(false);
+          }}
           placeholder="ADMIN_EMAIL_KODIKOS"
           autoComplete="off"
         />
+
+        {kodikosOk ? (
+          <span className="ad-kodikos-ok">
+            <IconOk width={14} height={14} /> Ο κωδικός επιβεβαιώθηκε
+          </span>
+        ) : (
+          <span className="ad-kodikos-akyros">Δεν έχει επιβεβαιωθεί ακόμα</span>
+        )}
+
         <span className="ad-kodikos-note">
           Χρειάζεται για να σταλεί οποιοδήποτε email. Δεν αποθηκεύεται —
           γράφεται ξανά σε κάθε επίσκεψη.
@@ -481,6 +565,11 @@ const AdminDashboard = () => {
             const diplo =
               req.email && metriteEmail[(req.email || '').toLowerCase()] > 1;
 
+            /* Η τελευταία αποστολή της αίτησης, και το αν η κατάσταση
+               που είναι ΤΩΡΑ επιλεγμένη έχει ήδη σταλεί κάποτε. */
+            const teleftaia = teleftaiaApostoli(req.emailIstoriko);
+            const stalthikeXronos = (req.emailIstoriko || {})[epilogi];
+
             return (
               <tr key={pin}>
                 <td><strong>{pin}</strong></td>
@@ -495,9 +584,23 @@ const AdminDashboard = () => {
                   )}
                 </td>
 
-                <td><ArxeiaPelati req={req} /></td>
+                <td><ArxeiaPelati req={req} nea={neaArxeia[pin]} /></td>
 
                 <td>
+                  {/* Τι έγινε τελευταίο σε αυτή την αίτηση */}
+                  {teleftaia ? (
+                    <p className="ad-teleftaia">
+                      Τελευταία αποστολή: <strong>{teleftaia.etiketa}</strong>
+                      <span className="ad-teleftaia-ora">
+                        {' · '}{imerominia(teleftaia.xronos)}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="ad-teleftaia ad-teleftaia-kamia">
+                      Δεν έχει σταλεί ποτέ email σε αυτή την αίτηση.
+                    </p>
+                  )}
+
                   <select
                     className="status-select"
                     value={epilogi}
@@ -533,10 +636,23 @@ const AdminDashboard = () => {
                   >
                     {stelnei === pin
                       ? 'Γίνεται…'
-                      : katastasi?.stelneiEmail
-                      ? 'Αλλαγή και αποστολή email'
-                      : 'Αλλαγή κατάστασης'}
+                      : !katastasi?.stelneiEmail
+                      ? 'Αλλαγή κατάστασης'
+                      : stalthikeXronos
+                      ? 'Αποστολή ξανά'
+                      : 'Αλλαγή και αποστολή email'}
                   </button>
+
+                  {/* Η επιλεγμένη κατάσταση: στάλθηκε ήδη ή όχι; */}
+                  {katastasi?.stelneiEmail && (
+                    stalthikeXronos ? (
+                      <p className="ad-stalthike">
+                        Στάλθηκε ήδη — {imerominia(stalthikeXronos)}
+                      </p>
+                    ) : (
+                      <p className="ad-den-stalthike">Δεν έχει σταλεί</p>
+                    )
+                  )}
 
                   {katastasi && !katastasi.stelneiEmail && (
                     <p className="ad-simeiosi">
