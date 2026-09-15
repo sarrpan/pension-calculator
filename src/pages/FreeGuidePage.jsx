@@ -2,205 +2,209 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import './FreeGuidePage.css';
 
-const fieldCards = [
-  {
-    tone: 'sand',
-    title: 'Συνολικός ασφαλιστικός βίος',
-    text: 'Θα χρειαστεί να γνωρίζετε τον συνολικό ασφαλιστικό βίο του εργαζομένου, δηλαδή πόσα έτη και πόσοι μήνες ασφάλισης υπάρχουν συνολικά.',
-  },
-  {
-    tone: 'blue',
-    title: 'Έτη διαμονής στην Ελλάδα',
-    text: 'Το πεδίο αυτό καθορίζει το ποσό της Εθνικής Σύνταξης. Ως προσυμπληρωμένη τιμή μπαίνουν τα 40 χρόνια. Αν έχετε πάνω από 40 χρόνια διαμονής, δεν χρειάζεται να το αλλάξετε.',
-  },
-  {
-    tone: 'green',
-    title: 'Πρώτη ασφάλιση πριν την 1/1/1993',
-    text: 'Αρκεί ακόμη και ένα ένσημο έως και τις 31/12/1992 για να θεωρηθεί κάποιος ασφαλισμένος πριν το 1993. Ο διαχωρισμός αυτός επηρεάζει όρια ηλικίας και προϋποθέσεις εξόδου.',
-  },
-  {
-    tone: 'rose',
-    title: 'Αποχώρηση με καθεστώς βαρέων',
-    text: 'Επιλέξτε «Ναι» μόνο αν πληρούνται οι προϋποθέσεις ΒΑΕ και θα χρησιμοποιηθούν για έξοδο με ειδικές διατάξεις.',
-  },
-];
-
 const FreeGuidePage = () => {
   return (
-    <main className="free-guide-page">
-      <div className="free-guide-container">
-        <section className="free-guide-hero">
-          <div className="free-guide-hero-content">
-            <span className="free-guide-badge">Προετοιμασία Υπολογισμού</span>
-            <h1>Οδηγίες Δωρεάν Εκτίμησης</h1>
-            <p className="free-guide-lead">
-              Για να είναι η εκτίμησή σας όσο το δυνατόν πιο κοντά στην πραγματικότητα,
-              θα χρειαστεί να εισάγετε εσείς τα δεδομένα σας. Βεβαιωθείτε ότι έχετε
-              διαθέσιμα τα απαραίτητα στοιχεία πριν ξεκινήσετε.
-            </p>
-          </div>
-        </section>
+    <main className="fg-page">
+      <div className="fg-container">
 
-        <section className="free-guide-section free-guide-section-intro">
-          <h2>Τι στοιχεία θα χρειαστώ;</h2>
-          <div className="free-guide-answer">
-            <p>Θα πρέπει να έχετε διαθέσιμα τα εξής στοιχεία:</p>
-            <ul className="free-guide-list">
-              <li>Τις <strong>μεικτές ετήσιες αποδοχές</strong> σας από το 2002 έως σήμερα.</li>
-              <li>Τον αριθμό των <strong>ενσήμων / ημερών ασφάλισης</strong> ανά έτος.</li>
-              <li>Την <strong>ημερομηνία πρώτης ασφάλισης</strong> (πριν ή μετά την 1/1/1993).</li>
-              <li>Τον <strong>συνολικό ασφαλιστικό βίο</strong>, δηλαδή τα συνολικά έτη και τους συνολικούς μήνες ασφάλισης.</li>
-            </ul>
-          </div>
-        </section>
+        <section className="fg-hero">
+          <div className="fg-eyebrow">ΔΩΡΕΑΝ ΕΚΤΙΜΗΣΗ</div>
+          <h1>Τα στοιχεία τα βάζετε εσείς</h1>
 
-        <section className="free-guide-section">
-          <div className="free-guide-section-head">
-            <div>
-              <div className="free-guide-section-kicker">ΒΑΣΙΚΑ ΠΕΔΙΑ</div>
-              <h2>Επεξήγηση βασικών πεδίων της φόρμας</h2>
+          <p className="fg-lead">
+            Το εργαλείο υπολογίζει με όσα του δώσετε. Δεν διαβάζει αρχεία και δεν
+            ελέγχει αν λείπει χρόνος από το ασφαλιστικό σας ιστορικό.
+          </p>
+          <p className="fg-lead">
+            Συγκεντρώστε τα παρακάτω πριν ξεκινήσετε, ώστε να μη διακόψετε τη
+            συμπλήρωση στη μέση.
+          </p>
+
+          <div className="fg-panel-dark">
+            <div className="fg-panel-row">
+              <div className="fg-panel-row-title">Τι κοστίζει</div>
+              <p>Τίποτα. Χωρίς εγγραφή.</p>
             </div>
-            <p className="free-guide-section-intro-text">
-              Τα παρακάτω πεδία επηρεάζουν ουσιαστικά τη σωστή πορεία του υπολογισμού,
-              γι’ αυτό είναι σημαντικό να συμπληρωθούν σωστά.
-            </p>
-          </div>
-
-          <div className="free-guide-feature-grid">
-            {fieldCards.map((item) => (
-              <article
-                key={item.title}
-                className={`free-guide-feature-card free-guide-feature-card-${item.tone}`}
-              >
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-
-          <div className="free-guide-visual-block">
-            <article className="free-guide-feature-card free-guide-feature-card-sand free-guide-visual-card">
-              <h3>Χρόνος βαρέων ανά περίοδο</h3>
-              <p>
-                Αν υπάρχουν βαρέα ένσημα, θα πρέπει να χωριστούν σε «Έως 2014» και
-                «Από 2015 και μετά», γιατί από το 2015 αλλάζει ο τρόπος υπολογισμού.
-              </p>
-              <p>
-                Αν όλα τα ένσημα είναι Βαρέα ή αν δεν υπάρχουν καθόλου βαρέα ένσημα,
-                γίνεται η αντίστοιχη επιλογή στο radiobutton και τα πεδία ετών / μηνών
-                παραμένουν ανενεργά, αφού δεν χρειάζεται να συμπληρωθούν.
-              </p>
-            </article>
-
-            <div className="free-guide-image-card free-guide-image-card-soft free-guide-visual-image-card">
-              <img
-                src="/img/varea1.png"
-                alt="Πεδία επιλογής και συμπλήρωσης βαρέων ενσήμων ανά περίοδο"
-                className="free-guide-image"
-              />
-              <p className="free-guide-image-caption">
-                Απόσπασμα από τη φόρμα υπολογισμού
-              </p>
+            <div className="fg-panel-row">
+              <div className="fg-panel-row-title">Τι δίνει</div>
+              <p>Εκτίμηση κύριας και επικουρικής σύνταξης.</p>
             </div>
           </div>
         </section>
 
-        <section className="free-guide-section free-guide-section-split">
-          <div className="free-guide-section-copy">
-            <div className="free-guide-section-kicker">ΑΠΟΔΟΧΕΣ &amp; ΕΝΣΗΜΑ</div>
-            <h2>Εισαγωγή Ποσών &amp; Ενσήμων</h2>
+        <section className="fg-section">
+          <div className="fg-eyebrow">1. ΤΙ ΘΑ ΧΡΕΙΑΣΤΕΙΤΕ</div>
+          <h2>Δύο τρόποι για τις αποδοχές — διαλέγετε</h2>
 
-            <h3>Ημέρες Ασφάλισης ανά Έτος</h3>
+          <div className="fg-copy">
             <p>
-              Η συμπλήρωσή τους είναι το ίδιο σημαντική με τις αποδοχές.
-              Το μέγιστο όριο που αναγνωρίζει ο ΕΦΚΑ είναι <strong>300 ημέρες ανά έτος</strong>.
+              Ο ένας θέλει νούμερα για κάθε χρονιά, ο άλλος ένα μόνο ποσό. Και οι δύο
+              βγάζουν αποτέλεσμα.
             </p>
-
-            <div className="free-guide-note">
-              <strong>Tip για Παράλληλη Ασφάλιση (Δύο δουλειές):</strong>
-              <br />
-              Αν είχατε παράλληλη απασχόληση την ίδια χρονιά, θα συμπληρώσετε το μέγιστο
-              των 300 ημερών ασφάλισης, αλλά στο πεδίο των ετήσιων αποδοχών
-              <strong> θα προσθέσετε τα μεικτά ποσά και από τις δύο εργασίες</strong>.
-            </div>
           </div>
 
-          <div className="free-guide-upload-card free-guide-upload-card-soft">
-            <div className="free-guide-upload-label">Προεπισκόπηση πίνακα</div>
-            <div className="free-guide-image-card">
+          <div className="fg-block fg-block-warm">
+            <h3>Αναλυτικά, ανά έτος</h3>
+            <div className="fg-copy">
+              <p>
+                Οι μεικτές ετήσιες αποδοχές σας και οι ημέρες ασφάλισης για κάθε χρονιά
+                από το 2002 και μετά.
+              </p>
+            </div>
+
+            <figure className="fg-figure">
               <img
                 src="/img/year.png"
                 alt="Πίνακας εισαγωγής ετήσιων αποδοχών και ημερών ασφάλισης"
-                className="free-guide-image"
               />
-              <p className="free-guide-image-caption">
-                Απόσπασμα από τον πίνακα της φόρμας
+              <figcaption>Απόσπασμα από τον πίνακα της φόρμας</figcaption>
+            </figure>
+
+            <div className="fg-source-title fg-sources-head">Πού θα βρείτε τα ποσά</div>
+
+            <div className="fg-sources">
+              <div className="fg-source">
+                <div className="fg-source-title">Από το λογιστήριο ή τη μισθοδοσία</div>
+                <p>Η ακριβέστερη πηγή, και η μόνη που δίνει μεικτά ποσά κατευθείαν.</p>
+              </div>
+
+              <div className="fg-source">
+                <div className="fg-source-title">Από πρόγραμμα του εργοδότη</div>
+                <p>Όπου υπάρχει ηλεκτρονική υπηρεσία για το προσωπικό.</p>
+              </div>
+
+              <div className="fg-source">
+                <div className="fg-source-title">Από τη φορολογική σας δήλωση</div>
+                <p>Στο Taxisnet, ανά έτος, στο Ε1.</p>
+              </div>
+            </div>
+
+            <div className="fg-note">
+              Το Ε1 δείχνει το ποσό <strong>μετά</strong> την αφαίρεση των εισφορών.
+              Η φόρμα ζητάει μεικτά ποσά, που είναι μεγαλύτερα.
+            </div>
+          </div>
+
+          <div className="fg-block fg-block-cool">
+            <h3>Συνολικά, με ένα ποσό</h3>
+            <div className="fg-copy">
+              <p>
+                Ο μέσος μηνιαίος συντάξιμος μισθός σας, αν τον έχετε ήδη υπολογισμένο.
+                Ένα νούμερο, χωρίς πίνακα.
               </p>
             </div>
           </div>
-        </section>
 
-        <section className="free-guide-bottom-grid">
-          <article className="free-guide-section free-guide-compact-card free-guide-compact-card-sand">
-            <div className="free-guide-section-kicker">ΠΡΟΣΟΜΟΙΩΣΗ</div>
-            <h2>Υπολογισμός για όσους πλησιάζουν στη σύνταξη</h2>
-            <p>
-              Αν ο ασφαλισμένος απέχει έως και δύο χρόνια από το όριο συνταξιοδότησής του,
-              μπορεί να χρησιμοποιήσει το εργαλείο για προσομοίωση της κύριας και της επικουρικής
-              σύνταξης που του αναλογεί, καθώς και για να δει πώς μπορεί να μεταβληθεί το ποσό αν
-              παραμείνει στην εργασία του για ένα ή δύο επιπλέον έτη.
-            </p>
-            <p>
-              Σε αυτή την περίπτωση, θα πρέπει να συμπληρωθούν για τα επόμενα χρόνια
-              οι αποδοχές και τα ένσημα που εκτιμάτε ότι θα υπάρχουν.
-              Όσο πιο ακριβή είναι αυτά τα στοιχεία, τόσο πιο κοντά στην πραγματικότητα
-              θα είναι το αποτέλεσμα.
-            </p>
-            <p>
-              Επειδή τα επόμενα έτη συμπληρώνονται υποθετικά, η εκτίμηση παραμένει
-              ενδεικτική και μπορεί να εμφανιστεί <strong>ελαφρώς χαμηλότερη </strong>
-              από το τελικό πραγματικό ποσό.
-            </p>
-          </article>
-
-          <article className="free-guide-section free-guide-compact-card free-guide-compact-card-blue">
-            <div className="free-guide-section-kicker">ΤΕΛΙΚΟ ΠΟΣΟ</div>
-            <h2>Καθαρό Ποσό και Φόρος Εισοδήματος</h2>
-            <ul className="free-guide-list">
-              <li>
-                Στο τελικό ποσό θα εφαρμοσθεί <strong>παρακράτηση φόρου εισοδήματος</strong>
-                {' '}κατά την πληρωμή. Έχουν ήδη αφαιρεθεί οι ασφαλιστικές κρατήσεις
-                (Υγεία 6%, ΕΑΣ όπου προβλέπεται).
-              </li>
-              <li>
-                Η εφαρμογή παρέχει αποκλειστικά μια <strong>εκτίμηση</strong>.
-                Δεν αποτελεί επίσημη πράξη ούτε αντικαθιστά τον ΕΦΚΑ.
-              </li>
-            </ul>
-          </article>
-        </section>
-
-        <section className="free-guide-cta">
-          <div className="free-guide-cta-content">
-            <div className="free-guide-section-kicker free-guide-section-kicker-light">
-              ΕΠΟΜΕΝΟ ΒΗΜΑ
+          <div className="fg-block fg-block-cool">
+            <h3>Τα χρόνια πριν το 2002</h3>
+            <div className="fg-copy">
+              <p>
+                Συνήθως δεν χρειάζονται αποδοχές. Αρκεί ο φορέας, το διάστημα, το είδος
+                των ενσήμων και οι ημέρες.
+              </p>
             </div>
-            <h2>Αφού συγκεντρώσετε τα στοιχεία, προχωρήστε στον υπολογισμό</h2>
-            <p>
-              Η δωρεάν εκτίμηση βασίζεται αποκλειστικά στα δεδομένα που θα εισάγετε.
-              Ξεκινήστε όταν είστε έτοιμοι.
-            </p>
+          </div>
 
-            <div className="free-guide-actions">
-              <Link to="/calculator" className="free-guide-button free-guide-button-light">
-                Ξεκινήστε τώρα
-              </Link>
-              <Link to="/" className="free-guide-link free-guide-link-light">
-                Επιστροφή στην αρχική
-              </Link>
+          <div className="fg-copy fg-copy-spaced">
+            <p>
+              Ανεξάρτητα από τον τρόπο που θα επιλέξετε, θα χρειαστείτε επίσης την
+              ημερομηνία γέννησής σας, την ημερομηνία που θέλετε να αρχίσει η σύνταξη
+              και το έτος της πρώτης σας ασφάλισης.
+            </p>
+          </div>
+        </section>
+
+        <section className="fg-section">
+          <div className="fg-eyebrow">2. ΠΩΣ ΣΥΜΠΛΗΡΩΝΕΤΑΙ</div>
+          <h2>Έως δύο ασφαλιστικές περίοδοι</h2>
+
+          <div className="fg-copy">
+            <p>
+              Δηλώνετε δύο από τα διαφορετικά ταμεία που έχετε. Ο συνολικός χρόνος
+              προκύπτει από το άθροισμα των δύο περιόδων. Αν ο ασφαλιστικός σας χρόνος
+              είναι μοιρασμένος σε περισσότερα ταμεία, ο χρόνος που θα μείνει αδήλωτος
+              δεν θα μπει στον υπολογισμό.
+            </p>
+            <p>
+              Αυτό σημαίνει ότι το ποσό που θα δείτε δεν θα είναι ακριβές. Μπορεί να
+              βγει μεγαλύτερο ή μικρότερο από το πραγματικό, ανάλογα με το τι μένει
+              έξω. Αν πρόκειται για λίγα ένσημα μέσα σε μια ολόκληρη καριέρα, η διαφορά
+              θα είναι μικρή. Αν πρόκειται για χρόνια, θα είναι αισθητή.
+            </p>
+            <p>
+              Το εργαλείο δεν υπολογίζει παράλληλη ασφάλιση. Αν είχατε δύο δουλειές την
+              ίδια χρονιά, ο χρόνος μετριέται μία φορά.
+            </p>
+          </div>
+
+          <div className="fg-block fg-block-cool">
+            <h3>Τρία πεδία που παρεξηγούνται</h3>
+
+            <div className="fg-source-title fg-field-title">Έτος πρώτης ασφάλισης</div>
+            <div className="fg-copy">
+              <p>
+                Το έτος που ασφαλιστήκατε για πρώτη φορά, ακόμη κι αν εκείνη η παλιά
+                περίοδος δεν δηλωθεί παρακάτω. Επηρεάζει τα όρια ηλικίας.
+              </p>
+            </div>
+
+            <div className="fg-source-title fg-field-title">Έτη νόμιμης διαμονής</div>
+            <div className="fg-copy">
+              <p>
+                Καθορίζουν το ποσό της Εθνικής Σύνταξης. Είναι προσυμπληρωμένα με 40
+                χρόνια. Αν έχετε περισσότερα, αφήστε το όπως είναι.
+              </p>
+            </div>
+
+            <div className="fg-source-title fg-field-title">Ημέρες ανά έτος</div>
+            <div className="fg-copy">
+              <p>Το ανώτατο όριο που αναγνωρίζει ο ΕΦΚΑ είναι 300 ημέρες τον χρόνο.</p>
             </div>
           </div>
         </section>
+
+        <section className="fg-section">
+          <div className="fg-eyebrow">3. ΤΟ ΑΠΟΤΕΛΕΣΜΑ</div>
+          <h2>Τι περιλαμβάνει το ποσό που θα δείτε</h2>
+
+          <div className="fg-copy">
+            <p>
+              Οι ασφαλιστικές κρατήσεις έχουν ήδη αφαιρεθεί. Ο φόρος εισοδήματος όχι:
+              παρακρατείται αργότερα, κατά την πληρωμή της σύνταξης.
+            </p>
+            <p>
+              Αν απέχετε έως δύο χρόνια από το όριο συνταξιοδότησής σας, μπορείτε να
+              δείτε πώς μεταβάλλεται το ποσό αν μείνετε στη δουλειά ένα ή δύο χρόνια
+              ακόμη. Συμπληρώνετε για τα επόμενα έτη τις αποδοχές και τα ένσημα που
+              εκτιμάτε ότι θα υπάρχουν. Επειδή τα έτη αυτά είναι υποθετικά, το
+              αποτέλεσμα μπορεί να βγει ελαφρώς χαμηλότερο από το πραγματικό.
+            </p>
+          </div>
+
+          <div className="fg-highlight">
+            Το αποτέλεσμα είναι εκτίμηση. Δεν αποτελεί επίσημη πράξη και δεν
+            υποκαθιστά την απόφαση του e-ΕΦΚΑ.
+          </div>
+        </section>
+
+        <section className="fg-cta">
+          <div className="fg-eyebrow fg-eyebrow-light">ΕΠΟΜΕΝΟ ΒΗΜΑ</div>
+          <h2>Ξεκινήστε</h2>
+          <p>
+            Η εκτίμηση είναι δωρεάν και δεν χρειάζεται εγγραφή. Αν θέλετε να δείτε τι
+            λείπει από το ιστορικό σας, αυτό το κάνει η αναλυτική έκθεση.
+          </p>
+
+          <div className="fg-cta-actions">
+            <Link to="/calculator" className="fg-button fg-button-primary">
+              Δωρεάν Υπολογισμός
+            </Link>
+            <Link to="/report-guide" className="fg-button fg-button-outline">
+              Αναλυτικό Report
+            </Link>
+          </div>
+        </section>
+
       </div>
     </main>
   );
