@@ -4,6 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "test:average-salary": "node --test src/services/averageSalary.test.js",
+    "test:free-insurance": "node --test src/pages/pension-form/utils/freeInsuranceValidation.test.js",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

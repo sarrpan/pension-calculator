@@ -1,5 +1,6 @@
 
 import React from "react";
+import { Link } from "react-router-dom";
 
 import { InputWithLabel, RadioOption } from "../components/FormControls";
 import { fieldsetStyle } from "../utils/calculatorStyles";
@@ -22,6 +23,7 @@ const NON_SALARIED_MODE_LABELS = {
 };
 
 function ContributoryPensionInputSection({
+  calculatorEdition = "professional",
   currentFormStep,
   contributoryEarningsInputMethod,
   averageMonthlyPensionableEarningsInput,
@@ -78,6 +80,29 @@ function ContributoryPensionInputSection({
   const hasCompletedContributoryInput =
     hasSelectedEarningsMethod &&
     hasValidAverageMonthlyAmount;
+
+  if (calculatorEdition === "free") {
+    return (
+      <fieldset id="averageMonthlyPensionableEarningsField" style={fieldsetStyle}>
+        <legend>Μέσος μηνιαίος συντάξιμος μισθός</legend>
+        <label htmlFor="averageMonthlyPensionableEarnings">Ποσό μέσου μηνιαίου συντάξιμου μισθού (€)</label>
+        <div>
+          <input id="averageMonthlyPensionableEarnings" type="text" inputMode="decimal"
+            value={averageMonthlyPensionableEarningsInput}
+            onChange={(event) => onAverageMonthlyPensionableEarningsChange(event.target.value)}
+            placeholder="π.χ. 1450,75"
+            aria-invalid={Boolean(validationAttempted && averageMonthlyIssue)}
+            aria-describedby={validationAttempted && averageMonthlyIssue ? 'free-average-salary-error' : undefined}
+            style={{ marginTop: '0.5rem', padding: '0.65rem', width: '220px', maxWidth: '100%', fontSize: '16px' }}
+          />
+        </div>
+        {validationAttempted && averageMonthlyIssue && (
+          <p id="free-average-salary-error" role="alert" style={{ color: '#b42318' }}>{averageMonthlyIssue.message}</p>
+        )}
+        <p>Δεν γνωρίζετε τον μέσο συντάξιμο μισθό σας; <Link to="/average-salary">Υπολογίστε τον εδώ →</Link></p>
+      </fieldset>
+    );
+  }
 
   if (currentFormStep === "contributory_yearly") {
     return (

@@ -1,3 +1,5 @@
+import { getFreeInsurancePeriodsError } from "./freeInsuranceValidation.js";
+
 const PENSION_INPUT_DOCUMENT_TYPE = "geodora-pension-input";
 const PENSION_INPUT_SCHEMA_VERSION = "1.0";
 const PENSION_INPUT_SOURCE_APPLICATION = "geodora-pension-forms";
@@ -8,6 +10,15 @@ function createPensionInputPackage({
   createdAt = new Date(),
 }) {
   assertCalculationInput(calculationInput);
+  if (calculatorEdition === "free") {
+    const periodError = getFreeInsurancePeriodsError(calculationInput.insurancePeriodsDraft);
+    if (periodError) throw new Error(periodError);
+    if (calculationInput.contributoryPensionData?.earningsInputMethod !== "average_monthly" ||
+        calculationInput.contributoryPensionData?.yearsData?.length ||
+        calculationInput.yearsData?.length) {
+      throw new Error("Η δωρεάν εκτίμηση σύνταξης δέχεται μόνο έτοιμο μέσο μηνιαίο συντάξιμο μισθό.");
+    }
+  }
 
   const createdAtDate =
     createdAt instanceof Date ? createdAt : new Date(createdAt);

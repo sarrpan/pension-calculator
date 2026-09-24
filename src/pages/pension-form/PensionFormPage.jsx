@@ -43,7 +43,7 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
   const savedDraft = useMemo(() => loadSavedDraft(), []);
 
   const [currentFormStep, setCurrentFormStep] = useState(() =>
-    shouldOpenMainStep(location.search)
+    calculatorEdition === "free" || shouldOpenMainStep(location.search)
       ? "main"
       : getInitialFormStep(savedDraft),
   );
@@ -170,8 +170,10 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
     normalizeAuxiliaryContributionDraft(savedDraft.auxiliaryContributionDraft),
   );
 
-  const [contributoryEarningsInputMethod, setContributoryEarningsInputMethod] =
+  const [savedEarningsInputMethod, setContributoryEarningsInputMethod] =
     useState(savedDraft.contributoryEarningsInputMethod || "");
+  const contributoryEarningsInputMethod = calculatorEdition === "free"
+    ? "average_monthly" : savedEarningsInputMethod;
   const [
     averageMonthlyPensionableEarningsInput,
     setAverageMonthlyPensionableEarningsInput,
@@ -198,6 +200,23 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
   const [mainValidationAttempted, setMainValidationAttempted] =
     useState(false);
+
+  useEffect(() => {
+    const amount = location.state?.averageMonthlyPensionableEarnings;
+    if (calculatorEdition !== "free" || !Number.isFinite(amount) || amount <= 0) return;
+    setAverageMonthlyPensionableEarningsInput(String(amount).replace('.', ','));
+    setCurrentFormStep("main");
+    setBackendResponse(null);
+    setBackendError("");
+    setCalculationResponse(null);
+    setPensionInputExportError("");
+    // Consume the Router handoff once so refresh/back cannot overwrite an edit.
+    const remainingState = { ...location.state };
+    delete remainingState.averageMonthlyPensionableEarnings;
+    navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, {
+      replace: true, state: Object.keys(remainingState).length ? remainingState : null,
+    });
+  }, [calculatorEdition, location.key, location.state, location.pathname, location.search, location.hash, navigate]);
 
   const derivedInsuredTypeInput =
     getInsuredTypeFromFirstInsuranceYear(
@@ -452,7 +471,7 @@ useEffect(() => {
 
   const contributoryFieldIssues = useMemo(() => {
     return getContributoryFieldIssues({
-      requiresExplicitMethod: !hasContributionBasedPeriodInput({
+      requiresExplicitMethod: calculatorEdition === "free" || !hasContributionBasedPeriodInput({
         insurancePeriodsInputMode,
         simpleFundInput,
         insurancePeriodGroups,
@@ -914,6 +933,7 @@ useEffect(() => {
     }
 
     if (
+      calculatorEdition !== "free" &&
       analysis.requiresContributoryYearlyStep &&
       currentFormStep !== "contributory_yearly"
     ) {
@@ -1312,6 +1332,7 @@ useEffect(() => {
 
         {currentFormStep !== "parallel_insurance" && (
           <ContributoryPensionInputSection
+          calculatorEdition={calculatorEdition}
           currentFormStep={currentFormStep}
           contributoryEarningsInputMethod={contributoryEarningsInputMethod}
           averageMonthlyPensionableEarningsInput={

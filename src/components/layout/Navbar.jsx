@@ -124,7 +124,7 @@ const Navbar = () => {
             </Link>
 
             <Link to={DIADROMES.ypologismos} className="nv-cta">
-              Δωρεάν Υπολογισμός
+              Δωρεάν Εκτίμηση
             </Link>
           </div>
 

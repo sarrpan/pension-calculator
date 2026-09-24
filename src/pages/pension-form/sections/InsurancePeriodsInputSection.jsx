@@ -597,6 +597,7 @@ function FreeInsurancePeriodsFlow({
               hideFundSelection
               hideInsuredTypeSelection
               hideSingleEmploymentCategory
+              hideYearlyEarningsInput
               useEmploymentCategoryRadios
               canRemove={false}
               onGroupChange={(field, value) =>
@@ -892,13 +893,6 @@ function getFreePeriodCompletionIssue({
   }
 
   if (
-    isContributionBasedFund(group.fund) &&
-    !group.nonSalariedEarningsInputMode
-  ) {
-    return 'Επιλέξτε αν γνωρίζετε το ετήσιο εισόδημα ή τις ετήσιες εισφορές κύριας σύνταξης.';
-  }
-
-  if (
     isTsayFund(group.fund) &&
     !['yes', 'no'].includes(group.tsaySinglePensionerStatus)
   ) {
@@ -1005,6 +999,7 @@ function InsurancePeriodGroupFields({
   hideFundSelection = false,
   hideInsuredTypeSelection = false,
   hideSingleEmploymentCategory = false,
+  hideYearlyEarningsInput = false,
   useEmploymentCategoryRadios = false,
   canRemove,
   onGroupChange,
@@ -1155,7 +1150,7 @@ function InsurancePeriodGroupFields({
           />
         )}
 
-        {isCurrentContributionBasedFund && (
+        {isCurrentContributionBasedFund && !hideYearlyEarningsInput && (
           <SelectWithLabel
             id={`multiPeriod${groupNumber}NonSalariedEarningsInputMode`}
             label="Τι στοιχεία γνωρίζετε για κάθε έτος;"

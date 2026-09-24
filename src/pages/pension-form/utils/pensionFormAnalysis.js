@@ -1,6 +1,7 @@
 
 
 
+import { getFreeInsurancePeriodsError } from "./freeInsuranceValidation.js";
 import {
   PARALLEL_CONTRIBUTION_INPUT_MODE_BASE_AND_UNITS,
   PARALLEL_CONTRIBUTION_INPUT_MODE_TOTAL_AMOUNT,
@@ -394,6 +395,7 @@ function analyzePensionForm({
     insuranceExtraDaysInput,
   });
   const insurancePeriodsAnalysis = analyzeInsurancePeriodsDraft({
+    requiresYearlyEarnings: calculatorEdition !== "free",
     insurancePeriodsInputMode,
     globalInsuredType:
       firstInsuranceYearAnalysis.insuredType,
@@ -444,14 +446,16 @@ function analyzePensionForm({
       insurancePeriodsAnalysis.insurancePeriodsDraft,
     );
 
-  // Η Free έκδοση δεν επεξεργάζεται πραγματική παράλληλη ασφάλιση.
-  // Η ημερολογιακή επικάλυψη δεν αρκεί για να χαρακτηριστεί ο χρόνος
-  // ως παράλληλος, επομένως δεν ενεργοποιείται η σχετική ροή.
+  const freeInsurancePeriodsError = calculatorEdition === "free"
+    ? getFreeInsurancePeriodsError(insurancePeriodsAnalysis.insurancePeriodsDraft)
+    : null;
+  // Free rejects date overlaps before preparing a calculation request.
   const parallelInsuranceSegments = [];
   const ignoreDateOverlapsForContributory =
-    detectedParallelInsuranceSegments.length > 0;
+    calculatorEdition !== "free" && detectedParallelInsuranceSegments.length > 0;
 
   const contributoryAnalysis = analyzeContributoryPensionInputs({
+    calculatorEdition,
     currentFormStep,
     contributoryEarningsInputMethod,
     averageMonthlyPensionableEarningsInput,
@@ -512,6 +516,7 @@ function analyzePensionForm({
   });
 
   const errors = [
+    freeInsurancePeriodsError,
     dateAnalysis.error,
     birthDateAnalysis.error,
     firstInsuranceYearAnalysis.error,
@@ -612,7 +617,9 @@ function analyzePensionForm({
     insurancePeriodsDraft: insurancePeriodsAnalysis.insurancePeriodsDraft.map(
       createBackendSafeInsurancePeriodDraft,
     ),
-    parallelInsuranceDraft: parallelInsuranceAnalysis.parallelInsuranceDraft,
+    ...(calculatorEdition !== "free" && {
+      parallelInsuranceDraft: parallelInsuranceAnalysis.parallelInsuranceDraft,
+    }),
     article30SpecialRegimeData:
       article30SpecialRegimeAnalysis.article30SpecialRegimeData,
     plasticYearsDraft: plasticYearsAnalysis.plasticYearsDraft,
@@ -2807,6 +2814,7 @@ function getArticle30PremiumTypeLabel(premiumType) {
 }
 
 function analyzeInsurancePeriodsDraft({
+  requiresYearlyEarnings = true,
   insurancePeriodsInputMode,
   globalInsuredType,
   simpleFundInput,
@@ -2917,6 +2925,7 @@ function analyzeInsurancePeriodsDraft({
 
     for (let index = 0; index < groups.length; index += 1) {
       const periodResult = analyzeMultiInsurancePeriodDraft({
+        requiresYearlyEarnings,
         mode,
         groupNumber: index + 1,
         periodId: groups[index].id || `period_${index + 1}`,
@@ -3063,6 +3072,7 @@ function analyzeInsurancePeriodsDraft({
   }
 
   const periodResult = buildValidatedInsurancePeriodDraft({
+    requiresYearlyEarnings,
     mode,
     id: "period_1",
     fundInput: simpleFundInput,
@@ -3192,6 +3202,7 @@ function hasAnyInsurancePeriodGroupValue(group = {}) {
 }
 
 function analyzeMultiInsurancePeriodDraft({
+  requiresYearlyEarnings = true,
   mode,
   groupNumber,
   periodId,
@@ -3307,6 +3318,7 @@ function analyzeMultiInsurancePeriodDraft({
   }
 
   const periodResult = buildValidatedInsurancePeriodDraft({
+    requiresYearlyEarnings,
     mode,
     id: periodId,
     fundInput,
@@ -3374,6 +3386,7 @@ function buildInsuranceTimeAnalysisFromDays({
 }
 
 function buildValidatedInsurancePeriodDraft({
+  requiresYearlyEarnings = true,
   mode,
   id,
   fundInput,
@@ -3465,10 +3478,10 @@ function buildValidatedInsurancePeriodDraft({
     );
   }
 
-  const nonSalariedInputModeResult = analyzeNonSalariedEarningsInputMode({
+  const nonSalariedInputModeResult = requiresYearlyEarnings ? analyzeNonSalariedEarningsInputMode({
     fund,
     value: nonSalariedEarningsInputMode,
-  });
+  }) : { error: null, inputMode: null, inputModeLabel: null };
 
   if (nonSalariedInputModeResult.error) {
     return createInsurancePeriodDraftError(
@@ -4789,6 +4802,7 @@ function analyzeResidenceYears(value) {
 }
 
 function analyzeContributoryPensionInputs({
+  calculatorEdition = "professional",
   currentFormStep,
   contributoryEarningsInputMethod,
   averageMonthlyPensionableEarningsInput,
@@ -4798,6 +4812,12 @@ function analyzeContributoryPensionInputs({
   parallelInsuranceDraft,
   ignoreDateOverlaps = false,
 }) {
+  if (calculatorEdition === "free") {
+    return analyzeAverageMonthlyPensionableEarnings({
+      averageMonthlyPensionableEarningsInput,
+      method: "average_monthly",
+    });
+  }
   const hasContributionBasedPeriod = insurancePeriodsDraft.some((period) => {
     return CONTRIBUTION_BASED_FUNDS.includes(period?.fund);
   });
