@@ -84,11 +84,6 @@ const uploadFiles = async (pin, files, user, uploaded, onProgress) => {
   }
 };
 
-export const elegxosYparxousasAitisis = async (email) => {
-  const result = await klisiSynartisis({ energeia: "elegxos_email", email: kanoniko(email) });
-  return Boolean(result.success && result.yparxei);
-};
-
 export const katastasiAitisis = async (pin, email) => {
   const result = await klisiSynartisis({ pin: plirisKodikos(pin), email: kanoniko(email) }, DIEFTHYNSI_KATASTASIS);
   if (!result.success) return { success: false };
@@ -98,6 +93,7 @@ export const katastasiAitisis = async (pin, email) => {
     aitisi: result.vrethike ? {
       pin: result.pin, email: result.email, status: result.status,
       finalReportUrl: result.finalReportUrl || null,
+      reportAvailabilityExpired: result.reportAvailabilityExpired === true,
     } : null,
   };
 };

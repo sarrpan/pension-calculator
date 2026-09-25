@@ -4,7 +4,6 @@ import './PremiumUploadPage.css';
 import {
   anevasmaAitisis,
   prosthikiSeAitisi,
-  elegxosYparxousasAitisis,
   validateUploadFiles,
 } from '../services/stripe/premiumService';
 
@@ -165,14 +164,6 @@ const PremiumUploadPage = () => {
      τίποτα. */
   const [kodikosAitisis, setKodikosAitisis] = useState('');
 
-  /* Εμφανίζεται μόνο αν βρεθεί άλλη αίτηση με το ίδιο email, και
-     μόνο τη στιγμή της υποβολής. */
-  const [diploEmail, setDiploEmail] = useState(false);
-
-  /* Ο χρήστης δήλωσε ότι πρόκειται για άλλο άτομο. Τότε δεν
-     ξαναρωτάμε. */
-  const [alloAtomo, setAlloAtomo] = useState(false);
-
   /* Δείχνει αν η τελευταία αποστολή ήταν συμπλήρωση υπάρχουσας
      αίτησης — αλλάζει την οθόνη επιτυχίας. */
   const [itanSymplirosi, setItanSymplirosi] = useState(false);
@@ -205,12 +196,6 @@ const PremiumUploadPage = () => {
       successRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [generatedPin]);
-
-  /* Αν αλλάξει το email, οι προηγούμενες απαντήσεις δεν ισχύουν πια. */
-  useEffect(() => {
-    setDiploEmail(false);
-    setAlloAtomo(false);
-  }, [email]);
 
   /* ── Διαχείριση αρχείων ── */
   const prosthikiArxeion = (epilegmena) => {
@@ -270,11 +255,9 @@ const PremiumUploadPage = () => {
   /* ══════════════════════════════════════════════
      ΥΠΟΒΟΛΗ
 
-     Τρεις δρόμοι:
+     Δύο δρόμοι:
      α) Ο χρήστης έδωσε κωδικό  -> τα αρχεία μπαίνουν στην ίδια αίτηση.
-     β) Δεν έδωσε, αλλά υπάρχει άλλη αίτηση με το ίδιο email
-        -> σταματάμε και ρωτάμε μία φορά.
-     γ) Σε κάθε άλλη περίπτωση -> νέα αίτηση, όπως πάντα.
+     β) Χωρίς κωδικό -> νέα αίτηση.
      ══════════════════════════════════════════════ */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -333,21 +316,7 @@ const PremiumUploadPage = () => {
       return;
     }
 
-    /* ── (β) Υπάρχει ήδη αίτηση με αυτό το email; ──
-       Ρωτάμε μία φορά. Αν ο χρήστης πει ότι είναι για άλλο άτομο,
-       δεν ξαναρωτάμε. Αν η υπηρεσία δεν απαντήσει, προχωράμε
-       κανονικά: ο έλεγχος είναι βοήθεια, όχι φραγμός. */
-    if (!alloAtomo) {
-      const yparxei = await elegxosYparxousasAitisis(email.trim());
-
-      if (yparxei) {
-        setDiploEmail(true);
-        setIsSubmitting(false);
-        return;
-      }
-    }
-
-    /* ── (γ) Νέα αίτηση ── */
+    /* ── (β) Νέα αίτηση ── */
     setProodos({ trexon: 1, synolo: files.length });
 
     const apotelesma = await anevasmaAitisis(
@@ -737,36 +706,6 @@ const PremiumUploadPage = () => {
               </span>
             </label>
 
-            {/* ── Υπάρχει ήδη αίτηση με αυτό το email ──
-                Δεν μπλοκάρει. Δίνει δύο δρόμους, με απλά λόγια. */}
-            {diploEmail && (
-              <div className="pu-notice pu-notice--warn" role="alert">
-                <IconAlert className="pu-icon" />
-                <div>
-                  <p className="pu-notice-title">Φαίνεται ότι μας έχετε ξαναστείλει έγγραφα</p>
-                  <p>
-                    Αν στέλνετε τώρα κάτι που σας ζητήσαμε, γράψτε τον κωδικό της
-                    αίτησής σας στο πρώτο πεδίο της φόρμας. Έτσι τα νέα αρχεία θα
-                    μπουν στον ίδιο φάκελο.
-                  </p>
-                  <p>
-                    Αν κάνετε αίτηση για άλλο άτομο, πατήστε το κουμπί και
-                    συνεχίστε κανονικά.
-                  </p>
-                  <button
-                    type="button"
-                    className="pu-notice-btn"
-                    onClick={() => {
-                      setAlloAtomo(true);
-                      setDiploEmail(false);
-                    }}
-                  >
-                    Είναι για άλλο άτομο — συνέχεια
-                  </button>
-                </div>
-              </div>
-            )}
-
             {error && (
               <div className="pu-notice pu-notice--error" role="alert">
                 <IconAlert className="pu-icon" />
@@ -818,14 +757,12 @@ const PremiumUploadPage = () => {
             <ul>
               <li>
                 <IconLock className="pu-icon-sm" />
-                Τα έγγραφα και η έκθεση φυλάσσονται για έναν χρόνο σε υπολογιστή χωρίς
-                σύνδεση στο διαδίκτυο, ώστε να μπορούμε να απαντήσουμε αν προκύψουν
-                απορίες όταν βγει η απόφαση του ΕΦΚΑ.
+                Τα έγγραφα αποθηκεύονται σε προστατευμένο χώρο με περιορισμένη πρόσβαση
+                και χρησιμοποιούνται μόνο για την παροχή της υπηρεσίας.
               </li>
               <li>
                 <IconTrash className="pu-icon-sm" />
-                Διαγραφή νωρίτερα με απλό αίτημα. Έγγραφα που δεν χρειάζονται για τον
-                εκτίμηση διαγράφονται αμέσως.
+                Διαγραφή νωρίτερα με απλό αίτημα.
               </li>
               <li>
                 <IconClock className="pu-icon-sm" />

@@ -19,7 +19,7 @@ function serviceHarness(responses=[]) {
     fetch:async(url,options)=>{calls.push({url,...options,body:JSON.parse(options.body)});const result=responses.shift(); if(result instanceof Error)throw result;
       return {ok:result?.ok!==false,status:result?.status||200,json:async()=>result?.data||{success:true}};},
   };
-  vm.runInNewContext(source+'\nthis.api={validateUploadFiles,anevasmaAitisis,prosthikiSeAitisi};',scope);
+  vm.runInNewContext(source+'\nthis.api={validateUploadFiles,anevasmaAitisis,prosthikiSeAitisi,katastasiAitisis};',scope);
   return {...scope.api,uploads,deletes,calls};
 }
 
@@ -41,6 +41,7 @@ test('new upload sends real bytes, owner metadata and authenticated server creat
   const h=serviceHarness([{data:{success:true,plithosArxeion:1}}]);
   const result=await h.anevasmaAitisis({email:'V@EXAMPLE.COM'},[fixture]);
   assert.equal(result.success,true);assert.equal(h.uploads.length,1);
+  assert.equal(h.calls.length,1);
   assert.equal(h.uploads[0][1],fixture);assert.equal(h.uploads[0][2].customMetadata.ownerUid,'owner');
   assert.equal(h.calls[0].headers.Authorization,'Bearer auth-token');assert.equal(h.calls[0].body.energeia,'nea_aitisi');
   assert.equal(h.calls[0].body.email,'v@example.com');assert.equal(h.calls[0].body.arxeia.length,1);
@@ -72,6 +73,43 @@ function component(relative,imports={},env={}){
   };
 }
 
+test('tracking service forwards report expiry without changing delivered status',async()=>{
+  for(const expired of [true,false]){
+    const h=serviceHarness([{data:{success:true,vrethike:true,pin:'PIN-123456',email:'v@example.com',status:'delivered',
+      reportAvailabilityExpired:expired,...(!expired?{finalReportUrl:'https://example.com/report.pdf'}:{})}}]);
+    const result=await h.katastasiAitisis('123456','V@EXAMPLE.COM');
+    assert.equal(result.aitisi.status,'delivered'); assert.equal(result.aitisi.reportAvailabilityExpired,expired);
+    assert.equal(result.aitisi.finalReportUrl,expired?null:'https://example.com/report.pdf');
+    assert.deepEqual(h.calls[0].body,{pin:'PIN-123456',email:'v@example.com'});
+  }
+});
+
+test('upload submits directly without PIN and preserves PIN + email supplementation; privacy wording is accurate',async()=>{
+  for(const supplementary of [false,true]){
+    const calls=[];
+    const h=component('src/pages/PremiumUploadPage.jsx',{
+      '../services/stripe/premiumService':{
+        validateUploadFiles:()=>'',
+        anevasmaAitisis:async(...args)=>{calls.push({type:'new',args});return {success:true,pin:'PIN-123456'};},
+        prosthikiSeAitisi:async(...args)=>{calls.push({type:'supplement',args});return {success:true,pin:'PIN-123456'};},
+      },
+    });
+    h.render();
+    assert.match(h.text(),/Τα έγγραφα αποθηκεύονται σε προστατευμένο χώρο με περιορισμένη πρόσβαση/);
+    assert.match(h.text(),/Διαγραφή νωρίτερα με απλό αίτημα/);
+    assert.doesNotMatch(h.text(),/υπολογιστή χωρίς σύνδεση στο διαδίκτυο|διαγράφονται αμέσως|για τον εκτίμηση|Φαίνεται ότι μας έχετε ξαναστείλει/);
+    h.one(n=>n.props.id==='pu-email').props.onChange({target:{value:'visitor@example.com'}});
+    if(supplementary)h.one(n=>n.props.id==='pu-kodikos').props.onChange({target:{value:'123456'}});
+    h.one(n=>n.props.type==='file').props.onChange({target:{files:[fixture],value:'sample.pdf'}});
+    h.one(n=>n.props.type==='checkbox').props.onChange({target:{checked:true}}); h.render();
+    await h.one(n=>n.type==='form').props.onSubmit({preventDefault(){}}); h.render();
+    assert.equal(calls.length,1); assert.equal(calls[0].type,supplementary?'supplement':'new');
+    if(supplementary)assert.deepEqual(clone(calls[0].args.slice(0,3)),['123456','visitor@example.com',[fixture]]);
+    else assert.deepEqual(clone(calls[0].args.slice(0,2)),[{email:'visitor@example.com',tilefono:''},[fixture]]);
+    assert.match(h.text(),/PIN-123456/);
+  }
+});
+
 test('contact sends email + message only; success requires a successful server response',async()=>{
   for(const ok of [true,false]){
     let resolve,body;
@@ -89,11 +127,11 @@ test('contact sends email + message only; success requires a successful server r
 });
 
 test('recovery validates six digits, preserves statuses, only offers payment when awaiting_payment and exposes correct delivery links',async()=>{
-  for(const status of ['documents_received','needs_more_info','awaiting_payment','processing','delivered','delivered-no-url']){
+  for(const status of ['documents_received','needs_more_info','awaiting_payment','processing','delivered','delivered-no-url','delivered-expired']){
     let calls=0;
     const h=component('src/pages/ReportRecoveryPage.jsx',{
       '../services/stripe/stripeService':{__esModule:true,default:null},
-      '../services/stripe/premiumService':{katastasiAitisis:async()=>{calls++;return {success:true,vrethike:true,aitisi:{pin:'PIN-123456',email:'v@example.com',status:status.replace('-no-url',''),finalReportUrl:status==='delivered'?'https://example.com/report.pdf':null}};}},
+      '../services/stripe/premiumService':{katastasiAitisis:async()=>{calls++;return {success:true,vrethike:true,aitisi:{pin:'PIN-123456',email:'v@example.com',status:status.startsWith('delivered')?'delivered':status,finalReportUrl:status==='delivered'?'https://example.com/report.pdf':null,reportAvailabilityExpired:status==='delivered-expired'}};}},
       '@stripe/react-stripe-js':{Elements:'Elements'},
     });
     h.render();h.one(n=>n.props.id==='pin').props.onChange({target:{value:'a12'}});h.render();
@@ -106,6 +144,12 @@ test('recovery validates six digits, preserves statuses, only offers payment whe
     if(status==='needs_more_info')assert.ok(h.nodes(n=>n.props.to==='/premium-upload').length);
     if(status==='delivered')assert.equal(h.one(n=>n.props.className==='download-btn').props.href,'https://example.com/report.pdf');
     if(status==='delivered-no-url')assert.match(h.text(),/Ελέγξτε το email σας/);
+    if(status==='delivered-expired'){
+      assert.equal(h.nodes(n=>n.props.className==='download-btn').length,0);
+      assert.match(h.text(),/Η online διαθεσιμότητα της έκθεσης έχει λήξει/);
+      assert.match(h.text(),/Αν χρειάζεστε ξανά την έκθεση/);
+      assert.ok(h.nodes(n=>n.props.to==='/contact').length);
+    }
   }
 });
 

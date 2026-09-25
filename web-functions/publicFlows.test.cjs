@@ -11,7 +11,7 @@ const file = (index, size = 1 * mb) => ({path:`premium_uploads/${pin}/${index}.p
 const base = (extra = {}) => ({pin, email, status:'documents_received', createdAt:1234, paymentStatus:'not_requested', files:[], uploadLimitsVersion:1, ...extra});
 
 function setup(initial = base(), overrides = {}) {
-  let request = clone(initial), creations = 0, mailCount = 0, lastMail;
+  let request = clone(initial), creations = 0, mailCount = 0, lastMail, reads = 0;
   let beforeTransaction;
   const objects = new Map();
   const intents = new Map();
@@ -19,7 +19,7 @@ function setup(initial = base(), overrides = {}) {
   const snapshot = value => ({val:()=>clone(value), exists:()=>value != null});
   const reference = {
     child:()=>reference, orderByChild:()=>reference, equalTo:()=>reference,
-    once:async()=>snapshot(request),
+    once:async()=>{reads++; return snapshot(request);},
     update:async patch=>{request={...request,...clone(patch)};},
     transaction:async callback=>{
       // Model the initial null callback produced by an uncached Admin SDK ref.
@@ -59,11 +59,12 @@ function setup(initial = base(), overrides = {}) {
   };
   const context={exports:{}, require:name=>{if(!(name in dependencies))throw Error(name); return dependencies[name];},
     process:{env:{STRIPE_SECRET_KEY:'fixture',EMAIL_USER:'configured@example.com',EMAIL_PASS:'fixture',PUBLIC_SITE_URL:'https://example.com',...overrides.env}},
-    console:{error(){}}, URL};
+    console:{error(){}}, URL, Date:class extends Date {static now(){return overrides.now ?? Date.now();}}};
   vm.runInNewContext(source,context,{filename:'index.js'});
   return {
     get request(){return request;}, set request(value){request=clone(value);},
     get creations(){return creations;}, get mailCount(){return mailCount;}, get lastMail(){return lastMail;},
+    get reads(){return reads;},
     objects,intents,
     race(action){beforeTransaction=action;},
     object(value,owner='owner'){objects.set(value.path,{size:String(value.size),contentType:value.type,metadata:{ownerUid:owner}}); return value;},
@@ -141,15 +142,83 @@ test('legacy byte counts are verified before preflight; later statuses cannot be
   }
 });
 
-test('status lookup uses one not-found response; delivered URL only for delivered requests',async()=>{
+test('removed email-only lookup is rejected identically without reading requests, with or without authentication',async()=>{
+  for(const request of [base(),null])for(const token of [null,'owner']){
+    const app=setup(request);
+    const result=await app.call('symplirosiAitisis',{energeia:'elegxos_email',email},'POST',token);
+    const unknown=await app.call('symplirosiAitisis',{energeia:'elegxos_email',email:'unknown@example.com'},'POST',token);
+    assert.deepEqual(result,unknown);
+    assert.equal(result.status,400); assert.equal(result.success,false); assert.equal(result.code,'invalid_action');
+    assert.equal(result.yparxei,undefined); assert.equal(app.reads,0);
+    assert.deepEqual(app.request,request);
+  }
+});
+
+test('supplement preflight still requires the same email with the PIN',async()=>{
+  const app=setup();
+  const match=await app.call('symplirosiAitisis',{energeia:'elegxos_kodikou',pin,email:email.toUpperCase()});
+  assert.equal(match.tairiazei,true); assert.equal(match.canUpload,true);
+  const mismatch=await app.call('symplirosiAitisis',{energeia:'elegxos_kodikou',pin,email:'wrong@example.com'});
+  assert.equal(mismatch.tairiazei,false); assert.equal(mismatch.canUpload,undefined);
+  const document=app.object(file(1));
+  const upload=await app.call('symplirosiAitisis',{energeia:'prosthiki_arxeion',pin,email:'wrong@example.com',arxeia:[document]});
+  assert.equal(upload.code,'not_found'); assert.equal(app.request.files.length,0);
+});
+
+test('status lookup uses one not-found response for a wrong email or missing request',async()=>{
   const app=setup(base({finalReportUrl:'https://example.com/report.pdf'}));
   const mismatch=await app.call('getRequestStatus',{pin,email:'wrong@example.com'});
   app.request=null;
   assert.deepEqual(await app.call('getRequestStatus',{pin,email}),mismatch);
-  app.request=base({status:'processing',finalReportUrl:'https://example.com/report.pdf'});
+});
+
+const reportUrl='https://example.com/report.pdf';
+const lookupTime=Date.parse('2026-09-25T12:00:00Z');
+test('delivered within two months returns the report URL',async()=>{
+  const app=setup(base({status:'delivered',deliveredAt:Date.parse('2026-08-25T12:00:00Z'),finalReportUrl:reportUrl}),{now:lookupTime});
+  const result=await app.call('getRequestStatus',{pin,email});
+  assert.equal(result.status,'delivered'); assert.equal(result.finalReportUrl,reportUrl);
+  assert.equal(result.reportAvailabilityExpired,false);
+});
+
+test('delivered after two months omits the URL, reports expiry and remains delivered',async()=>{
+  const app=setup(base({status:'delivered',deliveredAt:Date.parse('2026-07-24T12:00:00Z'),finalReportUrl:reportUrl}),{now:lookupTime});
+  const original=clone(app.request);
+  const result=await app.call('getRequestStatus',{pin,email});
+  assert.equal(result.status,'delivered'); assert.equal(result.finalReportUrl,undefined);
+  assert.equal(result.reportAvailabilityExpired,true); assert.deepEqual(app.request,original);
+});
+
+test('non-delivered requests never return a report URL even with a recent delivery timestamp',async()=>{
+  for(const status of ['documents_received','needs_more_info','awaiting_payment','processing']){
+    const app=setup(base({status,deliveredAt:lookupTime-1000,finalReportUrl:reportUrl}),{now:lookupTime});
+    const result=await app.call('getRequestStatus',{pin,email});
+    assert.equal(result.status,status); assert.equal(result.finalReportUrl,undefined);
+    assert.equal(result.reportAvailabilityExpired,undefined);
+  }
+});
+
+test('missing, invalid or future deliveredAt and missing URL do not expose a report',async()=>{
+  for(const deliveredAt of [undefined,null,'invalid',String(lookupTime-1000),0,-1,1.5,Number.MAX_SAFE_INTEGER,lookupTime+1]){
+    const app=setup(base({status:'delivered',deliveredAt,finalReportUrl:reportUrl}),{now:lookupTime});
+    const result=await app.call('getRequestStatus',{pin,email});
+    assert.equal(result.finalReportUrl,undefined); assert.equal(result.reportAvailabilityExpired,undefined);
+  }
+  const app=setup(base({status:'delivered',deliveredAt:lookupTime-1000}),{now:lookupTime});
   assert.equal((await app.call('getRequestStatus',{pin,email})).finalReportUrl,undefined);
-  app.request={...app.request,status:'delivered'};
-  assert.equal((await app.call('getRequestStatus',{pin,email})).finalReportUrl,'https://example.com/report.pdf');
+});
+
+test('report access ends exactly at two calendar months, including month ends and leap years',async()=>{
+  for(const [delivery,expiry] of [
+    ['2026-07-25T12:34:56.789Z','2026-09-25T12:34:56.789Z'],
+    ['2025-12-31T12:34:56.789Z','2026-02-28T12:34:56.789Z'],
+    ['2023-12-31T12:34:56.789Z','2024-02-29T12:34:56.789Z'],
+  ])for(const offset of [-1,0,1]){
+    const app=setup(base({status:'delivered',deliveredAt:Date.parse(delivery),finalReportUrl:reportUrl}),{now:Date.parse(expiry)+offset});
+    const result=await app.call('getRequestStatus',{pin,email});
+    assert.equal(result.finalReportUrl,offset<0?reportUrl:undefined,`${delivery}: ${offset}`);
+    assert.equal(result.reportAvailabilityExpired,offset>=0);
+  }
 });
 
 test('payment creation requires matching identity, awaiting_payment and unpaid state',async()=>{

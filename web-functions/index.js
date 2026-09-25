@@ -728,14 +728,13 @@ exports.symplirosiAitisis = onRequest(ORIA, (req, res) => {
   return cors(req, res, async () => {
     if (req.method !== "POST") return fail(res, 405, "method");
     const { energeia, email, pin, arxeia, phone } = req.body || {};
+    if (!["nea_aitisi", "elegxos_kodikou", "prosthiki_arxeion"].includes(energeia)) {
+      return fail(res, 400, "invalid_action");
+    }
     const emailKanoniko = kanoniko(email);
     if (!validEmail(emailKanoniko)) return fail(res, 400, "invalid_email");
     try {
       const vasi = admin.database().ref("premium_requests");
-      if (energeia === "elegxos_email") {
-        const result = await vasi.orderByChild("email").equalTo(emailKanoniko).once("value");
-        return res.status(200).json({ success: true, yparxei: result.exists() });
-      }
       const user = await uploadUser(req);
       const kodikos = plirisKodikos(pin);
       if (!/^PIN-\d{6}$/.test(kodikos)) return fail(res, 400, "not_found");
@@ -766,7 +765,6 @@ exports.symplirosiAitisis = onRequest(ORIA, (req, res) => {
         return res.status(200).json({ success: true, tairiazei: true,
           canUpload: uploadAllowed(request), ...fileTotals(previousFiles) });
       }
-      if (energeia !== "prosthiki_arxeion") return fail(res, 400, "invalid_action");
       const files = await verifiedFiles(kodikos, arxeia, user.uid);
       const verifiedPrevious = new Map(previousFiles.map((file) => [file.path, file]));
       let rejection = "upload_stage";
@@ -893,13 +891,22 @@ exports.getRequestStatus = onRequest(ORIA, (req, res) => {
         status: aitisi.status || KATASTASEIS.PARALIFTHIKAN,
       };
 
-      /* Ο σύνδεσμος της έκθεσης δίνεται μόνο όταν η έκθεση έχει
-         πράγματι παραδοθεί. */
-      if (
-        apantisi.status === KATASTASEIS.PARADOTHIKE &&
-        aitisi.finalReportUrl
-      ) {
-        apantisi.finalReportUrl = aitisi.finalReportUrl;
+      /* Δύο ημερολογιακοί μήνες από την παράδοση, σε UTC.
+         Αν λείπει η αντίστοιχη ημέρα, λήγει την τελευταία ημέρα του μήνα. */
+      const now = Date.now();
+      const deliveredAt = aitisi.deliveredAt;
+      if (apantisi.status === KATASTASEIS.PARADOTHIKE
+        && Number.isSafeInteger(deliveredAt) && deliveredAt > 0 && deliveredAt <= now) {
+        const expiresAt = new Date(deliveredAt);
+        const day = expiresAt.getUTCDate();
+        expiresAt.setUTCDate(1);
+        expiresAt.setUTCMonth(expiresAt.getUTCMonth() + 2);
+        const lastDay = new Date(Date.UTC(expiresAt.getUTCFullYear(), expiresAt.getUTCMonth() + 1, 0)).getUTCDate();
+        expiresAt.setUTCDate(Math.min(day, lastDay));
+        apantisi.reportAvailabilityExpired = now >= expiresAt.getTime();
+        if (!apantisi.reportAvailabilityExpired && aitisi.finalReportUrl) {
+          apantisi.finalReportUrl = aitisi.finalReportUrl;
+        }
       }
 
       return res.status(200).json(apantisi);

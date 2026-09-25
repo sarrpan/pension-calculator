@@ -444,8 +444,17 @@ const ReportRecoveryPage = () => {
 
             {oloklirothike && !reportData.finalReportUrl && (
               <p className="status-note">
-                Η έκθεση έχει ολοκληρωθεί αλλά δεν είναι διαθέσιμη για λήψη από αυτή τη σελίδα.
-                Ελέγξτε το email σας ή <Link to="/contact">επικοινωνήστε μαζί μας</Link>.
+                {reportData.reportAvailabilityExpired ? (
+                  <>
+                    Η online διαθεσιμότητα της έκθεσης έχει λήξει, καθώς έχουν περάσει δύο μήνες από την παράδοση.
+                    Αν χρειάζεστε ξανά την έκθεση, <Link to="/contact">επικοινωνήστε μαζί μας</Link>.
+                  </>
+                ) : (
+                  <>
+                    Η έκθεση έχει ολοκληρωθεί αλλά δεν είναι διαθέσιμη για λήψη από αυτή τη σελίδα.
+                    Ελέγξτε το email σας ή <Link to="/contact">επικοινωνήστε μαζί μας</Link>.
+                  </>
+                )}
               </p>
             )}
           </div>
