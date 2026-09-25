@@ -256,10 +256,53 @@ const AdminDashboard = () => {
      ήταν ορατός σε όποιον δει τον πηγαίο κώδικα της σελίδας. */
   const [kodikosSynartisis, setKodikosSynartisis] = useState('');
 
-  /* Γίνεται true μόλις ολοκληρωθεί η πρώτη επιτυχημένη ενέργεια.
-     Δεν υπάρχει τρόπος να ελεγχθεί ο κωδικός ενώ πληκτρολογείται —
-     μόνο η πρώτη αποστολή αποδεικνύει ότι είναι σωστός. */
+  /* Επιβεβαιώνεται στον server, με το κουμπί ή με επιτυχημένη ενέργεια. */
   const [kodikosOk, setKodikosOk] = useState(false);
+  const [elegxeiKodiko, setElegxeiKodiko] = useState(false);
+  const [minimaKodikou, setMinimaKodikou] = useState('');
+  const ekdosiKodikou = useRef(0);
+
+  const epivevaiosiKodikou = async () => {
+    if (elegxeiKodiko || !kodikosSynartisis) return;
+
+    const ekdosi = ekdosiKodikou.current;
+    const adynamia = 'Η επιβεβαίωση δεν ολοκληρώθηκε. Δοκιμάστε ξανά.';
+    setKodikosOk(false);
+    setMinimaKodikou('');
+    if (!DIEFTHYNSI_ALLAGIS) {
+      setMinimaKodikou(adynamia);
+      return;
+    }
+
+    setElegxeiKodiko(true);
+    try {
+      const apantisi = await fetch(DIEFTHYNSI_ALLAGIS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-kodikos': kodikosSynartisis,
+        },
+        body: JSON.stringify({ energeia: 'epivevaiosi_kodikou' }),
+      });
+      const dedomena = await apantisi.json().catch(() => ({}));
+      // Απάντηση για προηγούμενη τιμή δεν επιβεβαιώνει τον νέο κωδικό.
+      if (ekdosi !== ekdosiKodikou.current) return;
+
+      if (apantisi.ok && dedomena?.success === true) {
+        setKodikosOk(true);
+      } else {
+        setKodikosOk(false);
+        setMinimaKodikou(apantisi.status === 403 ? 'Λάθος κωδικός' : adynamia);
+      }
+    } catch {
+      if (ekdosi === ekdosiKodikou.current) {
+        setKodikosOk(false);
+        setMinimaKodikou(adynamia);
+      }
+    } finally {
+      setElegxeiKodiko(false);
+    }
+  };
 
   /* Οι επιλογές σου ανά αίτηση, μέχρι να πατήσεις αποθήκευση.
      Παλιότερα γράφονταν πάνω στο ίδιο το αντικείμενο της αίτησης
@@ -388,6 +431,7 @@ const AdminDashboard = () => {
       return;
     }
 
+    const ekdosi = ekdosiKodikou.current;
     setStelnei(pin);
     setApotelesmata((p) => ({ ...p, [pin]: null }));
 
@@ -410,7 +454,7 @@ const AdminDashboard = () => {
 
       if (!apantisi.ok || dedomena.success === false) {
         // Λάθος κωδικός: η ένδειξη πάνω στη σελίδα ξαναγίνεται «δεν επιβεβαιώθηκε».
-        if (apantisi.status === 401 || apantisi.status === 403) {
+        if (ekdosi === ekdosiKodikou.current && (apantisi.status === 401 || apantisi.status === 403)) {
           setKodikosOk(false);
         }
         setApotelesmata((p) => ({
@@ -425,7 +469,10 @@ const AdminDashboard = () => {
       }
 
       // Η ενέργεια πέρασε, άρα ο κωδικός είναι σωστός.
-      setKodikosOk(true);
+      if (ekdosi === ekdosiKodikou.current) {
+        setKodikosOk(true);
+        setMinimaKodikou('');
+      }
 
       const minima = dedomena.emailStalthike
         ? `Η κατάσταση άλλαξε και το email στάλθηκε στο ${dedomena.paraliptis}.`
@@ -523,19 +570,31 @@ const AdminDashboard = () => {
           type="password"
           value={kodikosSynartisis}
           onChange={(e) => {
+            ekdosiKodikou.current += 1;
             setKodikosSynartisis(e.target.value);
             setKodikosOk(false);
+            setMinimaKodikou('');
           }}
           placeholder="ADMIN_EMAIL_KODIKOS"
           autoComplete="off"
         />
+        <button
+          type="button"
+          className="save-btn ad-kodikos-epivevaiosi"
+          disabled={elegxeiKodiko || !kodikosSynartisis}
+          onClick={epivevaiosiKodikou}
+        >
+          {elegxeiKodiko ? 'Έλεγχος…' : 'Επιβεβαίωση'}
+        </button>
 
         {kodikosOk ? (
-          <span className="ad-kodikos-ok">
+          <span className="ad-kodikos-ok" role="status">
             <IconOk width={14} height={14} /> Ο κωδικός επιβεβαιώθηκε
           </span>
         ) : (
-          <span className="ad-kodikos-akyros">Δεν έχει επιβεβαιωθεί ακόμα</span>
+          <span className="ad-kodikos-akyros" role="status">
+            {minimaKodikou || 'Δεν έχει επιβεβαιωθεί ακόμα'}
+          </span>
         )}
 
         <span className="ad-kodikos-note">

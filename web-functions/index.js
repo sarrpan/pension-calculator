@@ -514,6 +514,11 @@ exports.allagiKatastasis = onRequest(ORIA, (req, res) => {
       });
     }
 
+    // Επιβεβαίωση μόνο του header, χωρίς PIN, πρόσβαση σε αίτηση ή email.
+    if (req.body?.energeia === "epivevaiosi_kodikou") {
+      return res.status(200).json({ success: true });
+    }
+
     const { pin, katastasi, keimeno, reportUrl } = req.body || {};
 
     // --- Έλεγχοι των στοιχείων που ήρθαν ---

@@ -205,6 +205,11 @@
   flex: 1 1 240px;
 }
 
+.ad-kodikos-epivevaiosi:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* --- Στοιχεία επικοινωνίας --- */
 .ad-tilefono {
   font-size: 12px;
