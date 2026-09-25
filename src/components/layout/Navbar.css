@@ -221,6 +221,25 @@
    ΜΙΚΡΕΣ ΟΘΟΝΕΣ
    ============================================================ */
 
+/* Πιο μικρά κενά πριν ενεργοποιηθεί το πτυσσόμενο μενού. */
+@media (min-width: 1181px) and (max-width: 1439px) {
+  .nv-container {
+    gap: 12px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .nv-right,
+  .nv-links,
+  .nv-secondary {
+    gap: 6px;
+  }
+
+  .nv-secondary {
+    padding-left: 8px;
+  }
+}
+
 @media (max-width: 1180px) {
 
   .navbar {
@@ -288,6 +307,7 @@
     padding-left: 0;
     padding-top: 20px;
     border-left: none;
+    border-top: 1px solid #e2e8f0;
   }
 
   .nv-track {

@@ -5,9 +5,9 @@
    Χρώματα: από το index.css, με εφεδρική τιμή.
    --primary: #0f172a  --accent: #ea580c
 
-   Διάταξη: μία στήλη. Το πλαίσιο σταματά να μεγαλώνει στα 720px,
-   ώστε το κείμενο να το γεμίζει σε κάθε οθόνη. Ό,τι περισσεύει
-   δεξιά και αριστερά είναι γκρι φόντο, όχι κενό μέσα σε πλαίσιο.
+   Διάταξη: sidebar 232px δίπλα σε περιεχόμενο έως 720px, με κενό 32px.
+   Σε tablet και κινητό η πλοήγηση γίνεται πτυσσόμενη και το περιεχόμενο
+   παραμένει μονής στήλης, χωρίς να πλαταίνουν τα υπάρχοντα πλαίσια.
 
    Σημασία χρωμάτων:
      κρεμ    = προσοχή / προετοιμασία
@@ -26,8 +26,114 @@
 }
 
 .rg-container {
-  max-width: 720px;
+  display: grid;
+  grid-template-columns: 232px minmax(0, 720px);
+  align-items: start;
+  gap: 32px;
+  max-width: 984px;
   margin: 0 auto;
+}
+
+.rg-content {
+  min-width: 0;
+  max-width: 720px;
+}
+
+/* ---------- Εσωτερική πλοήγηση ---------- */
+
+.rg-page section[id] {
+  scroll-margin-top: 108px;
+}
+
+.rg-sidebar {
+  position: sticky;
+  top: 104px;
+  max-height: calc(100dvh - 128px);
+  overflow-y: auto;
+  padding: 8px 6px;
+  scrollbar-width: thin;
+}
+
+.rg-sidebar-heading {
+  padding: 0 12px 24px;
+}
+
+.rg-sidebar-heading p {
+  color: var(--primary, #0f172a);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.rg-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rg-nav-list li + li {
+  margin-top: 4px;
+}
+
+.rg-nav-list a {
+  display: block;
+  padding: 11px 12px;
+  border-left: 3px solid transparent;
+  border-radius: 0 8px 8px 0;
+  color: #4a5568;
+  text-decoration: none;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.rg-nav-list a:hover {
+  background: #fffaf3;
+  color: var(--primary, #0f172a);
+}
+
+.rg-nav-list a[aria-current="location"] {
+  border-left-color: var(--accent, #ea580c);
+  background: #ffffff;
+  color: var(--primary, #0f172a);
+  font-weight: 700;
+}
+
+.rg-quick-access {
+  margin-top: 24px;
+  padding: 20px 12px 0;
+  border-top: 1px solid #e3e8ef;
+}
+
+.rg-page .rg-quick-access h2 {
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+}
+
+.rg-quick-access a {
+  display: block;
+  min-height: 44px;
+  padding: 8px 0;
+  color: #c2410c;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-decoration: none;
+}
+
+.rg-quick-access a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rg-nav-list a:focus-visible,
+.rg-quick-access a:focus-visible,
+.rg-mobile-nav summary:focus-visible,
+.rg-page section[tabindex]:focus-visible {
+  outline: 3px solid var(--accent, #ea580c);
+  outline-offset: 4px;
+}
+
+.rg-mobile-nav {
+  display: none;
 }
 
 /* ---------- Τυπογραφία ---------- */
@@ -442,6 +548,91 @@
 /* ============================================================
    Responsive
    ============================================================ */
+
+@media (max-width: 1180px) {
+  .rg-sidebar {
+    top: 86px;
+    max-height: calc(100dvh - 110px);
+  }
+
+  .rg-page section[id] {
+    scroll-margin-top: 90px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .rg-container {
+    display: block;
+    max-width: 720px;
+  }
+
+  .rg-sidebar {
+    display: none;
+  }
+
+  .rg-mobile-nav {
+    display: block;
+    margin-bottom: 20px;
+    border: 1px solid #e3e8ef;
+    border-radius: 12px;
+    background: #ffffff;
+  }
+
+  .rg-mobile-nav summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 52px;
+    padding: 14px 20px;
+    color: var(--primary, #0f172a);
+    font-size: 0.94rem;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .rg-mobile-nav summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .rg-mobile-nav summary::after {
+    content: '';
+    flex: 0 0 8px;
+    height: 8px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+  }
+
+  .rg-mobile-nav[open] summary {
+    border-bottom: 1px solid #e3e8ef;
+  }
+
+  .rg-mobile-nav[open] summary::after {
+    transform: rotate(225deg);
+  }
+
+  .rg-mobile-nav nav {
+    padding: 12px;
+  }
+
+  .rg-mobile-nav .rg-nav-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .rg-mobile-nav .rg-nav-list li {
+    margin: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .rg-mobile-nav .rg-nav-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
 @media (max-width: 768px) {
   .rg-page {
