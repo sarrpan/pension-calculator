@@ -63,22 +63,18 @@ const Footer = () => {
             <li><Link to="/free-guide">Δωρεάν Εκτίμηση</Link></li>
             {/* Ο προορισμός είναι η σελίδα παρουσίασης, όχι η φόρμα. */}
             <li><Link to="/report-guide">Αναλυτικό Report</Link></li>
-            <li><Link to="/premium-upload">Αποστολή Ιστορικού</Link></li>
-            <li><Link to="/report-recovery">Παρακολούθηση Αίτησης</Link></li>
+            <li><Link to="/premium-upload">Αποστολή ιστορικού</Link></li>
+            <li><Link to="/report-recovery">Παρακολούθηση αίτησης</Link></li>
           </ul>
         </nav>
 
-        {/* ---------- Στήλη 3: πληροφορίες ---------- */}
-        <nav className="ft-links" aria-label="Πληροφορίες">
-          <h5 className="ft-title">Πληροφορίες</h5>
+        {/* ---------- Στήλη 3: χρήσιμα ---------- */}
+        <nav className="ft-links" aria-label="Χρήσιμα">
+          <h5 className="ft-title">Χρήσιμα</h5>
           <ul>
-            <li><Link to="/pdf-guide">Λήψη PDF από τον e-ΕΦΚΑ</Link></li>
+            <li><Link to="/average-salary">Υπολογισμός μέσου συντάξιμου μισθού</Link></li>
+            <li><Link to="/pdf-guide">Οδηγός λήψης PDF από τον e-ΕΦΚΑ</Link></li>
             <li><Link to="/contact">Επικοινωνία</Link></li>
-            {/* Οι δύο σελίδες δεν υπάρχουν ακόμη. Μόλις δημιουργηθούν,
-                αφαιρώ τα σχόλια:
-            <li><Link to="/how-it-works">Πώς υπολογίζουμε</Link></li>
-            <li><Link to="/faq">Συχνές Ερωτήσεις</Link></li>
-            */}
           </ul>
         </nav>
 

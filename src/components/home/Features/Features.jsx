@@ -17,7 +17,7 @@ const Features = () => {
   return (
     <section className="features-section">
       <div className="container">
-        <h2 className="section-title">Τι περιλαμβάνει το αναλυτικό report</h2>
+        <h2 className="section-title">Τι περιλαμβάνει το Αναλυτικό Report</h2>
 
         {/* ROW 1: ΤΙ ΧΡΕΙΑΖΟΜΑΣΤΕ */}
         <div className="feature-row">
@@ -60,12 +60,12 @@ const Features = () => {
           <div className="feature-text">
             <span className="step-label">ΤΙ ΥΠΟΛΟΓΙΖΟΥΜΕ</span>
             <h3>Τα μεγέθη που διαμορφώνουν τη σύνταξη</h3>
-            <p>Αναλύουμε τα δεδομένα σας και δείχνουμε από τι αποτελείται το ποσό.</p>
+            <p>Αναλύουμε τα δεδομένα σας και δείχνουμε από τι αποτελείται το εκτιμώμενο ποσό.</p>
             <ul className="feature-bullets">
               <li>Εθνική και ανταποδοτική σύνταξη</li>
               <li>Επικουρική σύνταξη, αν υπάρχει</li>
               <li>Ασφαλιστικές κρατήσεις</li>
-              <li>Τελικό καθαρό ποσό</li>
+              <li>Εκτιμώμενο καθαρό ποσό</li>
             </ul>
           </div>
           <div className="feature-visual">
@@ -88,7 +88,7 @@ const Features = () => {
                 <span>− 53,00 €</span>
               </div>
               <div className="stat-total">
-                <span>ΤΕΛΙΚΟ ΠΟΣΟ</span>
+                <span>ΕΚΤΙΜΩΜΕΝΟ ΚΑΘΑΡΟ ΠΟΣΟ</span>
                 <span>830,67 €</span>
               </div>
             </div>
@@ -99,13 +99,12 @@ const Features = () => {
         <div className="feature-row">
           <div className="feature-text">
             <span className="step-label">ΤΙ ΣΕΝΑΡΙΑ ΕΞΕΤΑΖΟΥΜΕ</span>
-            <h3>Πόσο κοστίζει να βγείτε νωρίτερα</h3>
+            <h3>Πώς αλλάζει η εκτίμηση σε διαφορετικά σενάρια εξόδου</h3>
             <p>
-              Δεν αρκεί να ξέρετε πότε μπορείτε να βγείτε. Χρειάζεται να δείτε τη διαφορά στο ποσό
-              για κάθε ηλικία εξόδου.
+              Η εκτίμηση μπορεί να συγκρίνει διαφορετικά σενάρια συνταξιοδότησης και τη διαφορά στο ποσό για κάθε ηλικία εξόδου.
             </p>
             <ul className="feature-bullets">
-              <li>Πρώτο δυνατό σημείο εξόδου</li>
+              <li>Εκτίμηση πρώτου δυνατού σημείου εξόδου</li>
               <li>Μειωμένη έναντι πλήρους σύνταξης</li>
               <li>Τι κερδίζετε αν μείνετε περισσότερο</li>
             </ul>
@@ -130,11 +129,11 @@ const Features = () => {
         <div className="feature-row feature-row-last">
           <div className="feature-text">
             <span className="step-label">Η ΑΞΙΑ ΤΗΣ ΥΠΗΡΕΣΙΑΣ</span>
-            <h3>Ξεκάθαρο αποτέλεσμα, με 20 €</h3>
+            <h3>Ξεκάθαρη εκτίμηση, με 20 €</h3>
             <p>Η ανάγνωση του ασφαλιστικού ιστορικού θέλει εξειδίκευση. Την αναλαμβάνουμε εμείς.</p>
             <ul className="feature-bullets">
               <li>Γλιτώνετε χρόνο και ταλαιπωρία</li>
-              <li>Αποφεύγετε λάθη που κοστίζουν</li>
+              <li>Έχετε οργανωμένη επεξεργασία των στοιχείων σας</li>
               <li>Λαμβάνετε αρχείο PDF στο email σας</li>
             </ul>
           </div>
@@ -144,7 +143,7 @@ const Features = () => {
               <p className="mk-caption">Απόσπασμα της έκθεσης</p>
               <p className="mk-report-title">Έκθεση εκτίμησης σύνταξης</p>
               <div className="mk-report-row">
-                <span>Θεμελίωση δικαιώματος</span>
+                <span>Εκτίμηση θεμελίωσης δικαιώματος</span>
                 <strong>Μάρτιος 2029</strong>
               </div>
               <div className="mk-report-row">
