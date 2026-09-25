@@ -1,455 +1,179 @@
 import { ref as storageRef, uploadBytes, deleteObject } from "firebase/storage";
-import { ref as dbRef, set } from "firebase/database";
-import { storage, db } from "../../firebase";
+import { storage } from "../../firebase";
+import { initAuth } from "../../authInit";
 
-/* ══════════════════════════════════════════════════════════════
-   Η ΣΕΙΡΑ ΤΩΝ ΒΗΜΑΤΩΝ
-
-   1. anevasmaAitisis()   -> ανεβαίνουν τα αρχεία και δημιουργείται η αίτηση
-   2. (εκτός εφαρμογής)      ελέγχουμε τον φάκελο· αν λείπει κάτι, επικοινωνούμε
-   3. prosthikiSeAitisi() -> ο πελάτης στέλνει τα συμπληρωματικά έγγραφα
-   4. katagrafiPliromis() -> η αίτηση ενημερώνεται όταν γίνει η πληρωμή
-
-   ΠΡΟΣΟΧΗ: το βήμα 4 ΔΕΝ καλείται από εδώ. Η πληρωμή δεν ζητείται
-   πλέον τη στιγμή της αποστολής, αλλά αφού ελεγχθεί ο φάκελος.
-   ══════════════════════════════════════════════════════════════ */
-
-/* ══════════════════════════════════════════════════════════════
-   Η ΔΙΕΥΘΥΝΣΗ ΤΗΣ ΣΥΝΑΡΤΗΣΗΣ
-
-   Μπαίνει στο .env.local ως VITE_SYMPLIROSI_AITISIS_URL και στις
-   Environment Variables του Vercel. Παίρνεται από το αποτέλεσμα του
-   firebase deploy: είναι η γραμμή που τελειώνει σε symplirosiAitisis.
-   ══════════════════════════════════════════════════════════════ */
 const DIEFTHYNSI_SYMPLIROSIS = import.meta.env.VITE_SYMPLIROSI_AITISIS_URL;
-
-/* Η κατάσταση της αίτησης. Παίρνεται από το αποτέλεσμα του
-   firebase deploy: η γραμμή που τελειώνει σε getRequestStatus. */
 const DIEFTHYNSI_KATASTASIS = import.meta.env.VITE_GET_REQUEST_STATUS_URL;
-
-/* Η επιβεβαίωση της πληρωμής. Η γραμμή που τελειώνει σε
-   epivevaiosiPliromis. */
 const DIEFTHYNSI_EPIVEVAIOSIS = import.meta.env.VITE_EPIVEVAIOSI_PLIROMIS_URL;
 
-/* ══════════════════════════════════════════════════════════════
-   ΟΙ ΠΕΝΤΕ ΚΑΤΑΣΤΑΣΕΙΣ ΤΗΣ ΑΙΤΗΣΗΣ
-
-   Είναι τα πέντε στάδια της σελίδας «Παρακολούθηση Αίτησης».
-   Τα ίδια ακριβώς κείμενα πρέπει να αναγνωρίζονται και από το
-   ReportRecoveryPage.jsx και από το AdminDashboard.
-   ══════════════════════════════════════════════════════════════ */
 export const KATASTASEIS = {
-  PARALIFTHIKAN: "documents_received",   // Τα έγγραφα παραλήφθηκαν
-  ELLIPI: "needs_more_info",             // Χρειάζονται επιπλέον στοιχεία
-  ANAMONI_PLIROMIS: "awaiting_payment",  // Αναμονή πληρωμής
-  SE_EPEXERGASIA: "processing",          // Σε επεξεργασία
-  PARADOTHIKE: "delivered",              // Η έκθεση παραδόθηκε
+  PARALIFTHIKAN: "documents_received",
+  ELLIPI: "needs_more_info",
+  ANAMONI_PLIROMIS: "awaiting_payment",
+  SE_EPEXERGASIA: "processing",
+  PARADOTHIKE: "delivered",
 };
 
-const dimiourgiaKodikou = () => {
-  const arithmos = Math.floor(100000 + Math.random() * 900000);
-  return `PIN-${arithmos}`;
+export const UPLOAD_LIMITS = { files: 10, bytes: 50 * 1024 * 1024 };
+const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MESSAGES = {
+  upload_limits: "Κάθε αίτηση δέχεται έως 10 αρχεία και έως 50 MB συνολικά, μαζί με τα ήδη αποθηκευμένα. Αφαιρέστε, ενώστε ή μειώστε αρχεία, ή επικοινωνήστε μαζί μας.",
+  invalid_files: "Επιλέξτε έγκυρα, μη κενά αρχεία PDF, JPG/JPEG ή PNG.",
+  upload_stage: "Η αίτηση έχει ήδη προχωρήσει σε επόμενο στάδιο. Επικοινωνήστε μαζί μας για επιπλέον έγγραφα.",
+  not_found: "Δεν βρέθηκε αίτηση με αυτά τα στοιχεία. Ελέγξτε τον κωδικό και το email σας.",
+  pin_conflict: "Η αποστολή δεν ολοκληρώθηκε. Δοκιμάστε ξανά για να δημιουργηθεί νέος κωδικός.",
+  unavailable: "Η υπηρεσία δεν είναι διαθέσιμη αυτή τη στιγμή. Δοκιμάστε ξανά σε λίγο ή επικοινωνήστε μαζί μας.",
+  uncertain: "Δεν επιβεβαιώθηκε η καταχώριση. Ελέγξτε την Παρακολούθηση αίτησης με τον κωδικό που ακολουθεί πριν ξαναστείλετε αρχεία, ή επικοινωνήστε μαζί μας.",
 };
-
-/* Ο κωδικός γράφεται πάντα ολόκληρος, όπως αποθηκεύεται στη βάση,
-   ακόμη κι αν ο χρήστης πληκτρολόγησε μόνο τα έξι ψηφία. */
-const plirisKodikos = (pin) =>
-  `PIN-${String(pin || "").replace(/^PIN[-\s]*/i, "").trim()}`;
-
-/* Οι διευθύνσεις email αποθηκεύονται και συγκρίνονται με πεζά. Χωρίς
-   αυτό, το «Onoma@Mail.com» δεν θα ταίριαζε ποτέ με το ίδιο του τον
-   εαυτό γραμμένο αλλιώς. */
 const kanoniko = (email) => String(email || "").trim().toLowerCase();
+const plirisKodikos = (pin) => `PIN-${String(pin || "").replace(/^PIN[-\s]*/i, "").trim()}`;
+const validEmail = (email) => EMAIL_PATTERN.test(email) && email.length <= 254;
+const katharoOnoma = (name) => String(name || "arxeio").replace(/[^\w.\-]+/g, "_").slice(-60);
 
-/* Το όνομα του αρχείου καθαρίζεται πριν αποθηκευτεί: ελληνικά, κενά
-   και σημεία στίξης γίνονται κάτω παύλα. Η κατάληξη διατηρείται. */
-const katharoOnoma = (onoma) => {
-  const asfales = String(onoma || "arxeio")
-    .replace(/[^\w.\-]+/g, "_")
-    .replace(/_+/g, "_");
-  return asfales.length > 60 ? asfales.slice(-60) : asfales;
-};
-
-/* ══════════════════════════════════════════════════════════════
-   ΤΑ ΜΗΝΥΜΑΤΑ ΣΦΑΛΜΑΤΟΣ
-
-   Κάθε μήνυμα λέει τι έγινε και τι μπορεί να κάνει ο χρήστης.
-   Δεν αναφέρεται πουθενά χρέωση: σε αυτό το βήμα δεν ζητούνται
-   χρήματα, οπότε η διαβεβαίωση «δεν χρεωθήκατε» μόνο απορία θα
-   δημιουργούσε.
-   ══════════════════════════════════════════════════════════════ */
-const MINYMATA = {
-  xoros: {
-    kodikos: "xoris_apothikeytiko_xoro",
-    minima:
-      "Η υπηρεσία δεν μπορεί να δεχτεί αρχεία αυτή τη στιγμή. Δοκιμάστε αργότερα ή επικοινωνήστε μαζί μας.",
-  },
-  adeia: {
-    kodikos: "xoris_adeia",
-    minima:
-      "Η αποστολή αρχείων δεν είναι διαθέσιμη αυτή τη στιγμή. Επικοινωνήστε μαζί μας για να σας εξυπηρετήσουμε.",
-  },
-  syndesi: {
-    kodikos: "provlima_syndesis",
-    minima:
-      "Η αποστολή διακόπηκε. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά.",
-  },
-  arxeio: {
-    kodikos: "provlima_arxeiou",
-    minima:
-      "Κάποιο αρχείο δεν στάλθηκε σωστά. Δοκιμάστε ξανά ή αφαιρέστε το και στείλτε το χωριστά.",
-  },
-  vasi: {
-    kodikos: "provlima_katagrafis",
-    minima:
-      "Τα αρχεία στάλθηκαν, αλλά η αίτηση δεν καταχωρήθηκε. Μην τα ξαναστείλετε. Επικοινωνήστε μαζί μας για να την ολοκληρώσουμε.",
-  },
-  kodikos_lathos: {
-    kodikos: "kodikos_den_tairiazei",
-    minima:
-      "Δεν βρέθηκε αίτηση με αυτόν τον κωδικό και αυτό το email. Ελέγξτε τα έξι ψηφία και τη διεύθυνση που είχατε δώσει, ή αφήστε το πεδίο του κωδικού κενό για να ανοίξει νέα αίτηση.",
-  },
-  ypiresia: {
-    kodikos: "ypiresia_mi_diathesimi",
-    minima:
-      "Η υπηρεσία δεν είναι διαθέσιμη αυτή τη στιγμή. Δοκιμάστε ξανά σε λίγο ή επικοινωνήστε μαζί μας.",
-  },
-  agnosto: {
-    kodikos: "agnosto",
-    minima:
-      "Η αποστολή δεν ολοκληρώθηκε. Δοκιμάστε ξανά σε λίγο. Αν το πρόβλημα συνεχίζεται, επικοινωνήστε μαζί μας.",
-  },
-};
-
-/* Μεταφράζει τον κωδικό σφάλματος του Firebase σε ελληνικό μήνυμα. */
-const anagnorisiSfalmatos = (error) => {
-  const kodikos = error?.code || "";
-
-  switch (kodikos) {
-    case "storage/quota-exceeded":
-      return MINYMATA.xoros;
-
-    case "storage/unauthorized":
-    case "storage/unauthenticated":
-    case "storage/project-not-found":
-    case "storage/bucket-not-found":
-      return MINYMATA.adeia;
-
-    case "storage/retry-limit-exceeded":
-    case "storage/canceled":
-      return MINYMATA.syndesi;
-
-    case "storage/invalid-checksum":
-    case "storage/invalid-argument":
-      return MINYMATA.arxeio;
-
-    case "PERMISSION_DENIED":
-    case "permission-denied":
-      return MINYMATA.vasi;
-
-    default:
-      // Σφάλμα δικτύου χωρίς κωδικό (π.χ. κομμένη σύνδεση)
-      if (error instanceof TypeError) return MINYMATA.syndesi;
-      return MINYMATA.agnosto;
+// Used both by the page and by every service upload, including supplementary files.
+export const validateUploadFiles = (files, existing = { fileCount: 0, totalBytes: 0 }) => {
+  const list = Array.from(files || []);
+  if (!list.length || list.some((file) => !file || !ALLOWED_TYPES.includes(file.type)
+    || !Number.isSafeInteger(file.size) || file.size <= 0)) return MESSAGES.invalid_files;
+  if (!Number.isSafeInteger(existing.fileCount) || existing.fileCount < 0
+    || !Number.isSafeInteger(existing.totalBytes) || existing.totalBytes < 0) return MESSAGES.unavailable;
+  if (existing.fileCount + list.length > UPLOAD_LIMITS.files
+    || existing.totalBytes + list.reduce((sum, file) => sum + file.size, 0) > UPLOAD_LIMITS.bytes) {
+    return MESSAGES.upload_limits;
   }
+  return '';
 };
 
-/* Αν σπάσει το ανέβασμα στη μέση, τα ήδη ανεβασμένα αρχεία σβήνονται.
-   Διαφορετικά μένουν ορφανά στο Storage, χωρίς αίτηση που να τα δείχνει. */
-const katharismosMisoanevasmenon = async (diadromes) => {
-  await Promise.all(
-    diadromes.map(async (diadromi) => {
-      try {
-        await deleteObject(storageRef(storage, diadromi));
-      } catch {
-        // Αν δεν σβηστεί, δεν σταματά τίποτα. Το βλέπουμε από τον πίνακα.
-      }
-    })
-  );
-};
-
-/* Μιλάει με τη συνάρτηση symplirosiAitisis. Επιστρέφει πάντα
-   αντικείμενο, ποτέ δεν πετάει σφάλμα προς τα έξω. */
-const klisiSynartisis = async (soma, diefthynsi = DIEFTHYNSI_SYMPLIROSIS) => {
-  if (!diefthynsi) {
-    console.error("Λείπει η διεύθυνση της συνάρτησης στο .env.local.");
-    return { success: false, kodikos: MINYMATA.ypiresia.kodikos };
-  }
-
+const klisiSynartisis = async (body, url = DIEFTHYNSI_SYMPLIROSIS, user = null) => {
+  if (!url) return { success: false, error: MESSAGES.unavailable };
   try {
-    const apantisi = await fetch(diefthynsi, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(soma),
-    });
-
-    const dedomena = await apantisi.json().catch(() => ({}));
-
-    if (!apantisi.ok || dedomena.success === false) {
-      return { success: false, kodikos: MINYMATA.ypiresia.kodikos };
+    const headers = { "Content-Type": "application/json" };
+    if (user) headers.Authorization = `Bearer ${await user.getIdToken()}`;
+    const response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
+    const data = await response.json();
+    if (!response.ok || data.success !== true) {
+      return {
+        success: false,
+        uncertain: response.status >= 500,
+        error: MESSAGES[data.code] || MESSAGES.unavailable,
+      };
     }
-
-    return { success: true, ...dedomena };
-  } catch (error) {
-    console.error("Σφάλμα επικοινωνίας με τη συνάρτηση:", error);
-    return { success: false, kodikos: MINYMATA.syndesi.kodikos };
+    return data;
+  } catch {
+    return { success: false, uncertain: true, error: MESSAGES.unavailable };
   }
 };
 
-/* ══════════════════════════════════════════════════════════════
-   ΕΛΕΓΧΟΣ: υπάρχει ήδη αίτηση με αυτό το email;
+const cleanup = async (files) => {
+  await Promise.all(files.map(async ({ path }) => {
+    try { await deleteObject(storageRef(storage, path)); } catch { /* Best effort, owner only. */ }
+  }));
+};
 
-   Καλείται ΜΟΝΟ τη στιγμή της υποβολής, όχι καθώς πληκτρολογεί ο
-   χρήστης. Έτσι κανείς δεν μπορεί να δοκιμάζει διευθύνσεις γρήγορα
-   για να μάθει ποιος χρησιμοποίησε την υπηρεσία.
+const uploadFiles = async (pin, files, user, uploaded, onProgress) => {
+  for (let index = 0; index < files.length; index++) {
+    const file = files[index];
+    const path = `premium_uploads/${pin}/${crypto.randomUUID()}-${katharoOnoma(file.name)}`;
+    onProgress?.(index + 1, files.length);
+    await uploadBytes(storageRef(storage, path), file, {
+      contentType: file.type,
+      customMetadata: { ownerUid: user.uid },
+    });
+    uploaded.push({ path, name: file.name.slice(0, 255), size: file.size, type: file.type });
+  }
+};
 
-   Αν η υπηρεσία δεν απαντήσει, επιστρέφει false: ο έλεγχος αυτός
-   είναι βοήθεια, όχι φραγμός. Δεν σταματά ποτέ την αποστολή.
-   ══════════════════════════════════════════════════════════════ */
 export const elegxosYparxousasAitisis = async (email) => {
-  const apotelesma = await klisiSynartisis({
-    energeia: "elegxos_email",
-    email: kanoniko(email),
-  });
-
-  return Boolean(apotelesma.success && apotelesma.yparxei);
+  const result = await klisiSynartisis({ energeia: "elegxos_email", email: kanoniko(email) });
+  return Boolean(result.success && result.yparxei);
 };
 
-/* ══════════════════════════════════════════════════════════════
-   Η ΚΑΤΑΣΤΑΣΗ ΜΙΑΣ ΑΙΤΗΣΗΣ
-
-   Καλείται από τη σελίδα Παρακολούθησης. Μέχρι σήμερα η σελίδα
-   διάβαζε τη βάση απευθείας από τον browser του επισκέπτη, κάτι που
-   απαιτούσε ανοιχτή βάση για όλους. Τώρα ρωτάει τη συνάρτηση, που
-   απαντά μόνο με το στάδιο της αίτησης.
-
-   Επιστρέφει πάντα αντικείμενο. Το «vrethike» ξεχωρίζει τα δύο
-   αποτελέσματα: δεν βρέθηκε αίτηση, ή δεν απάντησε η υπηρεσία.
-   ══════════════════════════════════════════════════════════════ */
 export const katastasiAitisis = async (pin, email) => {
-  const apotelesma = await klisiSynartisis(
-    {
-      pin: plirisKodikos(pin),
-      email: kanoniko(email),
-    },
-    DIEFTHYNSI_KATASTASIS
-  );
-
-  if (!apotelesma.success) {
-    return { success: false, kodikos: MINYMATA.ypiresia.kodikos };
-  }
-
+  const result = await klisiSynartisis({ pin: plirisKodikos(pin), email: kanoniko(email) }, DIEFTHYNSI_KATASTASIS);
+  if (!result.success) return { success: false };
   return {
     success: true,
-    vrethike: Boolean(apotelesma.vrethike),
-    aitisi: apotelesma.vrethike
-      ? {
-          pin: apotelesma.pin,
-          email: apotelesma.email,
-          status: apotelesma.status,
-          finalReportUrl: apotelesma.finalReportUrl || null,
-        }
-      : null,
+    vrethike: Boolean(result.vrethike),
+    aitisi: result.vrethike ? {
+      pin: result.pin, email: result.email, status: result.status,
+      finalReportUrl: result.finalReportUrl || null,
+    } : null,
   };
 };
 
-/* ══════════════════════════════════════════════════════════════
-   ΒΗΜΑ 1 — Ανέβασμα των αρχείων και δημιουργία της αίτησης
-
-   stoicheia: { email, tilefono }
-   arxeia:    πίνακας File (1 έως 10)
-   onProodos: προαιρετική συνάρτηση (trexon, synolo) για την ένδειξη
-              προόδου στην οθόνη. Τα αρχεία ανεβαίνουν ένα-ένα, ώστε
-              να ξέρουμε πάντα ποιο απέτυχε.
-   ══════════════════════════════════════════════════════════════ */
 export const anevasmaAitisis = async (stoicheia, arxeia, onProodos) => {
-  const { email, tilefono } = stoicheia || {};
-  const pin = dimiourgiaKodikou();
-  const lista = Array.from(arxeia || []);
-
-  if (!lista.length) {
-    return { success: false, kodikos: "xoris_arxeia", error: MINYMATA.arxeio.minima };
+  const email = kanoniko(stoicheia?.email);
+  const phone = String(stoicheia?.tilefono || '').trim();
+  const files = Array.from(arxeia || []);
+  const error = validateUploadFiles(files);
+  if (error) return { success: false, error };
+  if (!validEmail(email) || phone.length > 40 || !DIEFTHYNSI_SYMPLIROSIS) {
+    return { success: false, error: MESSAGES.unavailable };
   }
-
-  const anevasmena = [];
-
-  // --- Ανέβασμα των αρχείων, ένα-ένα ---
-  for (let i = 0; i < lista.length; i++) {
-    const arxeio = lista[i];
-    const arithmos = String(i + 1).padStart(2, "0");
-    const diadromi = `premium_uploads/${pin}/${arithmos}-${katharoOnoma(arxeio.name)}`;
-
-    if (typeof onProodos === "function") onProodos(i + 1, lista.length);
-
-    try {
-      await uploadBytes(storageRef(storage, diadromi), arxeio);
-      anevasmena.push({
-        path: diadromi,
-        name: arxeio.name,
-        size: arxeio.size,
-        type: arxeio.type,
-      });
-    } catch (error) {
-      console.error(`Σφάλμα στο ανέβασμα του αρχείου ${arxeio.name}:`, error);
-      await katharismosMisoanevasmenon(anevasmena.map((a) => a.path));
-      const { kodikos, minima } = anagnorisiSfalmatos(error);
-      return { success: false, kodikos, error: minima };
-    }
-  }
-
-  // --- Καταχώριση της αίτησης στη βάση ---
+  const uploaded = [];
   try {
-    await set(dbRef(db, `premium_requests/${pin}`), {
-      pin,
-      email: kanoniko(email),
-      phone: tilefono || null,
-      files: anevasmena,
-      fileCount: anevasmena.length,
-      status: KATASTASEIS.PARALIFTHIKAN,
-      createdAt: Date.now(),
-      // Η συναίνεση για την επεξεργασία των εγγράφων, με χρόνο.
-      consentAt: Date.now(),
-      // Συμπληρώνονται αργότερα, όταν γίνει η πληρωμή.
-      paymentIntentId: null,
-      paymentStatus: "not_requested",
-    });
-  } catch (error) {
-    console.error("Σφάλμα στην καταχώριση της αίτησης:", error);
-    await katharismosMisoanevasmenon(anevasmena.map((a) => a.path));
-    const { kodikos, minima } = anagnorisiSfalmatos(error);
-    return { success: false, kodikos, error: minima };
+    const user = await initAuth();
+    const random = crypto.getRandomValues(new Uint32Array(1))[0];
+    const pin = `PIN-${100000 + random % 900000}`;
+    await uploadFiles(pin, files, user, uploaded, onProodos);
+    // Creation is server-owned: no browser writes payment/status fields to the database.
+    const result = await klisiSynartisis({
+      energeia: "nea_aitisi", pin, email, phone, arxeia: uploaded,
+    }, DIEFTHYNSI_SYMPLIROSIS, user);
+    if (!result.success) {
+      // A lost response might follow a successful commit. Do not delete its documents.
+      if (!result.uncertain) await cleanup(uploaded);
+      return { success: false, error: result.uncertain ? `${MESSAGES.uncertain} ${pin}` : result.error };
+    }
+    return { success: true, pin, plithosArxeion: result.plithosArxeion };
+  } catch {
+    await cleanup(uploaded);
+    return { success: false, error: MESSAGES.unavailable };
   }
-
-  return { success: true, pin, plithosArxeion: anevasmena.length };
 };
 
-/* ══════════════════════════════════════════════════════════════
-   ΒΗΜΑ 3 — Συμπληρωματικά έγγραφα σε ΥΠΑΡΧΟΥΣΑ αίτηση
-
-   Ο πελάτης που του ζητήσαμε κάτι επιπλέον γράφει τον κωδικό του
-   στη φόρμα. Τα αρχεία μπαίνουν στον ίδιο φάκελο και ΔΕΝ ανοίγει
-   δεύτερη αίτηση με άλλον κωδικό.
-
-   Η σειρά έχει σημασία:
-   1. Ελέγχουμε ΠΡΩΤΑ αν ταιριάζουν κωδικός και email. Αλλιώς θα
-      ανέβαιναν αρχεία που κανείς δεν θα μπορούσε να χρησιμοποιήσει.
-   2. Ανεβαίνουν τα αρχεία.
-   3. Η συνάρτηση τα προσθέτει στη λίστα της αίτησης.
-
-   Τα ονόματα των νέων αρχείων ξεκινούν με χρονοσήμανση, ώστε να μην
-   πατήσουν πάνω σε παλιότερα με το ίδιο όνομα.
-   ══════════════════════════════════════════════════════════════ */
 export const prosthikiSeAitisi = async (pin, email, arxeia, onProodos) => {
   const kodikos = plirisKodikos(pin);
   const emailKanoniko = kanoniko(email);
-  const lista = Array.from(arxeia || []);
-
-  if (!lista.length) {
-    return { success: false, kodikos: "xoris_arxeia", error: MINYMATA.arxeio.minima };
+  const files = Array.from(arxeia || []);
+  const error = validateUploadFiles(files);
+  if (error) return { success: false, error };
+  if (!/^PIN-\d{6}$/.test(kodikos) || !validEmail(emailKanoniko)) {
+    return { success: false, error: MESSAGES.not_found };
   }
-
-  // --- 1. Ταιριάζουν κωδικός και email; ---
-  const elegxos = await klisiSynartisis({
-    energeia: "elegxos_kodikou",
-    pin: kodikos,
-    email: emailKanoniko,
-  });
-
-  if (!elegxos.success) {
-    return {
-      success: false,
-      kodikos: MINYMATA.ypiresia.kodikos,
-      error: MINYMATA.ypiresia.minima,
-    };
-  }
-
-  if (!elegxos.tairiazei) {
-    return {
-      success: false,
-      kodikos: MINYMATA.kodikos_lathos.kodikos,
-      error: MINYMATA.kodikos_lathos.minima,
-    };
-  }
-
-  // --- 2. Ανέβασμα των αρχείων ---
-  const stigmi = Date.now();
-  const anevasmena = [];
-
-  for (let i = 0; i < lista.length; i++) {
-    const arxeio = lista[i];
-    const arithmos = String(i + 1).padStart(2, "0");
-    const diadromi = `premium_uploads/${kodikos}/${stigmi}-${arithmos}-${katharoOnoma(arxeio.name)}`;
-
-    if (typeof onProodos === "function") onProodos(i + 1, lista.length);
-
-    try {
-      await uploadBytes(storageRef(storage, diadromi), arxeio);
-      anevasmena.push({
-        path: diadromi,
-        name: arxeio.name,
-        size: arxeio.size,
-        type: arxeio.type,
-      });
-    } catch (error) {
-      console.error(`Σφάλμα στο ανέβασμα του αρχείου ${arxeio.name}:`, error);
-      await katharismosMisoanevasmenon(anevasmena.map((a) => a.path));
-      const { kodikos: kod, minima } = anagnorisiSfalmatos(error);
-      return { success: false, kodikos: kod, error: minima };
+  const uploaded = [];
+  try {
+    const user = await initAuth();
+    const existing = await klisiSynartisis({
+      energeia: "elegxos_kodikou", pin: kodikos, email: emailKanoniko,
+    }, DIEFTHYNSI_SYMPLIROSIS, user);
+    if (!existing.success) return { success: false, error: existing.error };
+    if (!existing.tairiazei) return { success: false, error: MESSAGES.not_found };
+    if (!existing.canUpload) return { success: false, error: MESSAGES.upload_stage };
+    const cumulativeError = validateUploadFiles(files, existing);
+    if (cumulativeError) return { success: false, error: cumulativeError };
+    await uploadFiles(kodikos, files, user, uploaded, onProodos);
+    const result = await klisiSynartisis({
+      energeia: "prosthiki_arxeion", pin: kodikos, email: emailKanoniko, arxeia: uploaded,
+    }, DIEFTHYNSI_SYMPLIROSIS, user);
+    if (!result.success) {
+      if (!result.uncertain) await cleanup(uploaded);
+      return { success: false, error: result.uncertain ? `${MESSAGES.uncertain} ${kodikos}` : result.error };
     }
+    return { success: true, pin: kodikos, symplirosi: true, synolikaArxeia: result.plithosArxeion };
+  } catch {
+    await cleanup(uploaded);
+    return { success: false, error: MESSAGES.unavailable };
   }
-
-  // --- 3. Προσθήκη στη λίστα της αίτησης ---
-  const prosthiki = await klisiSynartisis({
-    energeia: "prosthiki_arxeion",
-    pin: kodikos,
-    email: emailKanoniko,
-    arxeia: anevasmena,
-  });
-
-  if (!prosthiki.success || !prosthiki.tairiazei) {
-    await katharismosMisoanevasmenon(anevasmena.map((a) => a.path));
-    return {
-      success: false,
-      kodikos: MINYMATA.vasi.kodikos,
-      error: MINYMATA.vasi.minima,
-    };
-  }
-
-  return {
-    success: true,
-    pin: kodikos,
-    symplirosi: true,
-    plithosArxeion: anevasmena.length,
-    synolikaArxeia: prosthiki.plithosArxeion,
-  };
 };
 
-/* ══════════════════════════════════════════════════════════════
-   ΒΗΜΑ 4 — Σύνδεση της αίτησης με την πληρωμή
-
-   Καλείται από τη σελίδα Παρακολούθησης, όταν ο πελάτης πληρώσει.
-
-   Η ΑΛΛΑΓΗ: μέχρι σήμερα η σελίδα έγραφε μόνη της «πληρώθηκε» στη
-   βάση, χωρίς να ρωτήσει κανέναν. Όποιος ακύρωνε τη χρέωση μπορούσε
-   να εμφανιστεί ως πληρωμένος. Τώρα η σελίδα δεν γράφει τίποτα:
-   στέλνει τον αριθμό της συναλλαγής στη συνάρτηση, εκείνη ρωτάει το
-   Stripe, και η ένδειξη μπαίνει μόνο αν το Stripe το επιβεβαιώσει.
-   ══════════════════════════════════════════════════════════════ */
 export const katagrafiPliromis = async (pin, paymentIntentId, epipleon = {}) => {
-  const apotelesma = await klisiSynartisis(
-    {
-      pin: plirisKodikos(pin),
-      email: kanoniko(epipleon.email),
-      paymentIntentId,
-      ypanaxorisiAt: epipleon.ypanaxorisiAt || null,
-    },
-    DIEFTHYNSI_EPIVEVAIOSIS
-  );
-
-  if (!apotelesma.success || !apotelesma.plirothike) {
-    console.error("Η πληρωμή δεν επιβεβαιώθηκε από τον server.");
-    return { success: false, kodikos: "provlima_katagrafis_pliromis" };
-  }
-
-  return { success: true };
+  const result = await klisiSynartisis({
+    pin: plirisKodikos(pin), email: kanoniko(epipleon.email), paymentIntentId,
+    ypanaxorisiAt: epipleon.ypanaxorisiAt || null,
+  }, DIEFTHYNSI_EPIVEVAIOSIS);
+  return result.success && result.plirothike
+    ? { success: true, status: result.status }
+    : { success: false, kodikos: "provlima_katagrafis_pliromis" };
 };

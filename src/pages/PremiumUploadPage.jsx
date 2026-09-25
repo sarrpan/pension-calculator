@@ -5,9 +5,8 @@ import {
   anevasmaAitisis,
   prosthikiSeAitisi,
   elegxosYparxousasAitisis,
+  validateUploadFiles,
 } from '../services/stripe/premiumService';
-// ΓΡΑΜΜΗ ΔΟΚΙΜΩΝ 1 από 4 — σβήνεται μαζί με το αρχείο dokimastikiApostoli.jsx
-import { DOKIMASTIKI_LEITOURGIA, dokimastikoAnevasma, DokimastikiPliromi } from '../services/stripe/dokimastikiApostoli';
 
 /* ══════════════════════════════════════════════════════════════
    ΡΥΘΜΙΣΕΙΣ
@@ -215,6 +214,7 @@ const PremiumUploadPage = () => {
 
   /* ── Διαχείριση αρχείων ── */
   const prosthikiArxeion = (epilegmena) => {
+    if (isSubmitting) return;
     const nea = Array.from(epilegmena || []);
     if (!nea.length) return;
 
@@ -234,7 +234,7 @@ const PremiumUploadPage = () => {
     }
 
     if (trexonta.length > MEGISTA_ARCHEIA) {
-      setError(`Η φόρμα δέχεται έως ${MEGISTA_ARCHEIA} αρχεία. Αφαιρέστε κάποια ή στείλτε τα υπόλοιπα με νέα αίτηση.`);
+      setError(`Κάθε αίτηση δέχεται έως ${MEGISTA_ARCHEIA} αρχεία συνολικά. Αφαιρέστε ή ενώστε αρχεία, ή επικοινωνήστε μαζί μας.`);
       return;
     }
 
@@ -278,6 +278,7 @@ const PremiumUploadPage = () => {
      ══════════════════════════════════════════════ */
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError('');
 
     if (!emailIsValid) {
@@ -294,6 +295,11 @@ const PremiumUploadPage = () => {
     }
     if (!files.length) {
       setError('Επιλέξτε τουλάχιστον ένα αρχείο.');
+      return;
+    }
+    const fileError = validateUploadFiles(files);
+    if (fileError) {
+      setError(fileError);
       return;
     }
     if (!isConfirmed) {
@@ -344,10 +350,7 @@ const PremiumUploadPage = () => {
     /* ── (γ) Νέα αίτηση ── */
     setProodos({ trexon: 1, synolo: files.length });
 
-    // ΓΡΑΜΜΗ ΔΟΚΙΜΩΝ 2 από 4 — σβήνεται και μένει σκέτο: const apostoli = anevasmaAitisis;
-    const apostoli = DOKIMASTIKI_LEITOURGIA ? dokimastikoAnevasma : anevasmaAitisis;
-
-    const apotelesma = await apostoli(
+    const apotelesma = await anevasmaAitisis(
       { email: email.trim(), tilefono: tilefono.trim() },
       files,
       (trexon, synolo) => setProodos({ trexon, synolo })
@@ -455,8 +458,9 @@ const PremiumUploadPage = () => {
               <div>
                 <p className="pu-notice-title">Σημειώστε τον κωδικό τώρα</p>
                 <p>
-                  Σας τον στέλνουμε και με email. Με αυτόν βλέπετε την πορεία της
-                  αίτησής σας και, αργότερα, παραλαμβάνετε την έκθεση.
+                  Ο κωδικός εμφανίζεται εδώ μετά την επιτυχημένη αποστολή. Με αυτόν
+                  και το email σας βλέπετε την πορεία της αίτησης στη σελίδα
+                  Παρακολούθησης και, αργότερα, παραλαμβάνετε την έκθεση.
                 </p>
               </div>
             </div>
@@ -495,19 +499,6 @@ const PremiumUploadPage = () => {
             </p>
           </section>
 
-          {/* ΓΡΑΜΜΗ ΔΟΚΙΜΩΝ 3 από 4 — σβήνεται ολόκληρο το section από κάτω */}
-          {DOKIMASTIKI_LEITOURGIA && (
-            <section className="pu-card">
-              <h2 className="pu-card-title">Προεπισκόπηση φόρμας πληρωμής</h2>
-              <p className="pu-hint" style={{ marginTop: 0 }}>
-                Δεν εμφανίζεται στους πελάτες. Στην κανονική υπηρεσία η φόρμα αυτή
-                θα βρίσκεται στη σελίδα Παρακολούθησης Αίτησης, όταν ο φάκελος
-                ελεγχθεί. Δοκιμαστική κάρτα: 4242 4242 4242 4242, οποιαδήποτε
-                μελλοντική ημερομηνία, οποιοδήποτε CVC.
-              </p>
-              <DokimastikiPliromi />
-            </section>
-          )}
         </div>
       </div>
     );
@@ -519,27 +510,14 @@ const PremiumUploadPage = () => {
   return (
     <div className="pu-wrapper">
       <div className="pu-inner">
-        {/* ΓΡΑΜΜΗ ΔΟΚΙΜΩΝ 4 από 4 — σβήνεται ολόκληρο το πλαίσιο προειδοποίησης */}
-        {DOKIMASTIKI_LEITOURGIA && (
-          <div className="pu-notice pu-notice--error">
-            <IconAlert className="pu-icon" />
-            <div>
-              <p className="pu-notice-title">Δοκιμαστική λειτουργία</p>
-              <p>
-                Τα αρχεία ΔΕΝ ανεβαίνουν. Η αίτηση καταχωρείται κανονικά στη βάση,
-                με ψεύτικες διαδρομές αρχείων. Ορατό μόνο σε αυτή την οθόνη.
-                Η συμπλήρωση υπάρχουσας αίτησης με κωδικό ανεβάζει κανονικά.
-              </p>
-            </div>
-          </div>
-        )}
 
         <header className="pu-header">
           <p className="pu-eyebrow">ΑΠΟΣΤΟΛΗ ΕΓΓΡΑΦΩΝ</p>
-          <h1 className="pu-title">Στείλτε τα έγγραφά σας</h1>
+          <h1 className="pu-title">Αποστολή εγγράφων</h1>
           <p className="pu-subtitle">
-            Ό,τι δείχνει πού και πόσο εργαστήκατε. Θα δούμε τι υπάρχει και τι
-            λείπει, και θα σας ενημερώσουμε πριν πληρώσετε.
+            Στείλτε το PDF ασφαλιστικού ιστορικού από τον e-ΕΦΚΑ και άλλα σχετικά
+            αποδεικτικά για χρόνο ασφάλισης, εργασία, αποδοχές ή εισφορές.
+            Θα ελέγξουμε τι υπάρχει και τι λείπει, πριν ζητηθεί πληρωμή.
           </p>
         </header>
 
@@ -547,7 +525,7 @@ const PremiumUploadPage = () => {
         <section className="pu-card pu-order">
           <div className="pu-order-head">
             <div>
-              <h2 className="pu-order-title">Αναλυτική έκθεση σύνταξης</h2>
+              <h2 className="pu-order-title">Αναλυτικό Report</h2>
               <p className="pu-order-sub">Πληρωμή αφού ελεγχθεί ο φάκελός σας</p>
             </div>
             <div className="pu-price">
@@ -564,7 +542,8 @@ const PremiumUploadPage = () => {
 
           <p className="pu-order-foot">
             <IconClock className="pu-icon-sm" />
-            Σε αυτό το βήμα δεν ζητούνται στοιχεία κάρτας. Η έκθεση ετοιμάζεται το
+            Σε αυτό το βήμα δεν γίνεται πληρωμή και δεν ζητούνται στοιχεία κάρτας.
+            Η έκθεση παραδίδεται με email και στη σελίδα Παρακολούθησης, το
             αργότερο εντός {XRONOS_PARADOSIS} εργάσιμων ημερών από την πληρωμή.
           </p>
         </section>
@@ -593,6 +572,7 @@ const PremiumUploadPage = () => {
                   inputMode="numeric"
                   autoComplete="off"
                   maxLength={6}
+                  disabled={isSubmitting}
                 />
               </div>
               <p className="pu-field-hint">
@@ -612,6 +592,8 @@ const PremiumUploadPage = () => {
                 placeholder="π.χ. onoma@mail.com"
                 className="pu-input"
                 autoComplete="email"
+                maxLength={254}
+                disabled={isSubmitting}
               />
               <p className="pu-field-hint">
                 {exeiKodiko
@@ -633,6 +615,8 @@ const PremiumUploadPage = () => {
                 className="pu-input"
                 autoComplete="tel"
                 inputMode="tel"
+                maxLength={40}
+                disabled={isSubmitting}
               />
               <p className="pu-field-hint">
                 Μόνο αν προτιμάτε να σας πάρουμε τηλέφωνο όταν χρειάζεται διευκρίνιση.
@@ -643,7 +627,7 @@ const PremiumUploadPage = () => {
             {/* ── Αρχεία ── */}
             <div className="pu-field">
               <span className="pu-label">
-                Τα έγγραφά σας (PDF, JPG ή PNG — έως {MEGISTA_ARCHEIA} αρχεία, συνολικά {MEGISTO_SYNOLO_MB} MB)
+                Τα έγγραφά σας (PDF, JPG/JPEG ή PNG — έως {MEGISTA_ARCHEIA} αρχεία, συνολικά {MEGISTO_SYNOLO_MB} MB ανά αίτηση)
               </span>
 
               {files.length === 0 ? (
@@ -657,6 +641,7 @@ const PremiumUploadPage = () => {
                     type="file"
                     accept={APODEKTA_ACCEPT}
                     multiple
+                    disabled={isSubmitting}
                     onChange={handleFileChange}
                     className="pu-visually-hidden"
                   />
@@ -679,6 +664,7 @@ const PremiumUploadPage = () => {
                         <button
                           type="button"
                           className="pu-file-remove"
+                          disabled={isSubmitting}
                           onClick={() => afairesiArxeiou(index)}
                         >
                           <IconTrash className="pu-icon-sm" />
@@ -697,6 +683,7 @@ const PremiumUploadPage = () => {
                       <button
                         type="button"
                         className="pu-add-more"
+                        disabled={isSubmitting}
                         onClick={() => inputProsthikis.current?.click()}
                       >
                         <IconPlus className="pu-icon-sm" />
@@ -710,6 +697,7 @@ const PremiumUploadPage = () => {
                     type="file"
                     accept={APODEKTA_ACCEPT}
                     multiple
+                    disabled={isSubmitting}
                     onChange={handleFileChange}
                     className="pu-visually-hidden"
                   />
@@ -717,9 +705,9 @@ const PremiumUploadPage = () => {
               )}
 
               <p className="pu-field-hint">
-                Το βιογραφικό του e-ΕΦΚΑ όπως κατέβηκε, και ό,τι άλλο δείχνει χρόνο
-                εργασίας ή αποδοχές. Ο ευκολότερος δρόμος για τα χαρτιά είναι μία
-                σάρωση σε ένα PDF, σε οποιοδήποτε φωτοτυπείο.
+                Γίνεται δεκτό το PDF ασφαλιστικού ιστορικού του e-ΕΦΚΑ, αλλά και
+                άλλα αποδεικτικά χρόνου ασφάλισης, εργασίας, αποδοχών ή εισφορών.
+                Στα όρια περιλαμβάνονται και όσα αρχεία έχουν ήδη σταλεί για την ίδια αίτηση.
               </p>
             </div>
 
@@ -728,6 +716,7 @@ const PremiumUploadPage = () => {
               <input
                 type="checkbox"
                 checked={isConfirmed}
+                disabled={isSubmitting}
                 onChange={(e) => setIsConfirmed(e.target.checked)}
                 className="pu-visually-hidden"
               />
@@ -735,7 +724,7 @@ const PremiumUploadPage = () => {
                 <IconCheck className="pu-checkbox-icon" />
               </span>
               <span className="pu-confirm-text">
-                Συναινώ στην επεξεργασία των εγγράφων που στέλνω, για τον υπολογισμό
+                Συναινώ στην επεξεργασία των εγγράφων που στέλνω, για την εκτίμηση
                 της σύνταξής μου, και έχω διαβάσει την{' '}
                 <Link
                   to={DIADROMES.aporrito}
@@ -836,7 +825,7 @@ const PremiumUploadPage = () => {
               <li>
                 <IconTrash className="pu-icon-sm" />
                 Διαγραφή νωρίτερα με απλό αίτημα. Έγγραφα που δεν χρειάζονται για τον
-                υπολογισμό διαγράφονται αμέσως.
+                εκτίμηση διαγράφονται αμέσως.
               </li>
               <li>
                 <IconClock className="pu-icon-sm" />

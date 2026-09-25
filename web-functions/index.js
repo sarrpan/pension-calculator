@@ -1,4 +1,4 @@
-﻿require("dotenv").config();
+require("dotenv").config();
 
 /* ΝΕΑ ΓΕΝΙΑ. Οι λειτουργίες είναι ήδη ανεβασμένες ως 2ης γενιάς
    (οι διευθύνσεις τους τελειώνουν σε .a.run.app). Δεν γυρίζουν πίσω
@@ -49,10 +49,15 @@ const POSO_SE_LEPTA = 2000;
    ══════════════════════════════════════════════════════════════ */
 
 // Το όνομα που βλέπει ο πελάτης στα εισερχόμενά του.
-const ONOMA_APOSTOLEA = "CalculatorPension";
+const ONOMA_APOSTOLEA = "Sintaximou";
 
 // Η διεύθυνση της σελίδας, χωρίς κάθετο στο τέλος.
-const DIEFTHYNSI_SITE = "https://pension-calculator-six.vercel.app";
+const DIEFTHYNSI_SITE = (() => {
+  try {
+    const url = new URL(process.env.PUBLIC_SITE_URL || "");
+    return url.protocol === "https:" && !url.username && !url.password ? url.origin : "";
+  } catch { return ""; }
+})();
 
 // Οι δύο δεσμεύσεις χρόνου. Όποιος τις διάβασε, τις δικαιούται.
 const IMERES_ELEGXOU = 3;
@@ -225,7 +230,7 @@ const KEIMENA = {
       {
         t: "p",
         keimeno:
-          "Ελέγξαμε τον φάκελό σας. Για να γίνει σωστά ο υπολογισμός χρειαζόμαστε ακόμη τα εξής:",
+          "Ελέγξαμε τον φάκελό σας. Για να γίνει η εκτίμηση σύνταξης χρειαζόμαστε ακόμη τα εξής:",
       },
       { t: "parathesi", keimeno: extra.keimeno },
       { t: "titlos", keimeno: "Πώς μας τα στέλνετε" },
@@ -262,11 +267,11 @@ const KEIMENA = {
       {
         t: "p",
         keimeno:
-          "Ελέγξαμε τα έγγραφά σας. Ο φάκελος είναι πλήρης και ο υπολογισμός μπορεί να γίνει.",
+          "Ελέγξαμε τα έγγραφά σας. Ο φάκελος είναι πλήρης και μπορεί να γίνει η εκτίμηση σύνταξης.",
       },
       {
         t: "p",
-        keimeno: `Μένει η πληρωμή των ${TIMI_KEIMENO}, εφάπαξ.`,
+        keimeno: `Μένει η πληρωμή των ${TIMI_KEIMENO}, εφάπαξ, για το Αναλυτικό Report.`,
       },
       { t: "titlos", keimeno: "Πώς γίνεται" },
       {
@@ -304,7 +309,7 @@ const KEIMENA = {
       },
       {
         t: "p",
-        keimeno: `Χρόνος παράδοσης: έως ${IMERES_PARADOSIS} εργάσιμες ημέρες από την πληρωμή.`,
+        keimeno: `Χρόνος παράδοσης: έως ${IMERES_PARADOSIS} εργάσιμες ημέρες από την πληρωμή, με email και μέσω της σελίδας Παρακολούθησης.`,
       },
       {
         t: "p",
@@ -316,13 +321,13 @@ const KEIMENA = {
 
   /* ── Η έκθεση παραδόθηκε ─────────────────────────────────── */
   [KATASTASEIS.PARADOTHIKE]: (aitisi) => ({
-    thema: `Η έκθεσή σας είναι έτοιμη — ${aitisi.pin}`,
+    thema: `Το Αναλυτικό Report είναι έτοιμο — ${aitisi.pin}`,
     blokia: [
       { t: "p", keimeno: "Καλησπέρα σας," },
       {
         t: "p",
         keimeno:
-          "Η αναλυτική έκθεση για τη σύνταξή σας ολοκληρώθηκε. Θα τη βρείτε συνημμένη σε αυτό το μήνυμα, σε μορφή PDF.",
+          "Το Αναλυτικό Report με την εκτίμηση σύνταξης ολοκληρώθηκε. Θα βρείτε την έκθεση συνημμένη σε αυτό το μήνυμα, σε μορφή PDF.",
       },
       {
         t: "p",
@@ -530,6 +535,11 @@ exports.allagiKatastasis = onRequest(ORIA, (req, res) => {
       });
     }
 
+    if (KATASTASEIS_ME_EMAIL.includes(katastasi) && !DIEFTHYNSI_SITE) {
+      return res.status(503).json({ success: false, katastasiAllaxe: false, emailStalthike: false,
+        error: "Χρειάζεται έγκυρο PUBLIC_SITE_URL πριν από την αποστολή email." });
+    }
+
     try {
       // --- Η αίτηση από τη βάση ---
       const anafora = admin.database().ref(`premium_requests/${pin}`);
@@ -645,197 +655,189 @@ exports.allagiKatastasis = onRequest(ORIA, (req, res) => {
   });
 });
 
-/* ══════════════════════════════════════════════════════════════
-   ΣΥΜΠΛΗΡΩΜΑΤΙΚΑ ΕΓΓΡΑΦΑ ΣΤΗΝ ΙΔΙΑ ΑΙΤΗΣΗ
+const MAX_FILES = 10;
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+const DOCUMENT_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+const validEmail = (value) => typeof value === "string" && value.length <= 254
+  && /^[^\s@<>,;:"\\]+@[^\s@<>,;:"\\]+\.[^\s@<>,;:"\\]+$/.test(value);
+const uploadAllowed = (request) => request && request.paymentStatus !== "paid"
+  && [KATASTASEIS.PARALIFTHIKAN, KATASTASEIS.ELLIPI].includes(request.status);
+const fail = (res, status, code, error = "Η ενέργεια δεν ολοκληρώθηκε. Δοκιμάστε ξανά ή επικοινωνήστε μαζί μας.") =>
+  res.status(status).json({ success: false, code, error });
+const publicError = (code, status = 400) => Object.assign(new Error(code), { publicCode: code, status });
 
-   Τρεις δουλειές, μία διεύθυνση. Η ενέργεια δηλώνεται στο πεδίο
-   «energeia»:
+async function uploadUser(req) {
+  const match = /^Bearer (.+)$/.exec(req.headers.authorization || "");
+  if (!match) throw publicError("unauthorized", 401);
+  try { return await admin.auth().verifyIdToken(match[1]); }
+  catch { throw publicError("unauthorized", 401); }
+}
 
-     elegxos_email      { email }            -> { yparxei: true/false }
-     elegxos_kodikou    { pin, email }       -> { tairiazei: true/false }
-     prosthiki_arxeion  { pin, email, arxeia } -> προσθέτει τα αρχεία
+function fileTotals(files) {
+  if (!Array.isArray(files) || files.some((file) => !file || !Number.isSafeInteger(file.size) || file.size <= 0)) {
+    throw publicError("invalid_files");
+  }
+  return { fileCount: files.length, totalBytes: files.reduce((sum, file) => sum + file.size, 0) };
+}
 
-   ΓΙΑΤΙ ΣΤΟΝ SERVER ΚΑΙ ΟΧΙ ΣΤΗ ΣΕΛΙΔΑ
+function withinUploadLimits(files) {
+  const { fileCount, totalBytes } = fileTotals(files);
+  return fileCount <= MAX_FILES && totalBytes <= MAX_UPLOAD_BYTES;
+}
 
-   Και οι τρεις απαιτούν να διαβάσει ή να αλλάξει κάποιος αίτηση που
-   δεν είναι δική του. Μόλις κλείσουν οι κανόνες της βάσης (§9.3), ο
-   browser δεν θα μπορεί να κάνει τίποτε από αυτά. Εδώ θα δουλεύουν.
+// Client-supplied sizes/types are not authoritative: inspect the stored objects.
+async function verifiedFiles(pin, files, uid) {
+  if (!Array.isArray(files) || files.length === 0) throw publicError("invalid_files");
+  if (files.length > MAX_FILES) throw publicError("upload_limits");
+  const prefix = `premium_uploads/${pin}/`;
+  const paths = new Set();
+  const verified = [];
+  for (const file of files) {
+    if (!file || typeof file.path !== "string" || !file.path.startsWith(prefix)
+      || !file.path.slice(prefix.length) || file.path.slice(prefix.length).includes("/")
+      || file.path.length > 512 || paths.has(file.path)) throw publicError("invalid_files");
+    paths.add(file.path);
+    let metadata;
+    try { [metadata] = await admin.storage().bucket().file(file.path).getMetadata(); }
+    catch (error) {
+      if (Number(error.code) === 404) throw publicError("invalid_files");
+      throw error;
+    }
+    if (uid && metadata.metadata?.ownerUid !== uid) throw publicError("invalid_files");
+    const size = Number(metadata.size);
+    if (!Number.isSafeInteger(size) || size <= 0 || !DOCUMENT_TYPES.includes(metadata.contentType)) {
+      throw publicError("invalid_files");
+    }
+    verified.push({ path: file.path, name: String(file.name || file.path.slice(prefix.length)).slice(0, 255),
+      size, type: metadata.contentType });
+  }
+  if (!withinUploadLimits(verified)) throw publicError("upload_limits");
+  return verified;
+}
 
-   ΤΙ ΔΕΝ ΑΠΟΚΑΛΥΠΤΕΤΑΙ
+async function existingFiles(pin, request) {
+  const files = request.files || [];
+  if (request.uploadLimitsVersion === 1) { fileTotals(files); return files; }
+  // Legacy rows may contain client-reported byte counts. Recheck before extending them.
+  return files.length ? verifiedFiles(pin, files) : [];
+}
 
-   Ο έλεγχος του email απαντά μόνο ναι ή όχι. Δεν επιστρέφει κωδικό,
-   ούτε πόσες αιτήσεις, ούτε πότε. Ο έλεγχος του κωδικού απαντά μόνο
-   αν το ζευγάρι ταιριάζει — λάθος κωδικός και λάθος email δίνουν το
-   ίδιο «όχι», όπως και στη σελίδα Παρακολούθησης.
-   ══════════════════════════════════════════════════════════════ */
+/* New requests and supplementary documents share the same upload endpoint.
+   Every write verifies Firebase Auth, stored metadata and cumulative limits. */
 exports.symplirosiAitisis = onRequest(ORIA, (req, res) => {
-  cors(req, res, async () => {
-    if (req.method !== "POST") {
-      return res.status(405).json({ success: false, error: "POST required" });
-    }
-
-    const { energeia, email, pin, arxeia } = req.body || {};
+  return cors(req, res, async () => {
+    if (req.method !== "POST") return fail(res, 405, "method");
+    const { energeia, email, pin, arxeia, phone } = req.body || {};
     const emailKanoniko = kanoniko(email);
-
-    if (!emailKanoniko) {
-      return res.status(400).json({ success: false, error: "Λείπει το email." });
-    }
-
+    if (!validEmail(emailKanoniko)) return fail(res, 400, "invalid_email");
     try {
       const vasi = admin.database().ref("premium_requests");
-
-      /* ── 1. Υπάρχει ήδη αίτηση με αυτό το email; ── */
       if (energeia === "elegxos_email") {
-        const apotelesma = await vasi
-          .orderByChild("email")
-          .equalTo(emailKanoniko)
-          .once("value");
-
-        return res.status(200).json({
-          success: true,
-          yparxei: apotelesma.exists(),
-        });
+        const result = await vasi.orderByChild("email").equalTo(emailKanoniko).once("value");
+        return res.status(200).json({ success: true, yparxei: result.exists() });
       }
-
-      /* Οι δύο επόμενες ενέργειες θέλουν κωδικό. */
+      const user = await uploadUser(req);
       const kodikos = plirisKodikos(pin);
+      if (!/^PIN-\d{6}$/.test(kodikos)) return fail(res, 400, "not_found");
+      const reference = vasi.child(kodikos);
+      const request = (await reference.once("value")).val();
 
-      if (!/^PIN-\d{6}$/.test(kodikos)) {
-        return res.status(400).json({
-          success: false,
-          error: "Ο κωδικός πρέπει να έχει έξι ψηφία.",
+      if (energeia === "nea_aitisi") {
+        if (phone != null && (typeof phone !== "string" || phone.length > 40)) return fail(res, 400, "invalid_phone");
+        const files = await verifiedFiles(kodikos, arxeia, user.uid);
+        const createdAt = Date.now();
+        const result = await reference.transaction((current) => {
+          if (current) return;
+          return { pin: kodikos, email: emailKanoniko, phone: phone || null, ownerUid: user.uid,
+            files, ...fileTotals(files), uploadLimitsVersion: 1, status: KATASTASEIS.PARALIFTHIKAN,
+            createdAt, consentAt: createdAt, paymentStatus: "not_requested" };
         });
+        if (!result.committed) return fail(res, 409, "pin_conflict");
+        return res.status(200).json({ success: true, pin: kodikos, plithosArxeion: files.length });
       }
 
-      const anafora = vasi.child(kodikos);
-      const stigmiotypo = await anafora.once("value");
-      const aitisi = stigmiotypo.val();
-
-      const tairiazei =
-        Boolean(aitisi) && kanoniko(aitisi.email) === emailKanoniko;
-
-      /* ── 2. Ταιριάζουν κωδικός και email; ── */
+      const matches = request && kanoniko(request.email) === emailKanoniko;
+      if (!matches) {
+        if (energeia === "elegxos_kodikou") return res.status(200).json({ success: true, tairiazei: false });
+        return fail(res, 404, "not_found", "Δεν βρέθηκε αίτηση με αυτά τα στοιχεία.");
+      }
+      const previousFiles = await existingFiles(kodikos, request);
       if (energeia === "elegxos_kodikou") {
-        return res.status(200).json({ success: true, tairiazei });
+        return res.status(200).json({ success: true, tairiazei: true,
+          canUpload: uploadAllowed(request), ...fileTotals(previousFiles) });
       }
-
-      /* ── 3. Προσθήκη των αρχείων στον ίδιο φάκελο ── */
-      if (energeia === "prosthiki_arxeion") {
-        if (!tairiazei) {
-          return res.status(200).json({ success: true, tairiazei: false });
-        }
-
-        if (!Array.isArray(arxeia) || !arxeia.length) {
-          return res.status(400).json({
-            success: false,
-            error: "Δεν στάλθηκε κανένα αρχείο.",
-          });
-        }
-
-        /* Κάθε διαδρομή πρέπει να βρίσκεται μέσα στον φάκελο ΑΥΤΗΣ
-           της αίτησης. Χωρίς τον έλεγχο, θα μπορούσε κάποιος να
-           κολλήσει στην αίτησή του αρχεία τρίτου. */
-        const arxi = `premium_uploads/${kodikos}/`;
-        const egkyra = arxeia.filter(
-          (a) => a && typeof a.path === "string" && a.path.startsWith(arxi)
-        );
-
-        if (egkyra.length !== arxeia.length) {
-          return res.status(400).json({
-            success: false,
-            error: "Κάποιο αρχείο δεν ανήκει σε αυτή την αίτηση.",
-          });
-        }
-
-        const palia = Array.isArray(aitisi.files) ? aitisi.files : [];
-        const ola = palia.concat(egkyra);
-
-        await anafora.update({
-          files: ola,
-          fileCount: ola.length,
-          status: KATASTASEIS.PARALIFTHIKAN,
-          lastUploadAt: Date.now(),
-        });
-
-        return res.status(200).json({
-          success: true,
-          tairiazei: true,
-          plithosArxeion: ola.length,
-        });
-      }
-
-      return res.status(400).json({
-        success: false,
-        error: "Άγνωστη ενέργεια.",
+      if (energeia !== "prosthiki_arxeion") return fail(res, 400, "invalid_action");
+      const files = await verifiedFiles(kodikos, arxeia, user.uid);
+      const verifiedPrevious = new Map(previousFiles.map((file) => [file.path, file]));
+      let rejection = "upload_stage";
+      const result = await reference.transaction((current) => {
+        // The Admin SDK can start with an empty local cache. Returning null lets
+        // the server compare/retry with its current value; undefined would abort.
+        if (current === null) return null;
+        if (!current || kanoniko(current.email) !== emailKanoniko) { rejection = "not_found"; return; }
+        const previous = (current.files || []).map((file) => verifiedPrevious.get(file.path) || file);
+        const paths = new Set(previous.map((file) => file.path));
+        const added = files.filter((file) => !paths.has(file.path));
+        if (!added.length) return current; // Retry of a committed upload: no status regression.
+        if (!uploadAllowed(current)) return;
+        const combined = previous.concat(added);
+        if (!withinUploadLimits(combined)) { rejection = "upload_limits"; return; }
+        return { ...current, files: combined, ...fileTotals(combined), uploadLimitsVersion: 1,
+          status: KATASTASEIS.PARALIFTHIKAN, lastUploadAt: Date.now() };
       });
+      if (!result.committed || !result.snapshot.exists()) return fail(res, 409, rejection);
+      return res.status(200).json({ success: true, tairiazei: true, plithosArxeion: result.snapshot.val().files.length });
     } catch (error) {
-      console.error("Σφάλμα στη συμπλήρωση αίτησης:", error);
-
-      return res.status(500).json({
-        success: false,
-        error: error.message,
-      });
+      if (!error.publicCode) console.error("Upload request failed:", error.code || error.name);
+      return fail(res, error.status || 500, error.publicCode || "unavailable");
     }
   });
 });
 
-/* ══════════════════════════════════════════════════════════════
-   ΚΑΝΟΝΙΚΗ ΧΡΕΩΣΗ
-
-   Μέχρι τις 03/09 η κάρτα δεσμευόταν (capture_method: manual) και τα
-   χρήματα εισπράττονταν αργότερα, κατά την παράδοση της έκθεσης.
-
-   Η σειρά των βημάτων άλλαξε: ο πελάτης πληρώνει ΑΦΟΥ ελεγχθεί ο
-   φάκελός του, δηλαδή αφού ξέρουμε ότι η δουλειά μπορεί να γίνει.
-   Επομένως δεν υπάρχει λόγος για δέσμευση — η χρέωση είναι άμεση και
-   δεν χρειάζεται δεύτερο βήμα είσπραξης.
-
-   Η συνάρτηση capturePayment διαγράφηκε στις 03/09. Έμενε μόνο
-   επειδή περιείχε τη μοναδική δουλεμένη αποστολή email· τώρα η
-   αποστολή έχει δική της συνάρτηση, πιο πάνω.
-   ══════════════════════════════════════════════════════════════ */
 exports.createPaymentIntent = onRequest(ORIA, (req, res) => {
-  cors(req, res, async () => {
-    if (req.method !== "POST") {
-      return res.status(405).json({
-        success: false,
-        error: "POST required",
-      });
-    }
-
+  return cors(req, res, async () => {
+    if (req.method !== "POST") return fail(res, 405, "method");
+    const { pin, email } = req.body || {};
+    const kodikos = plirisKodikos(pin);
+    const emailKanoniko = kanoniko(email);
+    if (!/^PIN-\d{6}$/.test(kodikos) || !validEmail(emailKanoniko)) return fail(res, 404, "not_found");
     try {
+      const reference = admin.database().ref(`premium_requests/${kodikos}`);
+      const request = (await reference.once("value")).val();
+      if (!request || kanoniko(request.email) !== emailKanoniko) return fail(res, 404, "not_found");
+      if (request.status !== KATASTASEIS.ANAMONI_PLIROMIS || request.paymentStatus === "paid") {
+        return fail(res, 409, "payment_unavailable");
+      }
       const stripe = getStripeClient();
-
-      /* Ο κωδικός και το email της αίτησης καταγράφονται πάνω στη
-         συναλλαγή. Χωρίς αυτά, μια πληρωμή στο Stripe δεν μπορεί να
-         αντιστοιχηθεί με πελάτη — κάτι που έχει σημασία σε κάθε
-         διαφορά, επιστροφή ή έλεγχο. */
-      const { pin, email } = req.body || {};
-
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: POSO_SE_LEPTA,
-        currency: "eur",
-        receipt_email: email || undefined,
-        metadata: {
-          pin: pin || "",
-          email: email || "",
-        },
+      // Reuse the stored intent across visits; the idempotency key also covers concurrent creation.
+      const paymentIntent = request.paymentIntentId
+        ? await stripe.paymentIntents.retrieve(request.paymentIntentId)
+        : await stripe.paymentIntents.create({
+          amount: POSO_SE_LEPTA, currency: "eur", capture_method: "automatic",
+          receipt_email: emailKanoniko, metadata: { pin: kodikos, email: emailKanoniko },
+        }, { idempotencyKey: `premium-${kodikos}-${request.createdAt}` });
+      if (!paymentIntent || paymentIntent.status === "canceled"
+        || paymentIntent.amount !== POSO_SE_LEPTA || paymentIntent.currency !== "eur"
+        || plirisKodikos(paymentIntent.metadata?.pin) !== kodikos
+        || kanoniko(paymentIntent.metadata?.email) !== emailKanoniko) return fail(res, 409, "payment_unavailable");
+      const result = await reference.transaction((current) => {
+        if (current === null) return null;
+        if (!current || kanoniko(current.email) !== emailKanoniko
+          || current.status !== KATASTASEIS.ANAMONI_PLIROMIS || current.paymentStatus === "paid"
+          || (current.paymentIntentId && current.paymentIntentId !== paymentIntent.id)) return;
+        return { ...current, paymentIntentId: paymentIntent.id };
       });
-
-      return res.status(200).json({
-        success: true,
-        clientSecret: paymentIntent.client_secret,
-      });
+      if (!result.committed || !result.snapshot.exists()) return fail(res, 409, "payment_unavailable");
+      // An already successful intent can be verified again without another charge.
+      return res.status(200).json({ success: true, clientSecret: paymentIntent.client_secret,
+        ...(paymentIntent.status === "succeeded" ? { paidIntentId: paymentIntent.id } : {}) });
     } catch (error) {
-      console.error("Create payment intent error:", error);
-
-      return res.status(500).json({
-        success: false,
-        error: error.message,
-      });
+      console.error("Create payment intent failed:", error.code || error.name);
+      return fail(res, 500, "unavailable");
     }
   });
 });
+
 
 /* ══════════════════════════════════════════════════════════════
    Η ΚΑΤΑΣΤΑΣΗ ΤΗΣ ΑΙΤΗΣΗΣ
@@ -858,7 +860,7 @@ exports.createPaymentIntent = onRequest(ORIA, (req, res) => {
    μπορεί κανείς να καταλάβει πότε πέτυχε αληθινό κωδικό.
    ══════════════════════════════════════════════════════════════ */
 exports.getRequestStatus = onRequest(ORIA, (req, res) => {
-  cors(req, res, async () => {
+  return cors(req, res, async () => {
     if (req.method !== "POST") {
       return res.status(405).json({ success: false, error: "POST required" });
     }
@@ -867,7 +869,7 @@ exports.getRequestStatus = onRequest(ORIA, (req, res) => {
     const kodikos = plirisKodikos(pin);
     const emailKanoniko = kanoniko(email);
 
-    if (!/^PIN-\d{6}$/.test(kodikos) || !emailKanoniko) {
+    if (!/^PIN-\d{6}$/.test(kodikos) || !validEmail(emailKanoniko)) {
       return res.status(200).json({ success: true, vrethike: false });
     }
 
@@ -902,107 +904,92 @@ exports.getRequestStatus = onRequest(ORIA, (req, res) => {
 
       return res.status(200).json(apantisi);
     } catch (error) {
-      console.error("Σφάλμα στην ανάγνωση κατάστασης:", error);
+      console.error("Σφάλμα στην ανάγνωση κατάστασης:", error.code || error.name);
 
       return res.status(500).json({
         success: false,
-        error: error.message,
+        error: "Η αναζήτηση δεν ολοκληρώθηκε. Δοκιμάστε ξανά σε λίγο.",
       });
     }
   });
 });
 
-/* ══════════════════════════════════════════════════════════════
-   ΕΠΙΒΕΒΑΙΩΣΗ ΤΗΣ ΠΛΗΡΩΜΗΣ
-
-   Μέχρι σήμερα, η ένδειξη «πληρώθηκε» γραφόταν στη βάση από τον
-   υπολογιστή του πελάτη, αμέσως μετά την οθόνη της κάρτας. Κανείς
-   δεν ρωτούσε το Stripe αν τα χρήματα ήρθαν πράγματι. Όποιος
-   ακύρωνε τη χρέωση μπορούσε να εμφανιστεί ως πληρωμένος.
-
-   Τώρα η ένδειξη μπαίνει ΜΟΝΟ εδώ, και μόνο αφού το Stripe
-   επιβεβαιώσει τέσσερα πράγματα μαζί:
-
-     1. η συναλλαγή έχει ολοκληρωθεί (succeeded)
-     2. το ποσό είναι το σωστό
-     3. το νόμισμα είναι ευρώ
-     4. η συναλλαγή ανήκει σε ΑΥΤΗ την αίτηση
-
-   Χωρίς τα τέσσερα, η αίτηση μένει απλήρωτη.
-   ══════════════════════════════════════════════════════════════ */
 exports.epivevaiosiPliromis = onRequest(ORIA, (req, res) => {
-  cors(req, res, async () => {
-    if (req.method !== "POST") {
-      return res.status(405).json({ success: false, error: "POST required" });
-    }
-
+  return cors(req, res, async () => {
+    if (req.method !== "POST") return fail(res, 405, "method");
     const { pin, email, paymentIntentId, ypanaxorisiAt } = req.body || {};
     const kodikos = plirisKodikos(pin);
     const emailKanoniko = kanoniko(email);
-
-    if (!/^PIN-\d{6}$/.test(kodikos) || !paymentIntentId) {
-      return res.status(400).json({
-        success: false,
-        error: "Λείπουν στοιχεία της πληρωμής.",
-      });
+    if (!/^PIN-\d{6}$/.test(kodikos) || !validEmail(emailKanoniko)
+      || typeof paymentIntentId !== "string" || !/^pi_[a-zA-Z0-9]+$/.test(paymentIntentId)) {
+      return fail(res, 400, "invalid_payment");
     }
-
     try {
-      const anafora = admin.database().ref(`premium_requests/${kodikos}`);
-      const stigmiotypo = await anafora.once("value");
-      const aitisi = stigmiotypo.val();
-
-      if (!aitisi || kanoniko(aitisi.email) !== emailKanoniko) {
-        return res.status(404).json({
-          success: false,
-          error: "Δεν βρέθηκε αίτηση με αυτά τα στοιχεία.",
-        });
+      const reference = admin.database().ref(`premium_requests/${kodikos}`);
+      const request = (await reference.once("value")).val();
+      if (!request || kanoniko(request.email) !== emailKanoniko) return fail(res, 404, "not_found");
+      if (request.paymentStatus === "paid" && request.paymentIntentId === paymentIntentId) {
+        return res.status(200).json({ success: true, plirothike: true, status: request.status });
       }
-
-      // --- Η ερώτηση προς το Stripe ---
-      const stripe = getStripeClient();
-      const pliromi = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-      const egkyri =
-        Boolean(pliromi) &&
-        pliromi.status === "succeeded" &&
-        pliromi.currency === "eur" &&
-        Number(pliromi.amount_received) >= POSO_SE_LEPTA &&
-        plirisKodikos(pliromi.metadata && pliromi.metadata.pin) === kodikos;
-
-      if (!egkyri) {
-        console.error(
-          "Απορρίφθηκε επιβεβαίωση πληρωμής:",
-          kodikos,
-          paymentIntentId,
-          pliromi && pliromi.status
-        );
-
-        return res.status(200).json({
-          success: false,
-          plirothike: false,
-          error: "Η πληρωμή δεν επιβεβαιώθηκε.",
-        });
+      if (request.status !== KATASTASEIS.ANAMONI_PLIROMIS || request.paymentStatus === "paid"
+        || (request.paymentIntentId && request.paymentIntentId !== paymentIntentId)) {
+        return fail(res, 409, "payment_unavailable");
       }
-
-      await anafora.update({
-        paymentIntentId,
-        paymentStatus: "paid",
-        paidAt: Date.now(),
-        status: KATASTASEIS.SE_EPEXERGASIA,
-        /* Η ώρα που ο πελάτης δήλωσε ότι ζητά άμεση εκτέλεση και
-           παραιτείται από το δικαίωμα υπαναχώρησης. Νομικό τεκμήριο. */
-        withdrawalConsentAt: ypanaxorisiAt || Date.now(),
+      const payment = await getStripeClient().paymentIntents.retrieve(paymentIntentId);
+      if (!payment || payment.status !== "succeeded" || payment.currency !== "eur"
+        || payment.amount_received !== POSO_SE_LEPTA || payment.amount !== POSO_SE_LEPTA
+        || plirisKodikos(payment.metadata?.pin) !== kodikos
+        || kanoniko(payment.metadata?.email) !== emailKanoniko) {
+        return fail(res, 409, "payment_unverified", "Η πληρωμή δεν επιβεβαιώθηκε.");
+      }
+      const result = await reference.transaction((current) => {
+        if (current === null) return null;
+        if (!current || kanoniko(current.email) !== emailKanoniko) return;
+        if (current.paymentStatus === "paid" && current.paymentIntentId === paymentIntentId) return current;
+        if (current.status !== KATASTASEIS.ANAMONI_PLIROMIS || current.paymentStatus === "paid"
+          || (current.paymentIntentId && current.paymentIntentId !== paymentIntentId)) return;
+        return { ...current, paymentIntentId, paymentStatus: "paid", paidAt: Date.now(),
+          status: KATASTASEIS.SE_EPEXERGASIA,
+          withdrawalConsentAt: Number.isSafeInteger(ypanaxorisiAt) && ypanaxorisiAt > 0 && ypanaxorisiAt <= Date.now()
+            ? ypanaxorisiAt : Date.now() };
       });
-
-      return res.status(200).json({ success: true, plirothike: true });
+      if (!result.committed || !result.snapshot.exists()) return fail(res, 409, "payment_unavailable");
+      return res.status(200).json({ success: true, plirothike: true, status: result.snapshot.val().status });
     } catch (error) {
-      console.error("Σφάλμα στην επιβεβαίωση της πληρωμής:", error);
+      console.error("Payment verification failed:", error.code || error.name);
+      return fail(res, 500, "unavailable");
+    }
+  });
+});
 
-      return res.status(500).json({
-        success: false,
-        error: error.message,
+exports.sendContactMessage = onRequest(ORIA, (req, res) => {
+  return cors(req, res, async () => {
+    if (req.method !== "POST") return fail(res, 405, "method");
+    const body = req.body;
+    if (!body || typeof body !== "object" || Array.isArray(body)
+      || Object.keys(body).some((key) => !["email", "message"].includes(key))
+      || typeof body.email !== "string" || typeof body.message !== "string"
+      || !validEmail(body.email.trim()) || body.message.trim().length < 10
+      || body.message.length > 5000 || body.email.length > 254) {
+      return fail(res, 400, "invalid_contact", "Ελέγξτε το email και το μήνυμά σας (10–5000 χαρακτήρες).");
+    }
+    try {
+      const recipient = (process.env.CONTACT_EMAIL || process.env.EMAIL_USER || "").trim();
+      if (!validEmail(recipient)) throw new Error("Contact recipient unavailable");
+      const result = await getEmailTransporter().sendMail({
+        from: `"${ONOMA_APOSTOLEA}" <${process.env.EMAIL_USER}>`,
+        to: recipient,
+        replyTo: body.email.trim(),
+        subject: "Ερώτηση από την ιστοσελίδα Sintaximou",
+        text: body.message.trim(),
+        disableFileAccess: true,
+        disableUrlAccess: true,
       });
+      if (!result.accepted?.length) throw new Error("Message not accepted");
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Contact delivery failed:", error.code || error.name);
+      return fail(res, 503, "contact_failed", "Το μήνυμα δεν στάλθηκε. Δοκιμάστε ξανά σε λίγο.");
     }
   });
 });

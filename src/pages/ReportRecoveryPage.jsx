@@ -16,12 +16,10 @@ const TIMI = '20 €';
 /* ══════════════════════════════════════════════════════════════
    ΠΟΥ ΒΡΙΣΚΕΙ Ο ΧΡΗΣΤΗΣ ΤΟΝ ΚΩΔΙΚΟ
 
-   Ο κωδικός δίνεται σε δύο σημεία: στην οθόνη αμέσως μετά την
-   αποστολή, και στο email «Τα έγγραφά σας παραλήφθηκαν».
-   Το email αναφέρεται πρώτο: μετά από μέρες, εκεί θα ψάξει.
+   Ο κωδικός εμφανίζεται στην οθόνη μετά την επιτυχημένη αποστολή.
    ══════════════════════════════════════════════════════════════ */
 const KEIMENO_VOITHEIAS_PIN =
-  'Θα τον βρείτε στο email που λάβατε μόλις ολοκληρώθηκε η αποστολή των εγγράφων σας. Είχε εμφανιστεί και στην οθόνη εκείνη τη στιγμή. Αποτελείται από έξι ψηφία.';
+  'Ο κωδικός εμφανίστηκε στην οθόνη μετά την επιτυχημένη αποστολή των εγγράφων σας. Αποτελείται από έξι ψηφία.';
 
 /* ══════════════════════════════════════════════════════════════
    ΤΑ ΤΕΣΣΕΡΑ ΣΤΑΔΙΑ
@@ -56,16 +54,16 @@ const KATASTASEIS = {
   },
   awaiting_payment: {
     stadio: 1,
-    perigrafi: 'Ο φάκελός σας είναι πλήρης και μπορεί να γίνει ο υπολογισμός.',
+    perigrafi: 'Ο φάκελός σας είναι πλήρης και μπορεί να γίνει η εκτίμηση.',
     simeiosi: 'Η επεξεργασία ξεκινά μόλις ολοκληρωθεί η πληρωμή.',
   },
   processing: {
     stadio: 2,
-    perigrafi: 'Γίνεται ο υπολογισμός της σύνταξής σας και συντάσσεται η έκθεση.',
+    perigrafi: 'Ετοιμάζεται η εκτίμηση σύνταξης και συντάσσεται η έκθεση.',
   },
   delivered: {
     stadio: 3,
-    perigrafi: 'Ο υπολογισμός ολοκληρώθηκε. Μπορείτε να κατεβάσετε την αναλυτική έκθεση.',
+    perigrafi: 'Η εκτίμηση σύνταξης ολοκληρώθηκε και το Αναλυτικό Report είναι έτοιμο.',
   },
 };
 
@@ -86,7 +84,7 @@ const KATASTASI_TELOUS = 'delivered';
    ══════════════════════════════════════════════════════════════ */
 const MINYMATA = {
   leipeiPin: {
-    titlos: 'Λείπει ο κωδικός της αίτησης',
+    titlos: 'Ο κωδικός πρέπει να έχει ακριβώς έξι ψηφία',
     keimeno: 'Γράψτε τα έξι ψηφία του κωδικού σας. Το «PIN-» μπαίνει αυτόματα, δεν χρειάζεται να το πληκτρολογήσετε.',
     epikoinonia: false,
   },
@@ -120,6 +118,18 @@ const ReportRecoveryPage = () => {
   const [loading, setLoading] = useState(false);
   const [deixePliromi, setDeixePliromi] = useState(false);
   const [pinAitisis, setPinAitisis] = useState(null);
+  const [stripeClient, setStripeClient] = useState(null);
+  const [stripeLoading, setStripeLoading] = useState(Boolean(stripePromise));
+  const [paymentNeedsReview, setPaymentNeedsReview] = useState(false);
+  const [paymentInProgress, setPaymentInProgress] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    Promise.resolve(stripePromise).then((client) => {
+      if (active) { setStripeClient(client); setStripeLoading(false); }
+    });
+    return () => { active = false; };
+  }, []);
 
   // Σημεία της σελίδας όπου θα κατέβει αυτόματα η οθόνη
   const errorRef = useRef(null);
@@ -143,6 +153,7 @@ const ReportRecoveryPage = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
+    if (loading || paymentInProgress) return;
     setError(null);
     setReportData(null);
     setDeixePliromi(false);
@@ -152,11 +163,11 @@ const ReportRecoveryPage = () => {
     const cleanEmail = email.trim().toLowerCase();
 
     // --- Έλεγχοι πριν καν ρωτήσουμε τη βάση ---
-    if (!cleanPin) {
+    if (!/^\d{6}$/.test(cleanPin)) {
       setError(MINYMATA.leipeiPin);
       return;
     }
-    if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || cleanEmail.length > 254) {
       setError(MINYMATA.lathosEmail);
       return;
     }
@@ -182,6 +193,7 @@ const ReportRecoveryPage = () => {
 
       setPinAitisis(apotelesma.aitisi.pin);
       setReportData(apotelesma.aitisi);
+      setPaymentNeedsReview(false);
     } catch (err) {
       console.error(err);
       setError(MINYMATA.provlimaSyndesis);
@@ -206,13 +218,14 @@ const ReportRecoveryPage = () => {
        έχουν φύγει και ο πελάτης πρέπει να το μάθει, όχι να δει ότι όλα
        πήγαν καλά και μετά να του ζητηθεί δεύτερη πληρωμή. */
     if (!apotelesma?.success) {
+      setPaymentNeedsReview(true);
       setDeixePliromi(false);
       setError(MINYMATA.apotixiaKatagrafis);
       return;
     }
 
     setDeixePliromi(false);
-    setReportData({ ...reportData, status: 'processing', paymentStatus: 'paid' });
+    setReportData({ ...reportData, status: apotelesma.status || 'processing', paymentStatus: 'paid' });
   };
 
   // Υπολογισμός σταδίου με βάση την κατάσταση της αίτησης
@@ -221,7 +234,7 @@ const ReportRecoveryPage = () => {
   const oloklirothike = reportData?.status === KATASTASI_TELOUS;
   const perigrafi = katastasi ? katastasi.perigrafi : reportData?.status;
   const simeiosi = katastasi ? katastasi.simeiosi : null;
-  const zitisiPliromis = reportData?.status === 'awaiting_payment';
+  const zitisiPliromis = reportData?.status === 'awaiting_payment' && !paymentNeedsReview;
 
   return (
     <div className="recovery-page">
@@ -249,11 +262,13 @@ const ReportRecoveryPage = () => {
                   id="pin"
                   type="text"
                   inputMode="numeric"
+                  maxLength={6}
+                  disabled={paymentInProgress}
                   autoComplete="off"
                   placeholder="146138"
                   aria-label="Κωδικός αίτησης, τα έξι ψηφία μετά το PIN"
                   value={pin}
-                  onChange={(e) => setPin(e.target.value)}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 />
               </div>
               <p className="field-help">{KEIMENO_VOITHEIAS_PIN}</p>
@@ -269,6 +284,8 @@ const ReportRecoveryPage = () => {
                 type="email"
                 className="text-input"
                 autoComplete="email"
+                maxLength={254}
+                disabled={paymentInProgress}
                 placeholder="onoma@example.gr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -278,7 +295,7 @@ const ReportRecoveryPage = () => {
               </p>
             </div>
 
-            <button type="submit" className="recovery-submit" disabled={loading}>
+            <button type="submit" className="recovery-submit" disabled={loading || paymentInProgress}>
               {loading ? 'Γίνεται αναζήτηση…' : 'Έλεγχος κατάστασης'}
             </button>
           </form>
@@ -353,6 +370,12 @@ const ReportRecoveryPage = () => {
             <p className="status-text">{perigrafi}</p>
 
             {simeiosi && <p className="status-note">{simeiosi}</p>}
+            {reportData.status === 'needs_more_info' && (
+              <p className="status-note">
+                <Link to="/premium-upload">Αποστολή επιπλέον εγγράφων</Link>
+                {' '}με τον ίδιο κωδικό αίτησης και το ίδιο email.
+              </p>
+            )}
 
             {/* ── Πληρωμή, μόνο στην κατάσταση «Αναμονή πληρωμής» ──
                 Μόλις η κατάσταση αλλάξει, το κομμάτι αυτό εξαφανίζεται
@@ -360,12 +383,17 @@ const ReportRecoveryPage = () => {
             {zitisiPliromis && !deixePliromi && (
               <div className="pay-block">
                 <p className="pay-intro">
-                  Η αναλυτική έκθεση κοστίζει <strong>{TIMI}</strong>, εφάπαξ.
-                  Η πληρωμή γίνεται με κάρτα, μέσω Stripe.
+                  Το Αναλυτικό Report κοστίζει <strong>{TIMI}</strong>, εφάπαξ.
+                  Ο φάκελός σας έχει ήδη ελεγχθεί. Η έκθεση παραδίδεται το αργότερο
+                  εντός 10 εργάσιμων ημερών από την πληρωμή, με email και από αυτή τη σελίδα.
                 </p>
+                {!stripeClient && !stripeLoading && (
+                  <p className="status-note" role="alert">Η υπηρεσία πληρωμών δεν είναι διαθέσιμη αυτή τη στιγμή. Δοκιμάστε ξανά σε λίγο ή επικοινωνήστε μαζί μας.</p>
+                )}
                 <button
                   type="button"
                   className="pay-btn"
+                  disabled={!stripeClient}
                   onClick={() => setDeixePliromi(true)}
                 >
                   Πληρωμή {TIMI}
@@ -373,19 +401,22 @@ const ReportRecoveryPage = () => {
               </div>
             )}
 
-            {zitisiPliromis && deixePliromi && (
+            {zitisiPliromis && deixePliromi && stripeClient && (
               <div className="pay-block">
-                <Elements stripe={stripePromise} options={{ locale: 'el' }}>
+                <p className="pay-intro">Αναλυτικό Report — {TIMI} εφάπαξ. Ο φάκελος έχει ελεγχθεί. Παράδοση έως 10 εργάσιμες ημέρες από την πληρωμή.</p>
+                <Elements stripe={stripeClient} options={{ locale: 'el' }}>
                   <StripePaymentForm
                     onFileSubmit={meta_tin_pliromi}
                     timi={TIMI}
                     pin={reportData?.pin || pinAitisis}
                     email={reportData?.email}
+                    onProcessingChange={setPaymentInProgress}
                   />
                 </Elements>
                 <button
                   type="button"
                   className="pay-cancel"
+                  disabled={paymentInProgress}
                   onClick={() => setDeixePliromi(false)}
                 >
                   Ακύρωση
@@ -407,13 +438,14 @@ const ReportRecoveryPage = () => {
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                Κατέβασμα έκθεσης (PDF)
+                Λήψη έκθεσης (PDF)
               </a>
             )}
 
             {oloklirothike && !reportData.finalReportUrl && (
               <p className="status-note">
-                Η έκθεση ολοκληρώθηκε και αναρτάται. Δοκιμάστε ξανά σε λίγο.
+                Η έκθεση έχει ολοκληρωθεί αλλά δεν είναι διαθέσιμη για λήψη από αυτή τη σελίδα.
+                Ελέγξτε το email σας ή <Link to="/contact">επικοινωνήστε μαζί μας</Link>.
               </p>
             )}
           </div>

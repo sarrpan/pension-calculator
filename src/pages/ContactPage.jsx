@@ -1,14 +1,9 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import './ContactPage.css';
 
-/* ══════════════════════════════════════════════════════════════
-   ΡΥΘΜΙΣΕΙΣ ΤΗΣ ΣΕΛΙΔΑΣ
-
-   Αλλάζοντας τις δύο γραμμές παρακάτω αλλάζει όλη η σελίδα.
-   Δεν χρειάζεται να πειραχτεί τίποτε άλλο.
-   ══════════════════════════════════════════════════════════════ */
-const EMAIL_EPIKOINONIAS = 'roko.mal_husky@yahoo.gr';
-const THEMA_EMAIL = 'Ερώτηση από την ιστοσελίδα';
+const EMAIL_EPIKOINONIAS = (import.meta.env.VITE_CONTACT_EMAIL || '').trim();
+const CONTACT_URL = import.meta.env.VITE_CONTACT_URL;
 
 /* Εικονίδια — γραμμικά SVG, χωρίς emoji */
 const svgBase = {
@@ -85,7 +80,7 @@ const THEMATA = [
   },
   {
     Icon: IconReport,
-    titlos: 'Η αναλυτική έκθεση',
+    titlos: 'Αναλυτικό Report',
     keimeno: 'Τι ακριβώς περιλαμβάνει, πόσο κοστίζει και πώς παραδίδεται.',
   },
   {
@@ -96,56 +91,43 @@ const THEMATA = [
 ];
 
 const ContactPage = () => {
-  const [onoma, setOnoma] = useState('');
   const [email, setEmail] = useState('');
   const [minima, setMinima] = useState('');
   const [sfalma, setSfalma] = useState('');
   const [estalthike, setEstalthike] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  /* ══════════════════════════════════════════════════════════════
-     Η ΑΠΟΣΤΟΛΗ ΤΟΥ ΜΗΝΥΜΑΤΟΣ
-
-     ΠΡΟΣΩΡΙΝΗ ΛΥΣΗ: ανοίγει το πρόγραμμα αλληλογραφίας του
-     επισκέπτη με το μήνυμα ήδη γραμμένο. Δεν απαιτεί server,
-     οπότε δουλεύει και στο δωρεάν πλάνο (Spark).
-
-     ΟΤΑΝ ΕΡΘΕΙ ΤΟ BLAZE: αλλάζει ΜΟΝΟ το εσωτερικό αυτής της
-     συνάρτησης. Αντί για mailto, γίνεται fetch στη function που
-     θα στέλνει το email. Τίποτε άλλο στη σελίδα δεν αλλάζει.
-     ══════════════════════════════════════════════════════════════ */
-  const apostoliMinimatos = () => {
-    const soma =
-      `Όνομα: ${onoma.trim()}\n` +
-      `Email: ${email.trim()}\n\n` +
-      `${minima.trim()}\n`;
-
-    const dieuthynsi =
-      `mailto:${EMAIL_EPIKOINONIAS}` +
-      `?subject=${encodeURIComponent(THEMA_EMAIL)}` +
-      `&body=${encodeURIComponent(soma)}`;
-
-    window.location.href = dieuthynsi;
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (sending) return;
     setSfalma('');
 
-    if (!onoma.trim()) {
-      setSfalma('Συμπληρώστε το όνομά σας, για να ξέρουμε πώς να σας απευθυνθούμε.');
-      return;
-    }
-    if (!EMAIL_PATTERN.test(email.trim())) {
+    if (!EMAIL_PATTERN.test(email.trim()) || email.trim().length > 254) {
       setSfalma('Γράψτε ολόκληρη τη διεύθυνση του email σας, μαζί με το @ και την κατάληξη.');
       return;
     }
-    if (minima.trim().length < 10) {
+    if (minima.trim().length < 10 || minima.trim().length > 5000) {
       setSfalma('Γράψτε λίγα λόγια για το τι χρειάζεστε, ώστε να σας απαντήσουμε σωστά.');
       return;
     }
 
-    apostoliMinimatos();
-    setEstalthike(true);
+    setSending(true);
+    try {
+      if (!CONTACT_URL) throw new Error('Contact unavailable');
+      const response = await fetch(CONTACT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), message: minima.trim() }),
+      });
+      const data = await response.json();
+      if (!response.ok || data.success !== true) throw new Error('Contact failed');
+      setEstalthike(true);
+      setMinima('');
+    } catch {
+      setSfalma('Το μήνυμα δεν στάλθηκε. Δοκιμάστε ξανά σε λίγο.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -177,19 +159,6 @@ const ContactPage = () => {
             {!estalthike ? (
               <form onSubmit={handleSubmit} noValidate>
                 <div className="ct-field">
-                  <label className="ct-label" htmlFor="ct-onoma">Ονοματεπώνυμο</label>
-                  <input
-                    id="ct-onoma"
-                    type="text"
-                    className="ct-input"
-                    value={onoma}
-                    onChange={(e) => setOnoma(e.target.value)}
-                    placeholder="Το όνομά σας"
-                    autoComplete="name"
-                  />
-                </div>
-
-                <div className="ct-field">
                   <label className="ct-label" htmlFor="ct-email">Email</label>
                   <input
                     id="ct-email"
@@ -199,6 +168,8 @@ const ContactPage = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="onoma@example.gr"
                     autoComplete="email"
+                    maxLength={254}
+                    disabled={sending}
                   />
                   <p className="ct-field-hint">Εκεί θα σας απαντήσουμε.</p>
                 </div>
@@ -208,6 +179,8 @@ const ContactPage = () => {
                   <textarea
                     id="ct-minima"
                     rows="6"
+                    maxLength={5000}
+                    disabled={sending}
                     className="ct-input ct-textarea"
                     value={minima}
                     onChange={(e) => setMinima(e.target.value)}
@@ -219,33 +192,28 @@ const ContactPage = () => {
                   <div className="ct-notice ct-notice--error" role="alert">
                     <IconAlert className="ct-icon" />
                     <div>
-                      <p className="ct-notice-title">Λείπει κάτι</p>
+                      <p className="ct-notice-title">Η αποστολή δεν ολοκληρώθηκε</p>
                       <p>{sfalma}</p>
                     </div>
                   </div>
                 )}
 
-                <button type="submit" className="ct-submit">Αποστολή μηνύματος</button>
+                <button type="submit" className="ct-submit" disabled={sending}>
+                  {sending ? 'Γίνεται αποστολή…' : 'Αποστολή μηνύματος'}
+                </button>
 
                 <p className="ct-form-foot">
-                  Με το πάτημα του κουμπιού ανοίγει το πρόγραμμα αλληλογραφίας σας, με το μήνυμα
-                  ήδη συμπληρωμένο. Αν δεν ανοίξει, στείλτε μας email απευθείας.
+                  Χρησιμοποιούμε το email σας για να απαντήσουμε στην ερώτησή σας.
+                  Δείτε την <Link to="/privacy">Πολιτική Απορρήτου</Link>.
                 </p>
               </form>
             ) : (
               <div className="ct-sent">
                 <IconCheck className="ct-sent-icon" />
-                <h2 className="ct-sent-title">Το μήνυμά σας είναι έτοιμο</h2>
+                <h2 className="ct-sent-title">Το μήνυμά σας στάλθηκε</h2>
                 <p>
-                  Θα πρέπει να άνοιξε το πρόγραμμα αλληλογραφίας σας με το μήνυμα συμπληρωμένο.
-                  Πατήστε αποστολή εκεί για να μας φτάσει.
+                  Θα σας απαντήσουμε στο email που δηλώσατε.
                 </p>
-                <p>
-                  Αν δεν άνοιξε τίποτα, στείλτε το μήνυμά σας στη διεύθυνση:
-                </p>
-                <a className="ct-email-link" href={`mailto:${EMAIL_EPIKOINONIAS}`}>
-                  {EMAIL_EPIKOINONIAS}
-                </a>
                 <button type="button" className="ct-again" onClick={() => setEstalthike(false)}>
                   Σύνταξη νέου μηνύματος
                 </button>
@@ -256,16 +224,18 @@ const ContactPage = () => {
           {/* ── Στήλη 2: πλαϊνές πληροφορίες ── */}
           <aside className="ct-side">
 
-            <div className="ct-card">
-              <p className="ct-side-title">
-                <IconMail className="ct-icon-sm" />
-                Απευθείας email
-              </p>
-              <a className="ct-email-link" href={`mailto:${EMAIL_EPIKOINONIAS}`}>
-                {EMAIL_EPIKOINONIAS}
-              </a>
-              <p className="ct-side-note">Αν προτιμάτε να γράψετε από το δικό σας πρόγραμμα.</p>
-            </div>
+            {EMAIL_EPIKOINONIAS && (
+              <div className="ct-card">
+                <p className="ct-side-title">
+                  <IconMail className="ct-icon-sm" />
+                  Απευθείας email
+                </p>
+                <a className="ct-email-link" href={`mailto:${EMAIL_EPIKOINONIAS}`}>
+                  {EMAIL_EPIKOINONIAS}
+                </a>
+                <p className="ct-side-note">Αν προτιμάτε να γράψετε από το δικό σας πρόγραμμα.</p>
+              </div>
+            )}
 
             <div className="ct-card">
               <p className="ct-side-title">Συχνά μας ρωτούν για</p>
@@ -288,8 +258,12 @@ const ContactPage = () => {
                 Ασφάλεια στοιχείων
               </p>
               <p className="ct-side-note">
-                Μη στέλνετε ΑΜΚΑ, ΑΦΜ, κωδικούς Taxisnet ή άλλα ευαίσθητα στοιχεία μέσα από τη
-                φόρμα. Δεν τα χρειαζόμαστε για να σας απαντήσουμε.
+                Μην στέλνετε ΑΜΚΑ, ΑΦΜ, κωδικούς Taxisnet, ασφαλιστικά έγγραφα ή άλλα
+                προσωπικά στοιχεία που δεν χρειάζονται για την ερώτησή σας.
+              </p>
+              <p className="ct-side-note">
+                Για έγγραφα χρησιμοποιήστε τη σελίδα <Link to="/premium-upload">Αποστολή εγγράφων</Link>.
+                {' '}Δείτε την <Link to="/privacy">Πολιτική Απορρήτου</Link>.
               </p>
             </div>
 

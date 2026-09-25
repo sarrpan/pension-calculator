@@ -1,4 +1,6 @@
 ﻿{
+  "storage": { "rules": "web-functions/storage.rules" },
+  "database": { "rules": "web-functions/database.rules.json" },
   "functions": [
     {
       "source": "web-functions",

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   CardNumberElement,
   CardExpiryElement,
@@ -17,10 +17,10 @@ const CREATE_PAYMENT_INTENT_URL = import.meta.env.VITE_CREATE_PAYMENT_INTENT_URL
    προγραμματιστές. Ο πελάτης δεν πρέπει να τα δει ποτέ.
    ══════════════════════════════════════════════════════════════ */
 const MINYMA_DIKTYOU =
-  'Η σύνδεση με την υπηρεσία πληρωμών δεν ήταν δυνατή. Δεν χρεωθήκατε. Δοκιμάστε ξανά σε λίγο· αν το πρόβλημα συνεχίζεται, επικοινωνήστε μαζί μας.';
+  'Δεν ήταν δυνατή η επιβεβαίωση της πληρωμής λόγω σύνδεσης. Ελέγξτε την κατάσταση της αίτησής σας πριν δοκιμάσετε ξανά ή επικοινωνήστε μαζί μας.';
 
 const MINYMA_AGNOSTO =
-  'Η πληρωμή δεν ολοκληρώθηκε. Δεν χρεωθήκατε. Δοκιμάστε ξανά σε λίγο ή επικοινωνήστε μαζί μας.';
+  'Η πληρωμή δεν επιβεβαιώθηκε. Ελέγξτε την κατάσταση της αίτησής σας πριν δοκιμάσετε ξανά ή επικοινωνήστε μαζί μας.';
 
 /* Ξεχωρίζει τα σφάλματα δικτύου από τα υπόλοιπα. Το «Failed to fetch»
    είναι ό,τι λέει ο browser όταν δεν βρίσκει καθόλου τον διακομιστή. */
@@ -36,8 +36,9 @@ const elliniko_minima = (err) => {
     return MINYMA_DIKTYOU;
   }
 
-  // Τα δικά μας μηνύματα είναι ήδη ελληνικά και τα κρατάμε.
-  if (/[\u0370-\u03ff\u1f00-\u1fff]/.test(keimeno)) return keimeno;
+  if (['card_declined', 'expired_card', 'incorrect_cvc', 'incorrect_number', 'incomplete_number', 'incomplete_expiry', 'incomplete_cvc'].includes(err?.code)) {
+    return 'Η κάρτα δεν έγινε δεκτή. Ελέγξτε τα στοιχεία της ή επικοινωνήστε με την τράπεζά σας.';
+  }
 
   return MINYMA_AGNOSTO;
 };
@@ -97,11 +98,15 @@ const IconCheck = (p) => (
    την έκθεση. Είναι χωριστό από κάθε άλλη αποδοχή όρων· αν ήταν
    ενωμένο, δεν θα μετρούσε ως ρητή δήλωση.
    ══════════════════════════════════════════════════════════════ */
-const StripePaymentForm = ({ onFileSubmit, timi = '20 €', pin, email }) => {
+const StripePaymentForm = ({ onFileSubmit, timi = '20 €', pin, email, onProcessingChange }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [paymentError, setPaymentError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  useEffect(() => {
+    onProcessingChange?.(isProcessing);
+    return () => onProcessingChange?.(false);
+  }, [isProcessing, onProcessingChange]);
 
   // Παρακολούθηση της συμπλήρωσης των τριών πεδίων της κάρτας
   const [isCardNumberComplete, setIsCardNumberComplete] = useState(false);
@@ -118,7 +123,7 @@ const StripePaymentForm = ({ onFileSubmit, timi = '20 €', pin, email }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!stripe || !elements || !isFormComplete) {
+    if (!stripe || !elements || !isFormComplete || isProcessing) {
       return;
     }
 
@@ -143,6 +148,11 @@ const StripePaymentForm = ({ onFileSubmit, timi = '20 €', pin, email }) => {
         throw new Error(data.error || 'Αποτυχία δημιουργίας της πληρωμής.');
       }
 
+      if (data.paidIntentId) {
+        await onFileSubmit(data.paidIntentId, { ypanaxorisiAt: Date.now() });
+        return;
+      }
+
       const cardElement = elements.getElement(CardNumberElement);
       const { error, paymentIntent } = await stripe.confirmCardPayment(
         data.clientSecret,
@@ -150,18 +160,13 @@ const StripePaymentForm = ({ onFileSubmit, timi = '20 €', pin, email }) => {
       );
 
       if (error) {
-        setPaymentError(error.message);
+        setPaymentError(elliniko_minima(error));
         setIsProcessing(false);
         return;
       }
 
-      /* Αν η κατάσταση δεν είναι μία από τις δύο επιτυχείς, η πληρωμή
-         ΔΕΝ πέρασε. Παλιότερα η περίπτωση αυτή περνούσε σιωπηλά και η
-         σελίδα προχωρούσε σαν να είχε πληρωθεί. */
-      if (
-        paymentIntent?.status !== 'requires_capture' &&
-        paymentIntent?.status !== 'succeeded'
-      ) {
+      // Η automatic capture έχει ολοκληρωθεί μόνο στο succeeded.
+      if (paymentIntent?.status !== 'succeeded') {
         setPaymentError(MINYMA_AGNOSTO);
         setIsProcessing(false);
         return;
