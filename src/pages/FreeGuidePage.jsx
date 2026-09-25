@@ -147,7 +147,7 @@ const FreeGuidePage = () => {
                 Ξεκινήστε τη δωρεάν εκτίμηση <GuideIcon name="arrow" />
               </Link>
               <a href="#mesos-syntaksimos" className="fg-button fg-button-secondary">
-                Υπολογίστε τον μέσο συντάξιμο μισθό
+                Δείτε τι χρειάζεται για τον μέσο συντάξιμο μισθό
               </a>
             </div>
           </section>
@@ -161,7 +161,7 @@ const FreeGuidePage = () => {
                 <ul className="fg-check-list">
                   <li>Γνωρίζετε τα βασικά στοιχεία της ασφάλισής σας.</li>
                   <li>Έχετε έως δύο ασφαλιστικές περιόδους.</li>
-                  <li>Δεν χρειάζεται να εξεταστεί παράλληλη ασφάλιση.</li>
+                  <li>Δεν έχετε παράλληλη ασφάλιση.</li>
                   <li>Θέλετε άμεσα μια πρώτη εκτίμηση ποσού.</li>
                 </ul>
               </div>
@@ -204,7 +204,7 @@ const FreeGuidePage = () => {
                     <p>{description}</p>
                     {href && (
                       <a href={href} className="fg-text-link fg-details-link">
-                        Δεν γνωρίζετε τον μέσο συντάξιμο μισθό σας; Υπολογίστε τον εδώ <GuideIcon name="arrow" />
+                        Δείτε τι χρειάζεται για τον μέσο συντάξιμο μισθό <GuideIcon name="arrow" />
                       </a>
                     )}
                   </div>
@@ -228,7 +228,7 @@ const FreeGuidePage = () => {
               </div>
               <div>
                 <h3>Δεν το γνωρίζετε;</h3>
-                <p>Αν δεν τον γνωρίζετε, μπορείτε να τον υπολογίσετε με το δωρεάν εργαλείο μέσου συντάξιμου μισθού.</p>
+                <p>Αν δεν τον γνωρίζετε, μπορείτε να τον υπολογίσετε με το δωρεάν εργαλείο μέσου συντάξιμου μισθού. Μετά τον υπολογισμό μπορείτε να συνεχίσετε στη δωρεάν εκτίμηση με το ποσό προσυμπληρωμένο.</p>
               </div>
             </div>
             <div className="fg-salary-requirements">
@@ -382,7 +382,7 @@ const FreeGuidePage = () => {
             <h2 id="fg-cta-title">Έχετε τα στοιχεία σας; Ξεκινήστε.</h2>
             <p>Μια πρώτη εκτίμηση ποσού, δωρεάν και χωρίς εγγραφή.</p>
             <div className="fg-cta-actions">
-              <Link to="/calculator?start=main" className="fg-button fg-button-primary">Δωρεάν Εκτίμηση <GuideIcon name="arrow" /></Link>
+              <Link to="/calculator?start=main" className="fg-button fg-button-primary">Ξεκινήστε δωρεάν <GuideIcon name="arrow" /></Link>
               <Link to="/report-guide" className="fg-button fg-button-outline">Έχω πιο σύνθετη περίπτωση</Link>
             </div>
           </section>
