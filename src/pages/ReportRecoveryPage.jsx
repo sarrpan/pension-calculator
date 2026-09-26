@@ -6,6 +6,7 @@ import StripePaymentForm from '../components/stripe/StripePaymentForm';
 import {
   katastasiAitisis,
   katagrafiPliromis,
+  ypovoliYpanachorisis,
 } from '../services/stripe/premiumService';
 import './ReportRecoveryPage.css';
 
@@ -65,6 +66,9 @@ const KATASTASEIS = {
     stadio: 3,
     perigrafi: 'Η εκτίμηση σύνταξης ολοκληρώθηκε και το Αναλυτικό Report είναι έτοιμο.',
   },
+  withdrawn: {
+    perigrafi: 'Η επεξεργασία της αίτησης σταμάτησε λόγω υπαναχώρησης.',
+  },
 };
 
 /* Η κατάσταση που σημαίνει «τελείωσε». Χρησιμοποιείται και για το
@@ -122,6 +126,13 @@ const ReportRecoveryPage = () => {
   const [stripeLoading, setStripeLoading] = useState(Boolean(stripePromise));
   const [paymentNeedsReview, setPaymentNeedsReview] = useState(false);
   const [paymentInProgress, setPaymentInProgress] = useState(false);
+  const [withdrawalOpen, setWithdrawalOpen] = useState(false);
+  const [withdrawalConfirmed, setWithdrawalConfirmed] = useState(false);
+  const [withdrawalFullName, setWithdrawalFullName] = useState('');
+  const [withdrawalBusy, setWithdrawalBusy] = useState(false);
+  const [withdrawalMessage, setWithdrawalMessage] = useState('');
+  const [withdrawalError, setWithdrawalError] = useState('');
+  const withdrawalLock = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -153,10 +164,15 @@ const ReportRecoveryPage = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (loading || paymentInProgress) return;
+    if (loading || paymentInProgress || withdrawalLock.current) return;
     setError(null);
     setReportData(null);
     setDeixePliromi(false);
+    setWithdrawalOpen(false);
+    setWithdrawalConfirmed(false);
+    setWithdrawalFullName('');
+    setWithdrawalMessage('');
+    setWithdrawalError('');
 
     // Καθαρίζουμε το PIN: κενά, πεζά/κεφαλαία, και το "PIN-" αν το έγραψε κι αυτός
     const cleanPin = pin.trim().toUpperCase().replace(/^PIN[-\s]*/, '');
@@ -202,6 +218,43 @@ const ReportRecoveryPage = () => {
     }
   };
 
+  const submitWithdrawal = async (e) => {
+    e.preventDefault();
+    if (!withdrawalConfirmed || withdrawalLock.current || !reportData) return;
+    const fullName = withdrawalFullName.trim().replace(/\s+/g, ' ');
+    if (fullName.length < 2 || fullName.length > 200) {
+      setWithdrawalError('Συμπληρώστε το ονοματεπώνυμό σας στη δήλωση υπαναχώρησης.');
+      return;
+    }
+    withdrawalLock.current = true;
+    setWithdrawalBusy(true);
+    setWithdrawalError('');
+    try {
+      const result = await ypovoliYpanachorisis(reportData.pin, reportData.email, true, fullName);
+      if (!result.success) {
+        setWithdrawalError(result.error || 'Η υποβολή δεν επιβεβαιώθηκε. Δοκιμάστε ξανά ή επικοινωνήστε μαζί μας.');
+        // A delivery may have completed since the last search.
+        if (result.code === 'report_delivered') {
+          setReportData(previous => ({ ...previous, status: 'delivered', reportDelivered: true, canWithdraw: false }));
+          setWithdrawalOpen(false);
+        }
+        return;
+      }
+      setReportData(previous => ({ ...previous, status: 'withdrawn', canWithdraw: false,
+        withdrawalStatus: result.withdrawalStatus || 'requested',
+        withdrawalRequestedAt: result.withdrawalRequestedAt, refundStatus: result.refundStatus }));
+      setWithdrawalOpen(false);
+      setWithdrawalMessage(result.alreadyRequested
+        ? 'Το αίτημα υπαναχώρησης έχει ήδη καταγραφεί.'
+        : 'Το αίτημα υπαναχώρησης καταγράφηκε. Εφόσον η έκθεση δεν έχει ακόμη παραδοθεί, θα γίνει πλήρης επιστροφή του ποσού που καταβάλατε στο αρχικό μέσο πληρωμής.');
+    } catch {
+      setWithdrawalError('Η υποβολή δεν επιβεβαιώθηκε. Ελέγξτε ξανά την αίτηση ή επικοινωνήστε μαζί μας.');
+    } finally {
+      withdrawalLock.current = false;
+      setWithdrawalBusy(false);
+    }
+  };
+
   /* Καλείται από τη φόρμα κάρτας όταν η πληρωμή περάσει.
 
      Η σελίδα ΔΕΝ γράφει η ίδια «πληρώθηκε». Στέλνει τον αριθμό της
@@ -231,10 +284,12 @@ const ReportRecoveryPage = () => {
   // Υπολογισμός σταδίου με βάση την κατάσταση της αίτησης
   const katastasi = reportData ? KATASTASEIS[reportData.status] : null;
   const trexonStadio = katastasi ? katastasi.stadio : 0;
-  const oloklirothike = reportData?.status === KATASTASI_TELOUS;
+  const withdrawn = Boolean(reportData?.withdrawalStatus || reportData?.withdrawalRequestedAt || reportData?.status === 'withdrawn');
+  const oloklirothike = reportData?.reportDelivered || reportData?.status === KATASTASI_TELOUS;
   const perigrafi = katastasi ? katastasi.perigrafi : reportData?.status;
   const simeiosi = katastasi ? katastasi.simeiosi : null;
-  const zitisiPliromis = reportData?.status === 'awaiting_payment' && !paymentNeedsReview;
+  const zitisiPliromis = reportData?.status === 'awaiting_payment' && reportData?.paymentStatus !== 'paid' && !withdrawn && !paymentNeedsReview;
+  const withdrawalAvailable = reportData?.paymentStatus === 'paid' && !oloklirothike && !withdrawn;
 
   return (
     <div className="recovery-page">
@@ -263,7 +318,7 @@ const ReportRecoveryPage = () => {
                   type="text"
                   inputMode="numeric"
                   maxLength={6}
-                  disabled={paymentInProgress}
+                  disabled={paymentInProgress || withdrawalBusy}
                   autoComplete="off"
                   placeholder="146138"
                   aria-label="Κωδικός αίτησης, τα έξι ψηφία μετά το PIN"
@@ -285,7 +340,7 @@ const ReportRecoveryPage = () => {
                 className="text-input"
                 autoComplete="email"
                 maxLength={254}
-                disabled={paymentInProgress}
+                disabled={paymentInProgress || withdrawalBusy}
                 placeholder="onoma@example.gr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -295,7 +350,7 @@ const ReportRecoveryPage = () => {
               </p>
             </div>
 
-            <button type="submit" className="recovery-submit" disabled={loading || paymentInProgress}>
+            <button type="submit" className="recovery-submit" disabled={loading || paymentInProgress || withdrawalBusy}>
               {loading ? 'Γίνεται αναζήτηση…' : 'Έλεγχος κατάστασης'}
             </button>
           </form>
@@ -335,7 +390,7 @@ const ReportRecoveryPage = () => {
           <div className="status-box" aria-live="polite" ref={resultRef}>
             <span className="status-eyebrow">ΚΑΤΑΣΤΑΣΗ ΑΙΤΗΣΗΣ</span>
 
-            <ol className="stages">
+            {!withdrawn && <ol className="stages">
               {STADIA.map((onoma, i) => {
                 const done = i < trexonStadio || (oloklirothike && i <= trexonStadio);
                 const current = i === trexonStadio && !oloklirothike;
@@ -365,12 +420,54 @@ const ReportRecoveryPage = () => {
                   </li>
                 );
               })}
-            </ol>
+            </ol>}
 
-            <p className="status-text">{perigrafi}</p>
+            <p className="status-text">{withdrawn ? KATASTASEIS.withdrawn.perigrafi : perigrafi}</p>
 
-            {simeiosi && <p className="status-note">{simeiosi}</p>}
-            {reportData.status === 'needs_more_info' && (
+            {withdrawalAvailable && !withdrawalOpen && (
+              <button type="button" className="pay-cancel" onClick={() => setWithdrawalOpen(true)}>
+                Υπαναχώρηση από τη σύμβαση
+              </button>
+            )}
+            {withdrawalAvailable && withdrawalOpen && (
+              <form onSubmit={submitWithdrawal}>
+                <p className="status-note">Αίτηση {reportData.pin} — {reportData.email}</p>
+                <div className="field">
+                  <label className="field-label" htmlFor="withdrawal-full-name">Ονοματεπώνυμο</label>
+                  <input id="withdrawal-full-name" name="fullName" type="text" className="text-input"
+                    autoComplete="name" required minLength={2} maxLength={200} value={withdrawalFullName}
+                    disabled={withdrawalBusy} onChange={(e) => setWithdrawalFullName(e.target.value)}
+                    aria-describedby="withdrawal-name-purpose" />
+                  <p id="withdrawal-name-purpose" className="field-help">Χρησιμοποιείται μόνο για τη δήλωση υπαναχώρησης και τη διεκπεραίωσή της.</p>
+                </div>
+                <label>
+                  <input type="checkbox" required checked={withdrawalConfirmed} disabled={withdrawalBusy}
+                    onChange={(e) => setWithdrawalConfirmed(e.target.checked)} />{' '}
+                  Δηλώνω ότι επιθυμώ να υπαναχωρήσω από τη σύμβαση για το Αναλυτικό Report.
+                </label>
+                <button type="submit" className="pay-btn" disabled={!withdrawalConfirmed || withdrawalFullName.trim().length < 2 || withdrawalBusy}>
+                  {withdrawalBusy ? 'Υποβολή…' : 'Επιβεβαίωση υπαναχώρησης'}
+                </button>
+                <button type="button" className="pay-cancel" disabled={withdrawalBusy}
+                  onClick={() => { setWithdrawalOpen(false); setWithdrawalConfirmed(false); }}>
+                  Ακύρωση
+                </button>
+              </form>
+            )}
+            {(withdrawn || withdrawalMessage) && (
+              <p className="status-note" role="status">{withdrawalMessage || 'Το αίτημα υπαναχώρησης έχει ήδη καταγραφεί.'}</p>
+            )}
+            {withdrawalError && (
+              <p className="status-note" role="alert">{withdrawalError}{' '}<Link to="/contact">Επικοινωνία</Link></p>
+            )}
+            {oloklirothike && (
+              <p className="status-note">Η υπηρεσία έχει ολοκληρωθεί. Για οποιοδήποτε θέμα,{' '}
+                <Link to="/contact">επικοινωνήστε μαζί μας</Link>.
+              </p>
+            )}
+
+            {!withdrawn && simeiosi && <p className="status-note">{simeiosi}</p>}
+            {!withdrawn && reportData.status === 'needs_more_info' && (
               <p className="status-note">
                 <Link to="/premium-upload">Αποστολή επιπλέον εγγράφων</Link>
                 {' '}με τον ίδιο κωδικό αίτησης και το ίδιο email.
@@ -424,7 +521,7 @@ const ReportRecoveryPage = () => {
               </div>
             )}
 
-            {oloklirothike && reportData.finalReportUrl && (
+            {!withdrawn && oloklirothike && reportData.finalReportUrl && (
               <a
                 href={reportData.finalReportUrl}
                 target="_blank"
@@ -442,7 +539,7 @@ const ReportRecoveryPage = () => {
               </a>
             )}
 
-            {oloklirothike && !reportData.finalReportUrl && (
+            {!withdrawn && oloklirothike && !reportData.finalReportUrl && (
               <p className="status-note">
                 {reportData.reportAvailabilityExpired ? (
                   <>

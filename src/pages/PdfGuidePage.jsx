@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import './PdfGuidePage.css';
 
 const ImageSlider = ({ slides }) => {
@@ -52,6 +53,13 @@ const ImageSlider = ({ slides }) => {
           ></span>
         ))}
       </div>
+      <div className="direct-link-container">
+        <p>
+          Αφού αποθηκεύσετε το PDF, μπορείτε να το στείλετε μαζί με τυχόν άλλα σχετικά
+          έγγραφα για το Αναλυτικό Report.
+        </p>
+        <Link to="/premium-upload" className="btn-start-now">Αποστολή εγγράφων</Link>
+      </div>
     </div>
   );
 };
@@ -59,7 +67,7 @@ const ImageSlider = ({ slides }) => {
 const PdfGuidePage = () => {
   const allSteps = [
     { text: 'Επιλέξτε συνέχεια στο Taxisnet.', image: '/img/1.png' },
-    { text: 'Εισάγετε το Username και το Password σας.', image: '/img/2.png' },
+    { text: 'Στην επίσημη σελίδα σύνδεσης, εισάγετε το Username και το Password του Taxisnet.', image: '/img/2.png' },
     { text: 'Πατήστε Αποστολή.', image: '/img/3.png' },
     { text: 'Εισάγετε τον Αριθμό ΑΜΚΑ για ταυτοποίηση και πατήστε Είσοδος.', image: '/img/4.png' },
     { text: 'Στο μενού επιλέξτε Συνοπτικό και Αναλυτικό ιστορικό Ασφάλισης.', image: '/img/5.png' },
@@ -89,6 +97,15 @@ const PdfGuidePage = () => {
               <li><strong>Κωδικούς Taxisnet:</strong> Για την είσοδο στην πλατφόρμα.</li>
               <li><strong>Αριθμό ΑΜΚΑ:</strong> Θα σας ζητηθεί για την ταυτοποίηση.</li>
             </ul>
+            <p>
+              Οι κωδικοί Taxisnet εισάγονται μόνο στην επίσημη πλατφόρμα του e-ΕΦΚΑ.
+              Η Sintaximou δεν ζητά ούτε λαμβάνει τους κωδικούς Taxisnet σας.
+            </p>
+            <p>
+              Το PDF του Αναλυτικού Ιστορικού Ασφάλισης είναι ένα από τα έγγραφα που μπορείτε
+              να στείλετε για το Αναλυτικό Report. Αν υπάρχουν και άλλα σχετικά έγγραφα που
+              τεκμηριώνουν χρόνο ασφάλισης ή αποδοχές, μπορείτε να τα στείλετε μαζί.
+            </p>
 
             <div className="direct-link-container">
               <a

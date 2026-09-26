@@ -5,6 +5,7 @@ import { initAuth } from "../../authInit";
 const DIEFTHYNSI_SYMPLIROSIS = import.meta.env.VITE_SYMPLIROSI_AITISIS_URL;
 const DIEFTHYNSI_KATASTASIS = import.meta.env.VITE_GET_REQUEST_STATUS_URL;
 const DIEFTHYNSI_EPIVEVAIOSIS = import.meta.env.VITE_EPIVEVAIOSI_PLIROMIS_URL;
+const DIEFTHYNSI_YPANACHORISIS = import.meta.env.VITE_REQUEST_WITHDRAWAL_URL;
 
 export const KATASTASEIS = {
   PARALIFTHIKAN: "documents_received",
@@ -12,12 +13,17 @@ export const KATASTASEIS = {
   ANAMONI_PLIROMIS: "awaiting_payment",
   SE_EPEXERGASIA: "processing",
   PARADOTHIKE: "delivered",
+  YPANACHORISI: "withdrawn",
 };
 
 export const UPLOAD_LIMITS = { files: 10, bytes: 50 * 1024 * 1024 };
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MESSAGES = {
+  report_delivered: "Η υπηρεσία έχει ολοκληρωθεί. Για οποιοδήποτε θέμα, επικοινωνήστε μαζί μας.",
+  withdrawal_unavailable: "Η υπαναχώρηση δεν είναι διαθέσιμη για αυτή την αίτηση. Επικοινωνήστε μαζί μας.",
+  confirmation_required: "Επιβεβαιώστε ότι επιθυμείτε να υπαναχωρήσετε από τη σύμβαση.",
+  invalid_withdrawal_name: "Συμπληρώστε το ονοματεπώνυμό σας στη δήλωση υπαναχώρησης (2–200 χαρακτήρες).",
   upload_limits: "Κάθε αίτηση δέχεται έως 10 αρχεία και έως 50 MB συνολικά, μαζί με τα ήδη αποθηκευμένα. Αφαιρέστε, ενώστε ή μειώστε αρχεία, ή επικοινωνήστε μαζί μας.",
   invalid_files: "Επιλέξτε έγκυρα, μη κενά αρχεία PDF, JPG/JPEG ή PNG.",
   upload_stage: "Η αίτηση έχει ήδη προχωρήσει σε επόμενο στάδιο. Επικοινωνήστε μαζί μας για επιπλέον έγγραφα.",
@@ -55,6 +61,7 @@ const klisiSynartisis = async (body, url = DIEFTHYNSI_SYMPLIROSIS, user = null) 
     if (!response.ok || data.success !== true) {
       return {
         success: false,
+        code: data.code,
         uncertain: response.status >= 500,
         error: MESSAGES[data.code] || MESSAGES.unavailable,
       };
@@ -94,8 +101,21 @@ export const katastasiAitisis = async (pin, email) => {
       pin: result.pin, email: result.email, status: result.status,
       finalReportUrl: result.finalReportUrl || null,
       reportAvailabilityExpired: result.reportAvailabilityExpired === true,
+      paymentStatus: result.paymentStatus,
+      reportDelivered: result.reportDelivered === true,
+      canWithdraw: result.canWithdraw === true,
+      withdrawalStatus: result.withdrawalStatus || null,
+      withdrawalRequestedAt: result.withdrawalRequestedAt || null,
+      refundStatus: result.refundStatus || null,
     } : null,
   };
+};
+
+export const ypovoliYpanachorisis = (pin, email, confirmed, fullName) => {
+  if (!DIEFTHYNSI_YPANACHORISIS) return Promise.resolve({ success: false, error: MESSAGES.unavailable });
+  return klisiSynartisis({
+    pin: plirisKodikos(pin), email: kanoniko(email), confirmed: confirmed === true, fullName,
+  }, DIEFTHYNSI_YPANACHORISIS);
 };
 
 export const anevasmaAitisis = async (stoicheia, arxeia, onProodos) => {

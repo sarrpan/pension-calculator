@@ -29,6 +29,9 @@
 .as-years-heading h2 { margin: 0; }
 .as-year-range { padding: 4px 12px; border-radius: 8px; background: #eaf0f7; color: var(--primary, #0f172a); font-size: 0.85rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .as-help { font-size: 0.9rem; }
+.as-draft-tools { margin-bottom: 16px; }
+.as-clear-draft { min-height: 44px; margin-top: 8px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: var(--as-muted); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.as-clear-draft:hover { background: #f8fafc; }
 .as-fund-field { margin-bottom: 28px; }
 .as-fund-field label { display: block; margin-bottom: 8px; color: var(--primary, #0f172a); font-weight: 700; }
 .as-fund-field select { width: 100%; min-height: 48px; padding: 10px 12px; border: 1px solid #94a3b8; border-radius: 8px; background: #fff; color: var(--primary, #0f172a); font: inherit; font-size: 16px; }

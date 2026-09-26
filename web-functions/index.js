@@ -91,8 +91,8 @@ const KATASTASEIS = {
   PARADOTHIKE: "delivered",
 };
 
-// Οι καταστάσεις που στέλνουν email. Η «processing» λείπει επίτηδες:
-// ο πελάτης μόλις πλήρωσε και ξέρει ήδη ότι ξεκινά η δουλειά.
+// Οι χειροκίνητες αλλαγές κατάστασης που στέλνουν email.
+// Η επιβεβαίωση παραγγελίας στέλνεται μόνο από την epivevaiosiPliromis.
 const KATASTASEIS_ME_EMAIL = [
   KATASTASEIS.PARALIFTHIKAN,
   KATASTASEIS.ELLIPI,
@@ -101,6 +101,15 @@ const KATASTASEIS_ME_EMAIL = [
 ];
 
 const OLES_OI_KATASTASEIS = Object.values(KATASTASEIS);
+const WITHDRAWN = "withdrawn";
+const hasWithdrawal = (request) => Boolean(request && (request.status === WITHDRAWN
+  || request.withdrawalStatus || request.withdrawalRequestedAt));
+const hasDeliveredReport = (request) => Boolean(request && (request.status === KATASTASEIS.PARADOTHIKE
+  || request.deliveredAt || request.emailIstoriko?.delivered));
+const canWithdraw = (request) => Boolean(request && request.paymentStatus === "paid"
+  && !hasDeliveredReport(request) && !hasWithdrawal(request));
+const validPaymentAmount = (amount, currency) => Number.isSafeInteger(amount) && amount > 0
+  && typeof currency === "string" && /^[a-z]{3}$/.test(currency);
 
 /* ══════════════════════════════════════════════════════════════
    ΒΟΗΘΗΤΙΚΑ
@@ -116,7 +125,7 @@ function getStripeClient() {
   return new Stripe(secretKey);
 }
 
-function getEmailTransporter() {
+function getEmailTransporter(options = {}) {
   const emailUser = process.env.EMAIL_USER;
   const emailPass = process.env.EMAIL_PASS;
 
@@ -130,6 +139,7 @@ function getEmailTransporter() {
       user: emailUser,
       pass: emailPass,
     },
+    ...options,
   });
 }
 
@@ -319,6 +329,29 @@ const KEIMENA = {
     ],
   }),
 
+  /* ── Επιβεβαίωση πληρωμής και παραγγελίας ─────────────────── */
+  payment_confirmation: (aitisi) => ({
+    thema: `Επιβεβαίωση πληρωμής και παραγγελίας — ${aitisi.pin}`,
+    blokia: [
+      { t: "p", keimeno: "Καλησπέρα σας," },
+      { t: "p", keimeno: "Η πληρωμή σας ολοκληρώθηκε επιτυχώς και η παραγγελία σας επιβεβαιώθηκε." },
+      { t: "p", keimeno: "Υπηρεσία: Αναλυτικό Report." },
+      { t: "p", keimeno: `Τελική τιμή για τον καταναλωτή: ${TIMI_KEIMENO}.` },
+      { t: "kodikos", keimeno: aitisi.pin },
+      { t: "p", keimeno: "Η αίτησή σας βρίσκεται πλέον σε επεξεργασία. Μπορείτε να παρακολουθείτε την πορεία της με τον κωδικό και το email σας:" },
+      { t: "syndesmos", url: SELIDA_PARAKOLOUTHISIS },
+      { t: "p", keimeno: "Καταγράψαμε τη δήλωσή σας για την άμεση έναρξη της υπηρεσίας:" },
+      {
+        t: "parathesi",
+        keimeno: "Ζητώ να ξεκινήσει άμεσα η εκτέλεση της υπηρεσίας και γνωρίζω ότι, μόλις ολοκληρωθεί, χάνω το δικαίωμα υπαναχώρησης.",
+      },
+      { t: "titlos", keimeno: "Όροι Χρήσης" },
+      { t: "syndesmos", url: `${DIEFTHYNSI_SITE}/terms` },
+      { t: "titlos", keimeno: "Πληροφορίες υπαναχώρησης" },
+      { t: "syndesmos", url: `${DIEFTHYNSI_SITE}/terms#oroi-9` },
+    ],
+  }),
+
   /* ── Η έκθεση παραδόθηκε ─────────────────────────────────── */
   [KATASTASEIS.PARADOTHIKE]: (aitisi) => ({
     thema: `Το Αναλυτικό Report είναι έτοιμο — ${aitisi.pin}`,
@@ -491,7 +524,7 @@ const keimenoApoBlokia = (blokia) => {
    διεύθυνση που δεν ανήκει σε πραγματική αίτηση.
    ══════════════════════════════════════════════════════════════ */
 exports.allagiKatastasis = onRequest(ORIA, (req, res) => {
-  cors(req, res, async () => {
+  return cors(req, res, async () => {
     if (req.method !== "POST") {
       return res.status(405).json({ success: false, error: "POST required" });
     }
@@ -517,6 +550,28 @@ exports.allagiKatastasis = onRequest(ORIA, (req, res) => {
     // Επιβεβαίωση μόνο του header, χωρίς PIN, πρόσβαση σε αίτηση ή email.
     if (req.body?.energeia === "epivevaiosi_kodikou") {
       return res.status(200).json({ success: true });
+    }
+
+    // Records a refund already performed in Stripe Dashboard; never moves money.
+    if (req.body?.energeia === "refund_completed") {
+      const pin = plirisKodikos(req.body.pin);
+      if (!/^PIN-\d{6}$/.test(pin) || req.body.confirmed !== true) return fail(res, 400, "invalid_refund_confirmation");
+      try {
+        const result = await admin.database().ref(`premium_requests/${pin}`).transaction((current) => {
+          if (current === null) return null;
+          if (!hasWithdrawal(current) || !validPaymentAmount(current.refundAmount, current.refundCurrency)
+            || !current.withdrawalPaymentIntentId) return;
+          if (current.refundStatus === "completed") return current;
+          if (current.refundStatus !== "pending") return;
+          return { ...current, refundStatus: "completed", refundedAt: Date.now() };
+        });
+        if (!result.committed || !result.snapshot.exists()) return fail(res, 409, "refund_unavailable");
+        const saved = result.snapshot.val();
+        return res.status(200).json({ success: true, refundStatus: saved.refundStatus, refundedAt: saved.refundedAt });
+      } catch (error) {
+        console.error("Refund confirmation failed:", error.code || error.name);
+        return fail(res, 500, "unavailable");
+      }
     }
 
     const { pin, katastasi, keimeno, reportUrl } = req.body || {};
@@ -574,7 +629,15 @@ exports.allagiKatastasis = onRequest(ORIA, (req, res) => {
         allages.deliveredAt = Date.now();
       }
 
-      await anafora.update(allages);
+      // Serialize delivery/status changes with withdrawal on the same request.
+      const transition = await anafora.transaction((current) => {
+        if (current === null) return null;
+        if (hasWithdrawal(current)) return;
+        return { ...current, ...allages };
+      });
+      if (!transition.committed || !transition.snapshot.exists()) {
+        return fail(res, 409, "request_withdrawn", "Έχει καταγραφεί υπαναχώρηση. Η αίτηση δεν μπορεί να προχωρήσει.");
+      }
 
       // --- Χρειάζεται email αυτή η κατάσταση; ---
       if (!KATASTASEIS_ME_EMAIL.includes(katastasi)) {
@@ -665,7 +728,7 @@ const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 const DOCUMENT_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const validEmail = (value) => typeof value === "string" && value.length <= 254
   && /^[^\s@<>,;:"\\]+@[^\s@<>,;:"\\]+\.[^\s@<>,;:"\\]+$/.test(value);
-const uploadAllowed = (request) => request && request.paymentStatus !== "paid"
+const uploadAllowed = (request) => request && !hasWithdrawal(request) && request.paymentStatus !== "paid"
   && [KATASTASEIS.PARALIFTHIKAN, KATASTASEIS.ELLIPI].includes(request.status);
 const fail = (res, status, code, error = "Η ενέργεια δεν ολοκληρώθηκε. Δοκιμάστε ξανά ή επικοινωνήστε μαζί μας.") =>
   res.status(status).json({ success: false, code, error });
@@ -808,7 +871,7 @@ exports.createPaymentIntent = onRequest(ORIA, (req, res) => {
       const reference = admin.database().ref(`premium_requests/${kodikos}`);
       const request = (await reference.once("value")).val();
       if (!request || kanoniko(request.email) !== emailKanoniko) return fail(res, 404, "not_found");
-      if (request.status !== KATASTASEIS.ANAMONI_PLIROMIS || request.paymentStatus === "paid") {
+      if (hasWithdrawal(request) || request.status !== KATASTASEIS.ANAMONI_PLIROMIS || request.paymentStatus === "paid") {
         return fail(res, 409, "payment_unavailable");
       }
       const stripe = getStripeClient();
@@ -825,7 +888,7 @@ exports.createPaymentIntent = onRequest(ORIA, (req, res) => {
         || kanoniko(paymentIntent.metadata?.email) !== emailKanoniko) return fail(res, 409, "payment_unavailable");
       const result = await reference.transaction((current) => {
         if (current === null) return null;
-        if (!current || kanoniko(current.email) !== emailKanoniko
+        if (!current || hasWithdrawal(current) || kanoniko(current.email) !== emailKanoniko
           || current.status !== KATASTASEIS.ANAMONI_PLIROMIS || current.paymentStatus === "paid"
           || (current.paymentIntentId && current.paymentIntentId !== paymentIntent.id)) return;
         return { ...current, paymentIntentId: paymentIntent.id };
@@ -894,13 +957,19 @@ exports.getRequestStatus = onRequest(ORIA, (req, res) => {
         pin: kodikos,
         email: aitisi.email,
         status: aitisi.status || KATASTASEIS.PARALIFTHIKAN,
+        paymentStatus: aitisi.paymentStatus || "not_requested",
+        reportDelivered: hasDeliveredReport(aitisi),
+        canWithdraw: canWithdraw(aitisi),
+        withdrawalStatus: aitisi.withdrawalStatus || (hasWithdrawal(aitisi) ? "requested" : null),
+        withdrawalRequestedAt: aitisi.withdrawalRequestedAt || null,
+        refundStatus: aitisi.refundStatus || null,
       };
 
       /* Δύο ημερολογιακοί μήνες από την παράδοση, σε UTC.
          Αν λείπει η αντίστοιχη ημέρα, λήγει την τελευταία ημέρα του μήνα. */
       const now = Date.now();
       const deliveredAt = aitisi.deliveredAt;
-      if (apantisi.status === KATASTASEIS.PARADOTHIKE
+      if (!hasWithdrawal(aitisi) && apantisi.status === KATASTASEIS.PARADOTHIKE
         && Number.isSafeInteger(deliveredAt) && deliveredAt > 0 && deliveredAt <= now) {
         const expiresAt = new Date(deliveredAt);
         const day = expiresAt.getUTCDate();
@@ -926,6 +995,117 @@ exports.getRequestStatus = onRequest(ORIA, (req, res) => {
   });
 });
 
+async function sendWithdrawalEmail(reference, request, pin) {
+  try {
+    const requestedAt = new Date(request.withdrawalRequestedAt).toLocaleString("el-GR", { timeZone: "Europe/Athens", hour12: false });
+    const blokia = [
+      { t: "p", keimeno: "Λάβαμε τη δήλωση υπαναχώρησής σας." },
+      { t: "p", keimeno: "Υπηρεσία: Αναλυτικό Report." },
+      { t: "kodikos", keimeno: pin },
+      { t: "p", keimeno: `Ονοματεπώνυμο: ${request.withdrawalDeclaration.fullName}` },
+      { t: "p", keimeno: `Ημερομηνία και ώρα: ${requestedAt} (ώρα Ελλάδας).` },
+      { t: "p", keimeno: "Επειδή το Report δεν είχε παραδοθεί, δικαιούστε πλήρη επιστροφή. Θα επιστραφεί το πλήρες ποσό που καταβάλατε στο αρχικό μέσο πληρωμής. Η επιστροφή εκκρεμεί." },
+      { t: "p", keimeno: "Μετά την εκτέλεση της επιστροφής από την υπηρεσία μας θα ακολουθήσει η τραπεζική/Stripe επεξεργασία για την εμφάνιση του ποσού στο μέσο πληρωμής σας." },
+    ];
+    const delivery = await getEmailTransporter({ connectionTimeout: 5000, greetingTimeout: 5000, socketTimeout: 10000 }).sendMail({
+      from: `"${ONOMA_APOSTOLEA}" <${process.env.EMAIL_USER}>`, to: request.email,
+      subject: `Επιβεβαίωση αιτήματος υπαναχώρησης — ${pin}`,
+      text: keimenoApoBlokia(blokia), html: htmlApoBlokia(blokia),
+    });
+    if (!delivery.accepted?.some(recipient => kanoniko(recipient) === kanoniko(request.email))) throw new Error("email_not_accepted");
+    await reference.child("withdrawalEmail").update({ status: "sent", sentAt: Date.now() });
+  } catch (error) {
+    // Retain the atomic claim even after ambiguous SMTP failure; no duplicate sends on retry.
+    console.error("Withdrawal email failed:", { pin, code: error.code || error.name });
+    try { await reference.child("withdrawalEmail").update({ status: "failed", failedAt: Date.now() }); }
+    catch { console.error("Could not record withdrawal email failure:", pin); }
+  }
+}
+
+exports.requestWithdrawal = onRequest(ORIA, (req, res) => {
+  return cors(req, res, async () => {
+    res.set?.("Cache-Control", "no-store");
+    if (req.method !== "POST") return fail(res, 405, "method");
+    const { pin, email, confirmed, fullName } = req.body || {};
+    const kodikos = plirisKodikos(pin);
+    const emailKanoniko = kanoniko(email);
+    const notFound = () => fail(res, 404, "not_found", "Δεν βρέθηκε αίτηση με αυτά τα στοιχεία.");
+    if (!/^PIN-\d{6}$/.test(kodikos) || !validEmail(emailKanoniko)) return notFound();
+    try {
+      const reference = admin.database().ref(`premium_requests/${kodikos}`);
+      const request = (await reference.once("value")).val();
+      if (!request || kanoniko(request.email) !== emailKanoniko) return notFound();
+      if (confirmed !== true) return fail(res, 400, "confirmation_required");
+      const declarationName = typeof fullName === "string" ? fullName.trim().replace(/\s+/g, " ") : "";
+      let payment = null;
+      if (!hasWithdrawal(request)) {
+        if (declarationName.length < 2 || declarationName.length > 200) return fail(res, 400, "invalid_withdrawal_name");
+        if (!canWithdraw(request)) return fail(res, 409, hasDeliveredReport(request) ? "report_delivered" : "withdrawal_unavailable");
+        if (!/^pi_[a-zA-Z0-9]+$/.test(request.paymentIntentId || "")) return fail(res, 409, "withdrawal_unavailable");
+        // Read the original transaction, including legacy requests without a stored amount.
+        // Never use the current catalogue price or an amount/intent supplied by the browser.
+        payment = await getStripeClient().paymentIntents.retrieve(request.paymentIntentId);
+        if (!payment || payment.id !== request.paymentIntentId || payment.status !== "succeeded"
+          || !validPaymentAmount(payment.amount_received, payment.currency)
+          || plirisKodikos(payment.metadata?.pin) !== kodikos
+          || kanoniko(payment.metadata?.email) !== emailKanoniko) return fail(res, 409, "withdrawal_unavailable");
+      }
+      const claimId = require("node:crypto").randomUUID();
+      const result = await reference.transaction((current) => {
+        if (current === null) return null;
+        if (kanoniko(current.email) !== emailKanoniko) return;
+        if (hasWithdrawal(current)) return current;
+        if (!canWithdraw(current) || !payment || current.paymentIntentId !== payment.id) return;
+        const now = Date.now();
+        return { ...current, status: WITHDRAWN, withdrawalStatus: "requested", withdrawalRequestedAt: now,
+          withdrawalPreviousStatus: current.status, withdrawalPaymentIntentId: current.paymentIntentId,
+          refundStatus: "pending", refundAmount: payment.amount_received, refundCurrency: payment.currency,
+          withdrawalDeclaration: { fullName: declarationName, pin: kodikos, email: emailKanoniko,
+            service: "Αναλυτικό Report", contractedAt: current.paidAt || null },
+          withdrawalEmail: { claimId, claimedAt: now, status: "claimed" } };
+      });
+      const saved = result.snapshot.val();
+      if (!saved || kanoniko(saved.email) !== emailKanoniko) return notFound();
+      if (!result.committed || !hasWithdrawal(saved)) {
+        return fail(res, 409, hasDeliveredReport(saved) ? "report_delivered" : "withdrawal_unavailable");
+      }
+      const firstRequest = saved.withdrawalEmail?.claimId === claimId;
+      if (firstRequest) await sendWithdrawalEmail(reference, saved, kodikos);
+      return res.status(200).json({ success: true, alreadyRequested: !firstRequest, status: WITHDRAWN,
+        withdrawalStatus: saved.withdrawalStatus, withdrawalRequestedAt: saved.withdrawalRequestedAt,
+        refundStatus: saved.refundStatus, refundAmount: saved.refundAmount, refundCurrency: saved.refundCurrency });
+    } catch (error) {
+      console.error("Withdrawal failed:", error.code || error.name);
+      return fail(res, 500, "unavailable");
+    }
+  });
+});
+
+async function sendPaymentConfirmationEmail(reference, request, pin, paymentIntentId) {
+  let stage = "send";
+  try {
+    if (!DIEFTHYNSI_SITE) throw Object.assign(new Error(), { code: "missing_public_site_url" });
+    const { thema, blokia } = KEIMENA.payment_confirmation({ ...request, pin });
+    // Bound SMTP waits so an email outage does not hold up the paid response.
+    const transporter = getEmailTransporter({ connectionTimeout: 5000, greetingTimeout: 5000, socketTimeout: 10000 });
+    const delivery = await transporter.sendMail({
+      from: `"${ONOMA_APOSTOLEA}" <${process.env.EMAIL_USER}>`,
+      to: request.email,
+      subject: thema,
+      text: keimenoApoBlokia(blokia),
+      html: htmlApoBlokia(blokia),
+    });
+    if (!delivery.accepted?.some((recipient) => kanoniko(recipient) === kanoniko(request.email))) {
+      throw Object.assign(new Error(), { code: "email_not_accepted" });
+    }
+    stage = "record_delivery";
+    await reference.child("paymentConfirmationEmail").update({ sentAt: Date.now() });
+  } catch (error) {
+    // Keep the claim even after ambiguous SMTP/DB failures; retrying could send twice.
+    console.error("Payment confirmation email failed:", { pin, paymentIntentId, stage, code: error.code || error.name });
+  }
+}
+
 exports.epivevaiosiPliromis = onRequest(ORIA, (req, res) => {
   return cors(req, res, async () => {
     if (req.method !== "POST") return fail(res, 405, "method");
@@ -943,7 +1123,7 @@ exports.epivevaiosiPliromis = onRequest(ORIA, (req, res) => {
       if (request.paymentStatus === "paid" && request.paymentIntentId === paymentIntentId) {
         return res.status(200).json({ success: true, plirothike: true, status: request.status });
       }
-      if (request.status !== KATASTASEIS.ANAMONI_PLIROMIS || request.paymentStatus === "paid"
+      if (hasWithdrawal(request) || request.status !== KATASTASEIS.ANAMONI_PLIROMIS || request.paymentStatus === "paid"
         || (request.paymentIntentId && request.paymentIntentId !== paymentIntentId)) {
         return fail(res, 409, "payment_unavailable");
       }
@@ -954,19 +1134,27 @@ exports.epivevaiosiPliromis = onRequest(ORIA, (req, res) => {
         || kanoniko(payment.metadata?.email) !== emailKanoniko) {
         return fail(res, 409, "payment_unverified", "Η πληρωμή δεν επιβεβαιώθηκε.");
       }
+      const emailClaimId = require("node:crypto").randomUUID();
       const result = await reference.transaction((current) => {
         if (current === null) return null;
         if (!current || kanoniko(current.email) !== emailKanoniko) return;
         if (current.paymentStatus === "paid" && current.paymentIntentId === paymentIntentId) return current;
-        if (current.status !== KATASTASEIS.ANAMONI_PLIROMIS || current.paymentStatus === "paid"
+        if (hasWithdrawal(current) || current.status !== KATASTASEIS.ANAMONI_PLIROMIS || current.paymentStatus === "paid"
           || (current.paymentIntentId && current.paymentIntentId !== paymentIntentId)) return;
         return { ...current, paymentIntentId, paymentStatus: "paid", paidAt: Date.now(),
           status: KATASTASEIS.SE_EPEXERGASIA,
+          // Claim atomically with payment: only this transaction's owner may send.
+          paymentConfirmationEmail: current.paymentConfirmationEmail || { claimId: emailClaimId, claimedAt: Date.now() },
           withdrawalConsentAt: Number.isSafeInteger(ypanaxorisiAt) && ypanaxorisiAt > 0 && ypanaxorisiAt <= Date.now()
             ? ypanaxorisiAt : Date.now() };
       });
       if (!result.committed || !result.snapshot.exists()) return fail(res, 409, "payment_unavailable");
-      return res.status(200).json({ success: true, plirothike: true, status: result.snapshot.val().status });
+      const confirmed = result.snapshot.val();
+      if (confirmed.status === KATASTASEIS.SE_EPEXERGASIA
+        && confirmed.paymentConfirmationEmail?.claimId === emailClaimId) {
+        await sendPaymentConfirmationEmail(reference, confirmed, kodikos, paymentIntentId);
+      }
+      return res.status(200).json({ success: true, plirothike: true, status: confirmed.status });
     } catch (error) {
       console.error("Payment verification failed:", error.code || error.name);
       return fail(res, 500, "unavailable");

@@ -9,17 +9,17 @@ const root=path.resolve(__dirname,'..');
 const clone=value=>JSON.parse(JSON.stringify(value));
 const fixture={name:'sample.pdf',type:'application/pdf',size:1024};
 
-function serviceHarness(responses=[]) {
+function serviceHarness(responses=[],env={}) {
   const uploads=[],deletes=[],calls=[];
   const source=fs.readFileSync(path.join(root,'src/services/stripe/premiumService.js'),'utf8')
     .replace(/^import .*;\r?\n/gm,'').replaceAll('import.meta.env','ENV').replaceAll('export const ','const ');
-  const scope={ENV:{VITE_SYMPLIROSI_AITISIS_URL:'http://fixture/upload',VITE_GET_REQUEST_STATUS_URL:'http://fixture/status'},crypto:webcrypto,
+  const scope={ENV:{VITE_REQUEST_WITHDRAWAL_URL:'http://fixture/withdraw',VITE_SYMPLIROSI_AITISIS_URL:'http://fixture/upload',VITE_GET_REQUEST_STATUS_URL:'http://fixture/status',...env},crypto:webcrypto,
     storage:{},storageRef:(_storage,filePath)=>filePath,initAuth:async()=>({uid:'owner',getIdToken:async()=>'auth-token'}),
     uploadBytes:async(...args)=>{uploads.push(args);},deleteObject:async filePath=>deletes.push(filePath),
     fetch:async(url,options)=>{calls.push({url,...options,body:JSON.parse(options.body)});const result=responses.shift(); if(result instanceof Error)throw result;
       return {ok:result?.ok!==false,status:result?.status||200,json:async()=>result?.data||{success:true}};},
   };
-  vm.runInNewContext(source+'\nthis.api={validateUploadFiles,anevasmaAitisis,prosthikiSeAitisi,katastasiAitisis};',scope);
+  vm.runInNewContext(source+'\nthis.api={validateUploadFiles,anevasmaAitisis,prosthikiSeAitisi,katastasiAitisis,ypovoliYpanachorisis};',scope);
   return {...scope.api,uploads,deletes,calls};
 }
 
@@ -151,6 +151,102 @@ test('recovery validates six digits, preserves statuses, only offers payment whe
       assert.ok(h.nodes(n=>n.props.to==='/contact').length);
     }
   }
+});
+
+test('withdrawal service normalizes PIN/email and preserves generic failure codes and confirmed flag',async()=>{
+  const h=serviceHarness([{data:{success:true,withdrawalStatus:'requested',refundStatus:'pending',refundAmount:2500,refundCurrency:'eur'}},
+    {ok:false,status:404,data:{code:'not_found'}}]);
+  assert.equal((await h.ypovoliYpanachorisis('123456',' V@EXAMPLE.COM ',true,'Μαρία Παπαδοπούλου')).refundAmount,2500);
+  assert.deepEqual(h.calls[0].body,{pin:'PIN-123456',email:'v@example.com',confirmed:true,fullName:'Μαρία Παπαδοπούλου'});
+  assert.equal(h.calls[0].url,'http://fixture/withdraw');
+  const result=await h.ypovoliYpanachorisis('999999','v@example.com',false);
+  assert.equal(result.success,false); assert.equal(result.code,'not_found'); assert.match(result.error,/Δεν βρέθηκε αίτηση με αυτά τα στοιχεία/);
+  assert.equal(h.calls[1].body.confirmed,false);
+});
+
+test('unconfigured withdrawal endpoint fails without calling the upload endpoint',async()=>{
+  const h=serviceHarness([],{VITE_REQUEST_WITHDRAWAL_URL:undefined});
+  assert.equal((await h.ypovoliYpanachorisis('123456','v@example.com',true)).success,false);
+  assert.equal(h.calls.length,0);
+});
+
+async function recoveryWithdrawal(data,submit=async()=>({success:true,withdrawalStatus:'requested',refundStatus:'pending'})){
+  const h=component('src/pages/ReportRecoveryPage.jsx',{
+    '../services/stripe/stripeService':{__esModule:true,default:null},
+    '../services/stripe/premiumService':{
+      katastasiAitisis:async()=>({success:true,vrethike:true,aitisi:{pin:'PIN-123456',email:'v@example.com',...data}}),
+      ypovoliYpanachorisis:submit,
+    },'@stripe/react-stripe-js':{Elements:'Elements'},
+  });
+  h.render(); h.one(n=>n.props.id==='pin').props.onChange({target:{value:'123456'}});
+  h.one(n=>n.props.id==='email').props.onChange({target:{value:'v@example.com'}});h.render();
+  await h.one(n=>n.type==='form').props.onSubmit({preventDefault(){}});h.render();return h;
+}
+const withdrawalButton=n=>n.type==='button'&&n.props.children.includes('Υπαναχώρηση από τη σύμβαση');
+
+test('self-service withdrawal is only offered for paid undelivered requests and never shows processing/payment after withdrawal',async()=>{
+  for(const data of [{status:'documents_received'}, {status:'awaiting_payment'},
+    {status:'processing',paymentStatus:'paid'}, {status:'delivered',paymentStatus:'paid'},
+    {status:'processing',paymentStatus:'paid',reportDelivered:true},
+    {status:'withdrawn',paymentStatus:'paid',withdrawalStatus:'requested'},
+    {status:'processing',paymentStatus:'paid',withdrawalRequestedAt:1234}]){
+    const h=await recoveryWithdrawal(data);
+    const offered=data.status==='processing'&&!data.reportDelivered&&!data.withdrawalRequestedAt;
+    assert.equal(h.nodes(withdrawalButton).length,offered?1:0);
+    if(data.withdrawalStatus||data.withdrawalRequestedAt){
+      assert.match(h.text(),/Το αίτημα υπαναχώρησης έχει ήδη καταγραφεί/);
+      assert.equal(h.nodes(n=>n.props.className==='stages'||n.props.className==='pay-block').length,0);
+      assert.doesNotMatch(h.text(),/Ετοιμάζεται η εκτίμηση σύνταξης/);
+    }
+    if(data.status==='delivered'||data.reportDelivered){assert.match(h.text(),/Η υπηρεσία έχει ολοκληρωθεί/);assert.ok(h.nodes(n=>n.props.to==='/contact').length);}
+  }
+});
+
+test('withdrawal confirmation uses the found request credentials, locks double submits and reports pending refund only after success',async()=>{
+  let finish; const calls=[];
+  const h=await recoveryWithdrawal({status:'processing',paymentStatus:'paid'},(...args)=>{calls.push(args);return new Promise(resolve=>finish=resolve);});
+  h.one(withdrawalButton).props.onClick();h.render();
+  const form=()=>h.one(n=>n.type==='form'&&n.props.children.some(child=>child?.type==='label'));
+  await form().props.onSubmit({preventDefault(){}});assert.equal(calls.length,0);
+  h.one(n=>n.props.type==='checkbox').props.onChange({target:{checked:true}});h.render();
+  assert.equal(h.one(n=>n.props.id==='withdrawal-full-name').props.required,true);
+  await form().props.onSubmit({preventDefault(){}});h.render();assert.equal(calls.length,0);
+  assert.match(h.text(),/Συμπληρώστε το ονοματεπώνυμό σας/);
+  h.one(n=>n.props.id==='withdrawal-full-name').props.onChange({target:{value:' Μαρία  Παπαδοπούλου '}});h.render();
+  // Editing the search fields must not change the authenticated request being withdrawn.
+  h.one(n=>n.props.id==='email').props.onChange({target:{value:'other@example.com'}});h.render();
+  const submit=form().props.onSubmit,first=submit({preventDefault(){}});await submit({preventDefault(){}});h.render();
+  assert.equal(calls.length,1);assert.deepEqual(calls[0],['PIN-123456','v@example.com',true,'Μαρία Παπαδοπούλου']);
+  assert.match(h.text(),/Υποβολή…/);assert.doesNotMatch(h.text(),/Το αίτημα υπαναχώρησης καταγράφηκε/);
+  finish({success:true,withdrawalStatus:'requested',withdrawalRequestedAt:1234,refundStatus:'pending'});await first;h.render();
+  assert.match(h.text(),/πλήρης επιστροφή του ποσού που καταβάλατε στο αρχικό μέσο πληρωμής/);
+  assert.equal(h.nodes(withdrawalButton).length,0);assert.equal(h.nodes(n=>n.props.className==='stages').length,0);
+  assert.doesNotMatch(h.text(),/επιστροφή ολοκληρώθηκε|μείον|20\s*€/);
+});
+
+test('failed withdrawal never displays success; concurrent delivery removes the form and offers contact',async()=>{
+  for(const code of ['unavailable','report_delivered']){
+    const h=await recoveryWithdrawal({status:'processing',paymentStatus:'paid'},async()=>({success:false,code,error:'Η υποβολή δεν ολοκληρώθηκε.'}));
+    h.one(withdrawalButton).props.onClick();h.render();h.one(n=>n.props.type==='checkbox').props.onChange({target:{checked:true}});h.render();
+    h.one(n=>n.props.id==='withdrawal-full-name').props.onChange({target:{value:'Μαρία Παπαδοπούλου'}});h.render();
+    await h.one(n=>n.type==='form'&&n.props.children.some(child=>child?.type==='label')).props.onSubmit({preventDefault(){}});h.render();
+    assert.doesNotMatch(h.text(),/Το αίτημα υπαναχώρησης καταγράφηκε/);assert.ok(h.nodes(n=>n.props.role==='alert').length);
+    if(code==='report_delivered'){assert.equal(h.nodes(n=>n.props.type==='checkbox').length,0);assert.match(h.text(),/Η υπηρεσία έχει ολοκληρωθεί/);}
+  }
+});
+
+test('name input is limited to withdrawal; Terms contain the optional alternative model and retain online withdrawal',async()=>{
+  const recovery=await recoveryWithdrawal({status:'processing',paymentStatus:'paid'});
+  assert.equal(recovery.nodes(n=>n.props.id==='withdrawal-full-name').length,0);
+  const terms=component('src/pages/legal/TermsPage.jsx');terms.render();
+  assert.match(terms.one(n=>n.props.id==='withdrawal-model').props.children.join(''),/Προαιρετικό υπόδειγμα/);
+  const section=JSON.stringify(terms.one(n=>n.props.id==='oroi-9'));
+  for(const wording of [/Προς τον πάροχο/,/δηλώνω ότι υπαναχωρώ από τη σύμβαση/,
+    /Υπηρεσία: Αναλυτικό Report/,/Ημερομηνία σύναψης της σύμβασης\/παραγγελίας/,
+    /Ονοματεπώνυμο καταναλωτή/,/Διεύθυνση καταναλωτή/,/Ημερομηνία δήλωσης/,
+    /Υπογραφή καταναλωτή, μόνο αν αποστέλλεται σε έντυπη μορφή/,/Η χρήση του δεν είναι υποχρεωτική/,
+    /Η online υποβολή από την Παρακολούθηση Αίτησης είναι ο ευκολότερος τρόπος/]) assert.match(section,wording);
+  assert.doesNotMatch(section,/20\s*€/);
 });
 
 test('Stripe form accepts succeeded only and translates raw Stripe errors',async()=>{

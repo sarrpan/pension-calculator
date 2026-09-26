@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ref, onValue, update, remove } from "firebase/database";
+import { ref, onValue, runTransaction, remove } from "firebase/database";
 import { ref as sRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
 import { db, auth, storage } from "../firebase";
@@ -56,6 +56,20 @@ const KATASTASEIS = [
 
 const vresKatastasi = (kodikos) =>
   KATASTASEIS.find((k) => k.kodikos === kodikos) || null;
+const hasWithdrawal = (request) => Boolean(request && (request.status === 'withdrawn'
+  || request.withdrawalStatus || request.withdrawalRequestedAt));
+const refundAmountText = (request) => {
+  if (!Number.isSafeInteger(request.refundAmount) || request.refundAmount <= 0
+    || !/^[a-z]{3}$/.test(request.refundCurrency || '')) return 'Μη διαθέσιμο ποσό';
+  try {
+    const currency = request.refundCurrency.toUpperCase();
+    const formatter = new Intl.NumberFormat('el-GR', { style: 'currency', currency });
+    // Stripe uses two API decimals for ISK/UGX, and zero for MGA.
+    const decimals = currency === 'MGA' ? 0 : ['ISK', 'UGX'].includes(currency) ? 2
+      : formatter.resolvedOptions().maximumFractionDigits;
+    return formatter.format(request.refundAmount / 10 ** decimals);
+  } catch { return 'Μη διαθέσιμο ποσό'; }
+};
 
 /* Ημερομηνία και ώρα σε ελληνική μορφή, για το ιστορικό. */
 const imerominia = (xronos) => {
@@ -354,7 +368,7 @@ const AdminDashboard = () => {
 
   const handleAdminFileUpload = async (e, pin) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || hasWithdrawal(requests[pin])) return;
 
     setUploadingPin(pin);
     try {
@@ -364,7 +378,12 @@ const AdminDashboard = () => {
       const downloadUrl = await getDownloadURL(reportRef);
 
       const requestRef = ref(db, `premium_requests/${pin}`);
-      await update(requestRef, { finalReportUrl: downloadUrl });
+      const linked = await runTransaction(requestRef, (current) => {
+        if (current === null) return null;
+        if (!current || hasWithdrawal(current)) return;
+        return { ...current, finalReportUrl: downloadUrl };
+      });
+      if (!linked.committed || !linked.snapshot.exists()) throw new Error('Η αίτηση δεν δέχεται Report.');
 
       setApotelesmata((p) => ({
         ...p,
@@ -389,6 +408,7 @@ const AdminDashboard = () => {
      μήνυμα, ή μήνυμα που στάλθηκε χωρίς να αλλάξει η κατάσταση.
      ══════════════════════════════════════════════════════════════ */
   const apostoli = async (pin, req) => {
+    if (hasWithdrawal(req)) return;
     const nea = epiloges[pin] || req.status;
     const katastasi = vresKatastasi(nea);
 
@@ -497,6 +517,27 @@ const AdminDashboard = () => {
     }
 
     setStelnei(null);
+  };
+
+  const confirmRefund = async (pin) => {
+    if (stelnei) return;
+    if (!DIEFTHYNSI_ALLAGIS || !kodikosSynartisis) {
+      setApotelesmata(previous => ({ ...previous, [pin]: { ok: false, minima: 'Γράψτε τον κωδικό διαχείρισης και ελέγξτε τη σύνδεση.' } }));
+      return;
+    }
+    if (!window.confirm(`Έχετε ήδη ολοκληρώσει την πλήρη επιστροφή ${refundAmountText(requests[pin])} στο Stripe Dashboard; Η ενέργεια αυτή καταγράφει μόνο την ολοκλήρωση.`)) return;
+    setStelnei(pin);
+    try {
+      const response = await fetch(DIEFTHYNSI_ALLAGIS, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-kodikos': kodikosSynartisis },
+        body: JSON.stringify({ pin, energeia: 'refund_completed', confirmed: true }),
+      });
+      const result = await response.json();
+      if (!response.ok || result.success !== true) throw new Error('Η καταγραφή δεν επιβεβαιώθηκε. Ελέγξτε την αίτηση πριν δοκιμάσετε ξανά.');
+      setApotelesmata(previous => ({ ...previous, [pin]: { ok: true, minima: 'Καταγράφηκε η ολοκλήρωση της επιστροφής.' } }));
+    } catch (error) {
+      setApotelesmata(previous => ({ ...previous, [pin]: { ok: false, minima: error.message || 'Η καταγραφή δεν ολοκληρώθηκε.' } }));
+    } finally { setStelnei(null); }
   };
 
   const handleDelete = async (pin) => {
@@ -618,6 +659,7 @@ const AdminDashboard = () => {
         <tbody>
           {seira.map((pin) => {
             const req = requests[pin];
+            const withdrawn = hasWithdrawal(req);
             const epilogi = epiloges[pin] || req.status;
             const katastasi = vresKatastasi(epilogi);
             const apotelesma = apotelesmata[pin];
@@ -646,6 +688,26 @@ const AdminDashboard = () => {
                 <td><ArxeiaPelati req={req} nea={neaArxeia[pin]} /></td>
 
                 <td>
+                  {withdrawn && (
+                    <div>
+                      <strong>Υπαναχώρηση υποβλήθηκε</strong>
+                      <p>{req.withdrawalRequestedAt ? new Date(req.withdrawalRequestedAt).toLocaleString('el-GR') : ''}</p>
+                      <p>{req.withdrawalDeclaration?.fullName}</p>
+                      <p>Refund: {refundAmountText(req)} — {req.refundStatus === 'completed' ? 'ολοκληρώθηκε' : 'εκκρεμεί'}</p>
+                      <p>{req.withdrawalPaymentIntentId || req.paymentIntentId}</p>
+                      {req.refundStatus === 'pending' && (
+                        <>
+                          <p className="ad-simeiosi">Πλήρης επιστροφή του ποσού που καταβλήθηκε από το Stripe Dashboard, χωρίς αφαίρεση προμηθειών.</p>
+                          <button type="button" className="save-btn" disabled={Boolean(stelnei)} onClick={() => confirmRefund(pin)}>
+                            {stelnei === pin ? 'Καταγραφή…' : 'Σήμανση επιστροφής ως ολοκληρωμένης'}
+                          </button>
+                        </>
+                      )}
+                      {req.refundedAt && <p>Ολοκλήρωση: {new Date(req.refundedAt).toLocaleString('el-GR')}</p>}
+                      {req.withdrawalEmail?.status !== 'sent' && <p className="ad-proeidopoiisi">Η αποστολή του email υπαναχώρησης δεν έχει επιβεβαιωθεί.</p>}
+                    </div>
+                  )}
+                  {!withdrawn && <>
                   {/* Τι έγινε τελευταίο σε αυτή την αίτηση */}
                   {teleftaia ? (
                     <p className="ad-teleftaia">
@@ -718,6 +780,7 @@ const AdminDashboard = () => {
                       Σε αυτό το στάδιο δεν στέλνεται email στον πελάτη.
                     </p>
                   )}
+                  </>}
 
                   {apotelesma && (
                     <p className={apotelesma.ok ? 'ad-ok' : 'ad-lathos'}>
@@ -727,7 +790,7 @@ const AdminDashboard = () => {
                 </td>
 
                 <td>
-                  <div className="admin-upload-wrapper">
+                  {!withdrawn && <div className="admin-upload-wrapper">
                     <label className="custom-file-upload">
                       <input
                         type="file"
@@ -742,7 +805,7 @@ const AdminDashboard = () => {
                         <IconOk width={12} height={12} /> Έτοιμο
                       </span>
                     )}
-                  </div>
+                  </div>}
                 </td>
 
                 <td><IstorikoEmail istoriko={req.emailIstoriko} /></td>

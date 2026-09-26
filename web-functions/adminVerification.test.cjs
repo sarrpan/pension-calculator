@@ -23,6 +23,11 @@ function server(secret = adminCode) {
         return { ref: () => ({
           once: async () => { calls.reads++; return { exists: () => true, val: () => clone(request) }; },
           update: async patch => { calls.writes++; Object.assign(request, patch); },
+          transaction: async callback => {
+            const next = callback(clone(request));
+            if (next !== undefined) { calls.writes++; Object.assign(request, next); }
+            return { committed: next !== undefined, snapshot: { exists: () => true, val: () => clone(request) } };
+          },
         }) };
       },
     },
@@ -92,10 +97,10 @@ test('regular status changes retain header authentication and their normal behav
 
 // Render the actual JSX and run its event handlers with mocked Firebase and hooks,
 // using the same esbuild/VM approach as clientFlows.test.cjs.
-function dashboard(fetchResponse, url = 'https://fixture.example/admin') {
+function dashboard(fetchResponse, url = 'https://fixture.example/admin', requests = {}) {
   const source = fs.readFileSync(path.join(__dirname, '../src/pages/AdminDashboard.jsx'), 'utf8');
   const code = transformSync(source.replaceAll('import.meta.env', 'ENV'), { loader: 'jsx', format: 'cjs' }).code;
-  const hooks = [], effects = [], calls = [];
+  const hooks = [], effects = [], calls = [], confirmations = [];
   let cursor = 0, tree, dirty;
   const React = {
     createElement: (type, props, ...children) => ({ type, props: { ...props,
@@ -121,14 +126,15 @@ function dashboard(fetchResponse, url = 'https://fixture.example/admin') {
     'firebase/auth': { onAuthStateChanged: (_auth, callback) => { callback({ uid: 'admin' }); return () => {}; } },
     'firebase/database': {
       ref: (_db, key) => key,
-      onValue: (_ref, callback) => { callback({ val: () => ({}) }); return () => {}; },
-      update: unexpected, remove: unexpected,
+      onValue: (_ref, callback) => { callback({ val: () => requests }); return () => {}; },
+      runTransaction: unexpected, remove: unexpected,
     },
     'firebase/storage': { ref: unexpected, uploadBytes: unexpected, getDownloadURL: unexpected },
   };
   const scope = {
     module: { exports: {} }, require: name => imports[name],
     ENV: { VITE_ALLAGI_KATASTASIS_URL: url },
+    window: { confirm: message => { confirmations.push(message); return true; } },
     fetch: async (target, options) => { calls.push({ url: target, ...options }); return fetchResponse(); },
   };
   vm.runInNewContext(code, scope);
@@ -141,6 +147,10 @@ function dashboard(fetchResponse, url = 'https://fixture.example/admin') {
   };
   return {
     calls,
+    confirmations,
+    one,
+    nodes: predicate => flatten(tree).filter(predicate),
+    text: () => JSON.stringify(tree),
     render() {
       do {
         dirty = false; cursor = 0;
@@ -161,6 +171,38 @@ const typeCode = (app, value = adminCode) => {
   app.input().onChange({ target: { value } });
   app.render();
 };
+
+test('admin withdrawal view shows full refund pending, blocks processing/delivery and manually records completion',async()=>{
+  const request={status:'withdrawn',email:'fixture@example.com',withdrawalStatus:'requested',withdrawalRequestedAt:123456,
+    withdrawalPaymentIntentId:'pi_paid',refundStatus:'pending',refundAmount:2500,refundCurrency:'eur',
+    withdrawalDeclaration:{fullName:'Μαρία Παπαδοπούλου'},withdrawalEmail:{status:'sent'}};
+  const app=dashboard(()=>response(),'https://fixture.example/admin',{'PIN-123456':request});
+  app.render();typeCode(app);
+  assert.match(app.text(),/Υπαναχώρηση υποβλήθηκε/);assert.match(app.text(),/25,00\s*€/);assert.match(app.text(),/εκκρεμεί/);
+  assert.match(app.text(),/Μαρία Παπαδοπούλου/);assert.doesNotMatch(app.text(),/20\s*€/);
+  assert.match(app.text(),/pi_paid/);assert.match(app.text(),/χωρίς αφαίρεση προμηθειών/);
+  assert.equal(app.nodes(n=>n.type==='select'||n.props.type==='file').length,0);
+  const button=n=>n.type==='button'&&n.props.children.includes('Σήμανση επιστροφής ως ολοκληρωμένης');
+  await app.one(button).onClick();app.render();
+  assert.match(app.confirmations[0],/25,00\s*€/);assert.doesNotMatch(app.confirmations[0],/20\s*€/);
+  assert.deepEqual(JSON.parse(app.calls[0].body),{pin:'PIN-123456',energeia:'refund_completed',confirmed:true});
+  assert.equal(app.calls[0].headers['x-admin-kodikos'],adminCode);
+  assert.match(app.text(),/Καταγράφηκε η ολοκλήρωση της επιστροφής/);
+  const completed=dashboard(()=>assert.fail('Unexpected fetch'),'https://fixture.example/admin',{
+    'PIN-123456':{...request,refundStatus:'completed',refundedAt:223456},
+  });completed.render();assert.match(completed.text(),/ολοκληρώθηκε/);assert.equal(completed.nodes(button).length,0);
+});
+
+test('admin formats the recorded refund amount/currency at current and future prices',()=>{
+  for(const [refundAmount,refundCurrency,expected] of [[2000,'eur',/20,00\s*€/],
+    [2500,'eur',/25,00\s*€/],[3599,'usd',/35,99/],[500,'jpy',/500/]]){
+    const app=dashboard(()=>response(),'https://fixture.example/admin',{
+      'PIN-123456':{status:'withdrawn',withdrawalStatus:'requested',refundStatus:'pending',refundAmount,refundCurrency},
+    });app.render();
+    const row=app.one(n=>n.type==='p'&&n.props.children.includes('Refund: '));
+    assert.match(row.children.join(''),expected);
+  }
+});
 
 test('button verifies only on server success; editing afterwards resets the existing status', async () => {
   let finish;
