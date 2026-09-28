@@ -378,14 +378,14 @@ function FreeInsuranceCategoryWizard({
 
   return (
     <div>
-      <div style={selectorPeriodHeaderStyle}>
+      <div className="pf-selector-header">
         <div>
           <strong>
             {groupNumber === 1
               ? 'Πρώτη ασφαλιστική περίοδος'
               : 'Δεύτερη ασφαλιστική περίοδος'}
           </strong>
-          <p style={selectorHelpStyle}>
+          <p className="pf-help">
             Πού ή με ποια ιδιότητα εργαζόσασταν;
           </p>
         </div>
@@ -394,7 +394,7 @@ function FreeInsuranceCategoryWizard({
           <button
             type="button"
             onClick={onRemove}
-            style={selectorRemoveButtonStyle}
+            className="pf-destructive"
           >
             Αφαίρεση
           </button>
@@ -412,23 +412,23 @@ function FreeInsuranceCategoryWizard({
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="π.χ. ΔΕΗ, καθηγητής, μηχανικός, ΟΓΑ"
-            style={selectorSearchInputStyle}
+            className="pf-category-search"
           />
 
           {searchQuery.trim() && (
-            <div style={selectorSearchResultsStyle}>
+            <div className="pf-search-results">
               <strong>Πιθανές κατηγορίες</strong>
 
               {searchResults.length > 0 ? (
-                <div style={selectorSearchResultGridStyle}>
+                <div className="pf-option-grid">
                   {searchResults.map((result) => (
                     <button
                       key={`${result.categoryTitle}-${result.value}-${result.uniformedBody || 'general'}`}
                       type="button"
                       onClick={() => selectFund(result)}
-                      style={selectorSearchResultButtonStyle}
+                      className="pf-category-option"
                     >
-                      <span style={selectorSearchCategoryStyle}>
+                      <span className="pf-caption">
                         {result.categoryTitle}
                       </span>
                       <span>{result.label}</span>
@@ -436,28 +436,28 @@ function FreeInsuranceCategoryWizard({
                   ))}
                 </div>
               ) : (
-                <p style={selectorEmptySearchStyle}>
+                <p className="pf-help">
                   Δεν βρέθηκε σχετική κατηγορία.
                 </p>
               )}
             </div>
           )}
 
-          <div style={selectorTileGridStyle}>
+          <div className="pf-category-grid">
             {WORK_CATEGORIES.map((category) => (
               <button
                 key={category.id}
                 type="button"
                 onClick={() => openCategory(category.id)}
-                style={selectorTileStyle}
+                className="pf-category-tile"
               >
-                <span style={selectorTileTitleStyle}>
+                <span className="pf-tile-title">
                   {category.title}
                 </span>
-                <span style={selectorTileDescriptionStyle}>
+                <span className="pf-tile-description">
                   {category.description}
                 </span>
-                <span style={selectorTileMoreStyle}>
+                <span className="pf-tile-more">
                   Εμφάνιση υποκατηγοριών
                 </span>
               </button>
@@ -467,13 +467,13 @@ function FreeInsuranceCategoryWizard({
           <button
             type="button"
             onClick={() => setHelpVisible((current) => !current)}
-            style={selectorHelpButtonStyle}
+            className="pf-help-button"
           >
             Δεν βρίσκω την κατηγορία μου
           </button>
 
           {helpVisible && (
-            <div style={selectorHelpBoxStyle}>
+            <div className="pf-notice pf-notice-info">
               Δοκιμάστε την αναζήτηση με το επάγγελμα, τον εργοδότη
               ή την κοινή ονομασία του ταμείου. Αν η περίπτωση δεν
               εμφανίζεται, μπορεί να απαιτεί την πλήρη έκδοση.
@@ -482,9 +482,9 @@ function FreeInsuranceCategoryWizard({
         </>
       ) : (
         <>
-          <div style={selectorSelectedCategoryStyle}>
-            <div style={selectorSelectedCategoryTextStyle}>
-              <span style={selectorSelectedCategoryLabelStyle}>
+          <div className="pf-selected-category">
+            <div className="pf-selected-category-text">
+              <span className="pf-caption">
                 Επιλεγμένη γενική κατηγορία
               </span>
               <strong>{openCategoryData.title}</strong>
@@ -494,14 +494,14 @@ function FreeInsuranceCategoryWizard({
             <button
               type="button"
               onClick={showCategoryList}
-              style={selectorChangeCategoryButtonStyle}
+              className="pf-secondary"
             >
               Αλλαγή γενικής κατηγορίας
             </button>
           </div>
 
-          <div style={selectorSubOptionsStyle}>
-            <div style={selectorSubOptionsHeadingStyle}>
+          <div className="pf-suboptions">
+            <div className="pf-suboptions-heading">
               <strong>Επιλέξτε ασφαλιστικό φορέα</strong>
               <span>
                 Επιλέξτε τον ακριβή φορέα ή την κατηγορία.
@@ -509,13 +509,13 @@ function FreeInsuranceCategoryWizard({
             </div>
 
             {openCategoryData.id === 'uniformed' ? (
-              <div style={selectorUniformedGroupsStyle}>
+              <div className="pf-uniformed-groups">
                 {UNIFORMED_BODY_GROUPS.map((uniformedGroup) => (
                   <div key={uniformedGroup.value}>
-                    <strong style={selectorUniformedGroupTitleStyle}>
+                    <strong className="pf-uniformed-title">
                       {uniformedGroup.label}
                     </strong>
-                    <div style={selectorSubOptionGridStyle}>
+                    <div className="pf-suboption-grid">
                       {openCategoryData.options
                         .filter(
                           (option) =>
@@ -526,7 +526,7 @@ function FreeInsuranceCategoryWizard({
                             key={option.uniformedBody}
                             type="button"
                             onClick={() => selectFund(option)}
-                            style={selectorSubOptionStyle}
+                            className="pf-secondary"
                           >
                             {option.label}
                           </button>
@@ -536,13 +536,13 @@ function FreeInsuranceCategoryWizard({
                 ))}
               </div>
             ) : (
-              <div style={selectorSubOptionGridStyle}>
+              <div className="pf-suboption-grid">
                 {openCategoryData.options.map((option) => (
                   <button
                     key={option.value}
                     type="button"
                     onClick={() => selectFund(option)}
-                    style={selectorSubOptionStyle}
+                    className="pf-secondary"
                   >
                     {option.label}
                   </button>
@@ -591,214 +591,5 @@ function createEmptyUniformedSpecialTimeDraft() {
     },
   };
 }
-
-const selectorPeriodHeaderStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'flex-start',
-  gap: '1rem',
-  marginBottom: '0.75rem',
-};
-
-const selectorHelpStyle = {
-  margin: '0.25rem 0 0',
-  color: '#64748b',
-};
-
-const selectorSearchInputStyle = {
-  display: 'block',
-  boxSizing: 'border-box',
-  width: '100%',
-  marginTop: '0.4rem',
-  marginBottom: '0.85rem',
-  padding: '0.7rem 0.8rem',
-  border: '1px solid #94a3b8',
-  borderRadius: '8px',
-};
-
-const selectorSearchResultsStyle = {
-  marginBottom: '0.85rem',
-  padding: '0.8rem',
-  border: '1px solid #bfdbfe',
-  borderRadius: '8px',
-  background: '#eff6ff',
-};
-
-const selectorSearchResultGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: '0.5rem',
-  marginTop: '0.6rem',
-};
-
-const selectorSearchResultButtonStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'flex-start',
-  gap: '0.25rem',
-  padding: '0.65rem',
-  border: '1px solid #93c5fd',
-  borderRadius: '7px',
-  background: '#fff',
-  textAlign: 'left',
-  cursor: 'pointer',
-};
-
-const selectorSearchCategoryStyle = {
-  color: '#475569',
-  fontSize: '0.8rem',
-};
-
-const selectorEmptySearchStyle = {
-  marginBottom: 0,
-  color: '#475569',
-};
-
-const selectorTileGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
-  gap: '0.75rem',
-};
-
-const selectorTileStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'flex-start',
-  minHeight: '118px',
-  padding: '0.9rem',
-  border: '1px solid #cbd5e1',
-  borderRadius: '10px',
-  background: '#fff',
-  textAlign: 'left',
-  cursor: 'pointer',
-};
-
-const selectorOpenTileStyle = {
-  border: '2px solid #2563eb',
-  background: '#eff6ff',
-  boxShadow: '0 0 0 2px rgba(37, 99, 235, 0.12)',
-};
-
-const selectorTileTitleStyle = {
-  fontWeight: 700,
-  color: '#0f172a',
-};
-
-const selectorTileDescriptionStyle = {
-  marginTop: '0.35rem',
-  color: '#475569',
-  lineHeight: 1.35,
-};
-
-const selectorTileMoreStyle = {
-  marginTop: 'auto',
-  paddingTop: '0.55rem',
-  color: '#1d4ed8',
-  fontSize: '0.85rem',
-  fontWeight: 600,
-};
-
-const selectorSelectedCategoryStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: '1rem',
-  padding: '0.85rem',
-  border: '1px solid #93c5fd',
-  borderRadius: '8px',
-  background: '#eff6ff',
-};
-
-const selectorSelectedCategoryTextStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.2rem',
-};
-
-const selectorSelectedCategoryLabelStyle = {
-  color: '#475569',
-  fontSize: '0.82rem',
-};
-
-const selectorChangeCategoryButtonStyle = {
-  flexShrink: 0,
-  padding: '0.45rem 0.65rem',
-  border: '1px solid #2563eb',
-  borderRadius: '7px',
-  background: '#fff',
-  color: '#1d4ed8',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const selectorSubOptionsStyle = {
-  marginTop: '0.75rem',
-  padding: '0.85rem',
-  border: '1px solid #bfdbfe',
-  borderRadius: '8px',
-  background: '#eff6ff',
-};
-
-const selectorSubOptionsHeadingStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.2rem',
-};
-
-
-const selectorUniformedGroupsStyle = {
-  display: 'grid',
-  gap: '0.9rem',
-  marginTop: '0.65rem',
-};
-
-const selectorUniformedGroupTitleStyle = {
-  display: 'block',
-  marginBottom: '0.45rem',
-  color: '#334155',
-};
-
-const selectorSubOptionGridStyle = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '0.5rem',
-  marginTop: '0.65rem',
-};
-
-const selectorSubOptionStyle = {
-  padding: '0.55rem 0.75rem',
-  border: '1px solid #93c5fd',
-  borderRadius: '8px',
-  background: '#fff',
-  cursor: 'pointer',
-};
-
-const selectorHelpButtonStyle = {
-  marginTop: '0.75rem',
-  padding: 0,
-  border: 0,
-  background: 'transparent',
-  color: '#475569',
-  textDecoration: 'underline',
-  cursor: 'pointer',
-};
-
-const selectorHelpBoxStyle = {
-  marginTop: '0.5rem',
-  padding: '0.75rem',
-  border: '1px solid #f59e0b',
-  borderRadius: '8px',
-  background: '#fffbeb',
-  color: '#78350f',
-};
-
-const selectorRemoveButtonStyle = {
-  padding: '0.35rem 0.6rem',
-  border: '1px solid #fecaca',
-  borderRadius: '6px',
-  background: '#fff',
-  color: '#b91c1c',
-  cursor: 'pointer',
-};
 
 export default FreeInsuranceCategoryWizard;

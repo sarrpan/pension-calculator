@@ -9,6 +9,7 @@ import {
 } from "../utils/auxiliaryContributionFormUtils";
 
 function AuxiliaryContributionInputSection({
+  visualVariant = "default",
   insurancePeriodsInputMode,
   simpleFundInput,
   simpleEmploymentCategoryInput,
@@ -26,7 +27,7 @@ function AuxiliaryContributionInputSection({
   });
 
   return (
-    <fieldset style={fieldsetStyle}>
+    <fieldset className={visualVariant === "free" ? "pf-card" : undefined} style={visualVariant === "free" ? undefined : fieldsetStyle}>
       <legend>Στοιχεία επικουρικής ασφάλισης</legend>
 
       <p style={{ marginTop: 0, color: "#475569" }}>
@@ -282,8 +283,8 @@ const resolvedTextStyle = {
 
 const selectStyle = {
   marginTop: "0.5rem",
-  padding: "0.5rem",
-  width: "620px",
+  padding: "var(--pf-control-padding, 0.5rem)",
+  width: "var(--pf-control-width, 620px)",
   maxWidth: "100%",
 };
 

@@ -4,6 +4,7 @@ import React from 'react';
 import { fieldsetStyle } from '../utils/calculatorStyles';
 
 function EtaaExtraBenefitInputSection({
+  visualVariant = "default",
   insurancePeriodsInputMode,
   simpleFundInput,
   insurancePeriodGroups,
@@ -23,7 +24,7 @@ function EtaaExtraBenefitInputSection({
   const safeValue = normalizeEtaaExtraBenefitDraft(value);
 
   return (
-    <fieldset style={fieldsetStyle}>
+    <fieldset className={visualVariant === "free" ? "pf-card" : undefined} style={visualVariant === "free" ? undefined : fieldsetStyle}>
       <legend>Πρόσθετη παροχή πρώην ΕΤΑΑ</legend>
 
       <p style={{ marginTop: 0, color: '#475569' }}>
@@ -404,7 +405,7 @@ const YES_NO_OPTIONS = [
 
 const gridStyle = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+  gridTemplateColumns: 'var(--pf-field-grid, repeat(auto-fit, minmax(210px, 1fr)))',
   gap: '0.75rem',
 };
 
@@ -448,15 +449,15 @@ const warningNoticeStyle = {
 
 const selectStyle = {
   marginTop: '0.5rem',
-  padding: '0.5rem',
-  width: '300px',
+  padding: "var(--pf-control-padding, 0.5rem)",
+  width: "var(--pf-control-width, 300px)",
   maxWidth: '100%',
 };
 
 const inputStyle = {
   marginTop: '0.5rem',
-  padding: '0.5rem',
-  width: '220px',
+  padding: "var(--pf-control-padding, 0.5rem)",
+  width: "var(--pf-control-width, 220px)",
   maxWidth: '100%',
 };
 

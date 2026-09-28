@@ -4,6 +4,7 @@ import { RadioOption } from '../components/FormControls';
 import { fieldsetStyle } from '../utils/calculatorStyles';
 
 function NationalPensionInputSection({
+  visualVariant = "default",
   birthDateInput,
   firstInsuranceYearInput,
   pensionStartDateInput,
@@ -24,6 +25,7 @@ function NationalPensionInputSection({
   onDisabilityCategoryChange,
   onResidenceYearsChange,
 }) {
+  const isFreeAppearance = visualVariant === "free";
   const issueByField = Object.fromEntries(
     fieldIssues.map((issue) => [issue.key, issue]),
   );
@@ -58,7 +60,9 @@ function NationalPensionInputSection({
     <>
       <div
         id="birthDateField"
-        style={getRequiredFieldStyle({
+        className={isFreeAppearance ? "pf-field" : undefined}
+        data-invalid={isFreeAppearance && validationAttempted && Boolean(issueByField.birthDate)}
+        style={isFreeAppearance ? undefined : getRequiredFieldStyle({
           isComplete: birthDateComplete,
           issue: issueByField.birthDate,
           validationAttempted,
@@ -78,25 +82,39 @@ function NationalPensionInputSection({
             validationAttempted && Boolean(issueByField.birthDate)
           }
           aria-describedby="birthDateStatus"
-          style={textInputStyle}
+          className="pf-national-input" style={isFreeAppearance ? { '--pf-input-width': textInputStyle.width } : textInputStyle}
         />
+        {isFreeAppearance && birthDateComplete && (
+          <RequiredFieldStatus
+            visualVariant={visualVariant}
+            id="birthDateStatus"
+            isComplete={birthDateComplete}
+            issue={issueByField.birthDate}
+            validationAttempted={validationAttempted}
+          />
+        )}
 
         <p style={{ color: '#475569', marginBottom: 0 }}>
           Χρησιμοποιείται για να υπολογιστεί η ηλικία κατά την έναρξη της
           σύνταξης και να επιλεγεί η σωστή ράντα της επικουρικής.
         </p>
 
-        <RequiredFieldStatus
-          id="birthDateStatus"
-          isComplete={birthDateComplete}
-          issue={issueByField.birthDate}
-          validationAttempted={validationAttempted}
-        />
+        {!(isFreeAppearance && birthDateComplete) && (
+          <RequiredFieldStatus
+            visualVariant={visualVariant}
+            id="birthDateStatus"
+            isComplete={birthDateComplete}
+            issue={issueByField.birthDate}
+            validationAttempted={validationAttempted}
+          />
+        )}
       </div>
 
       <div
         id="firstInsuranceYearField"
-        style={getRequiredFieldStyle({
+        className={isFreeAppearance ? "pf-field" : undefined}
+        data-invalid={isFreeAppearance && validationAttempted && Boolean(issueByField.firstInsuranceYear)}
+        style={isFreeAppearance ? undefined : getRequiredFieldStyle({
           isComplete: firstInsuranceYearComplete,
           issue: issueByField.firstInsuranceYear,
           validationAttempted,
@@ -123,8 +141,17 @@ function NationalPensionInputSection({
             Boolean(issueByField.firstInsuranceYear)
           }
           aria-describedby="firstInsuranceYearStatus"
-          style={firstInsuranceYearInputStyle}
+          className="pf-national-input" style={isFreeAppearance ? { '--pf-input-width': firstInsuranceYearInputStyle.width } : firstInsuranceYearInputStyle}
         />
+        {isFreeAppearance && firstInsuranceYearComplete && (
+          <RequiredFieldStatus
+            visualVariant={visualVariant}
+            id="firstInsuranceYearStatus"
+            isComplete={firstInsuranceYearComplete}
+            issue={issueByField.firstInsuranceYear}
+            validationAttempted={validationAttempted}
+          />
+        )}
 
         <p style={{ color: '#475569', marginBottom: 0 }}>
           Γράψτε το έτος που ασφαλιστήκατε για πρώτη φορά, ακόμη
@@ -134,7 +161,7 @@ function NationalPensionInputSection({
         {getFirstInsuranceYearClassification(
           firstInsuranceYearInput
         ) && (
-          <p style={classificationStyle}>
+          <p style={isFreeAppearance ? undefined : classificationStyle}>
             Χαρακτηρισμός:{' '}
             <strong>
               {getFirstInsuranceYearClassification(
@@ -144,17 +171,22 @@ function NationalPensionInputSection({
           </p>
         )}
 
-        <RequiredFieldStatus
-          id="firstInsuranceYearStatus"
-          isComplete={firstInsuranceYearComplete}
-          issue={issueByField.firstInsuranceYear}
-          validationAttempted={validationAttempted}
-        />
+        {!(isFreeAppearance && firstInsuranceYearComplete) && (
+          <RequiredFieldStatus
+            visualVariant={visualVariant}
+            id="firstInsuranceYearStatus"
+            isComplete={firstInsuranceYearComplete}
+            issue={issueByField.firstInsuranceYear}
+            validationAttempted={validationAttempted}
+          />
+        )}
       </div>
 
       <div
         id="pensionStartDateField"
-        style={getRequiredFieldStyle({
+        className={isFreeAppearance ? "pf-field" : undefined}
+        data-invalid={isFreeAppearance && validationAttempted && Boolean(issueByField.pensionStartDate)}
+        style={isFreeAppearance ? undefined : getRequiredFieldStyle({
           isComplete: pensionStartDateComplete,
           issue: issueByField.pensionStartDate,
           validationAttempted,
@@ -179,20 +211,34 @@ function NationalPensionInputSection({
             Boolean(issueByField.pensionStartDate)
           }
           aria-describedby="pensionStartDateStatus"
-          style={textInputStyle}
+          className="pf-national-input" style={isFreeAppearance ? { '--pf-input-width': textInputStyle.width } : textInputStyle}
         />
+        {isFreeAppearance && pensionStartDateComplete && (
+          <RequiredFieldStatus
+            visualVariant={visualVariant}
+            id="pensionStartDateStatus"
+            isComplete={pensionStartDateComplete}
+            issue={issueByField.pensionStartDate}
+            validationAttempted={validationAttempted}
+          />
+        )}
 
-        <RequiredFieldStatus
-          id="pensionStartDateStatus"
-          isComplete={pensionStartDateComplete}
-          issue={issueByField.pensionStartDate}
-          validationAttempted={validationAttempted}
-        />
+        {!(isFreeAppearance && pensionStartDateComplete) && (
+          <RequiredFieldStatus
+            visualVariant={visualVariant}
+            id="pensionStartDateStatus"
+            isComplete={pensionStartDateComplete}
+            issue={issueByField.pensionStartDate}
+            validationAttempted={validationAttempted}
+          />
+        )}
       </div>
 
       <fieldset
         id="pensionTypeField"
-        style={getRequiredFieldsetStyle({
+        className={isFreeAppearance ? "pf-field" : undefined}
+        data-invalid={isFreeAppearance && validationAttempted && Boolean(issueByField.pensionScenario)}
+        style={isFreeAppearance ? undefined : getRequiredFieldsetStyle({
           isComplete: pensionScenarioComplete,
           issue: issueByField.pensionScenario,
           validationAttempted,
@@ -208,6 +254,7 @@ function NationalPensionInputSection({
         </legend>
 
         <RadioOption
+          visualVariant={visualVariant}
           id="pensionScenarioOldAgeStandard"
           name="pensionScenario"
           value="old_age_standard"
@@ -217,6 +264,7 @@ function NationalPensionInputSection({
         />
 
         <RadioOption
+          visualVariant={visualVariant}
           id="pensionScenarioOldAgeSpecialDisease"
           name="pensionScenario"
           value="old_age_special_disease"
@@ -229,6 +277,7 @@ function NationalPensionInputSection({
         />
 
         <RadioOption
+          visualVariant={visualVariant}
           id="pensionScenarioDisability"
           name="pensionScenario"
           value="disability"
@@ -238,6 +287,7 @@ function NationalPensionInputSection({
         />
 
         <RequiredFieldStatus
+          visualVariant={visualVariant}
           id="pensionTypeStatus"
           isComplete={pensionScenarioComplete}
           issue={issueByField.pensionScenario}
@@ -249,7 +299,9 @@ function NationalPensionInputSection({
         oldAgeCategoryInput === 'standard' && (
           <fieldset
             id="pensionModeField"
-            style={getRequiredFieldsetStyle({
+            className={isFreeAppearance ? "pf-field" : undefined}
+            data-invalid={isFreeAppearance && validationAttempted && Boolean(issueByField.pensionMode)}
+            style={isFreeAppearance ? undefined : getRequiredFieldsetStyle({
               isComplete: pensionModeComplete,
               issue: issueByField.pensionMode,
               validationAttempted,
@@ -263,6 +315,7 @@ function NationalPensionInputSection({
             <legend>Πλήρης ή μειωμένη σύνταξη γήρατος</legend>
 
             <RadioOption
+              visualVariant={visualVariant}
               id="pensionModeFull"
               name="pensionMode"
               value="full"
@@ -272,6 +325,7 @@ function NationalPensionInputSection({
             />
 
             <RadioOption
+              visualVariant={visualVariant}
               id="pensionModeReduced"
               name="pensionMode"
               value="reduced"
@@ -281,6 +335,7 @@ function NationalPensionInputSection({
             />
 
             <RequiredFieldStatus
+              visualVariant={visualVariant}
               id="pensionModeStatus"
               isComplete={pensionModeComplete}
               issue={issueByField.pensionMode}
@@ -294,7 +349,9 @@ function NationalPensionInputSection({
         pensionModeInput === 'reduced' && (
           <fieldset
             id="earlyReductionMonthsField"
-            style={getRequiredFieldsetStyle({
+            className={isFreeAppearance ? "pf-field" : undefined}
+            data-invalid={isFreeAppearance && validationAttempted && Boolean(issueByField.earlyReductionMonths)}
+            style={isFreeAppearance ? undefined : getRequiredFieldsetStyle({
               isComplete: earlyReductionMonthsComplete,
               issue: issueByField.earlyReductionMonths,
               validationAttempted,
@@ -321,22 +378,36 @@ function NationalPensionInputSection({
                 onEarlyReductionMonthsChange(event.target.value)
               }
               placeholder="0 έως 60"
-              style={smallTextInputStyle}
+              className="pf-national-input" style={isFreeAppearance ? { '--pf-input-width': smallTextInputStyle.width } : smallTextInputStyle}
             />
+            {isFreeAppearance && earlyReductionMonthsComplete && (
+              <RequiredFieldStatus
+                visualVariant={visualVariant}
+                id="earlyReductionMonthsStatus"
+                isComplete={earlyReductionMonthsComplete}
+                issue={issueByField.earlyReductionMonths}
+                validationAttempted={validationAttempted}
+              />
+            )}
 
-            <RequiredFieldStatus
-              id="earlyReductionMonthsStatus"
-              isComplete={earlyReductionMonthsComplete}
-              issue={issueByField.earlyReductionMonths}
-              validationAttempted={validationAttempted}
-            />
+            {!(isFreeAppearance && earlyReductionMonthsComplete) && (
+              <RequiredFieldStatus
+                visualVariant={visualVariant}
+                id="earlyReductionMonthsStatus"
+                isComplete={earlyReductionMonthsComplete}
+                issue={issueByField.earlyReductionMonths}
+                validationAttempted={validationAttempted}
+              />
+            )}
           </fieldset>
         )}
 
       {pensionTypeInput === 'disability' && (
         <fieldset
           id="disabilityCategoryField"
-          style={getRequiredFieldsetStyle({
+          className={isFreeAppearance ? "pf-field" : undefined}
+          data-invalid={isFreeAppearance && validationAttempted && Boolean(issueByField.disabilityCategory)}
+          style={isFreeAppearance ? undefined : getRequiredFieldsetStyle({
             isComplete: disabilityCategoryComplete,
             issue: issueByField.disabilityCategory,
             validationAttempted,
@@ -350,6 +421,7 @@ function NationalPensionInputSection({
           <legend>Κατηγορία ποσοστού αναπηρίας</legend>
 
           <RadioOption
+            visualVariant={visualVariant}
             id="disabilityEightyPlus"
             name="disabilityCategory"
             value="eighty_plus"
@@ -359,6 +431,7 @@ function NationalPensionInputSection({
           />
 
           <RadioOption
+            visualVariant={visualVariant}
             id="disabilitySixtySeven"
             name="disabilityCategory"
             value="sixty_seven_to_seventy_nine"
@@ -371,6 +444,7 @@ function NationalPensionInputSection({
           />
 
           <RadioOption
+            visualVariant={visualVariant}
             id="disabilityFifty"
             name="disabilityCategory"
             value="fifty_to_sixty_six"
@@ -382,6 +456,7 @@ function NationalPensionInputSection({
           />
 
           <RequiredFieldStatus
+            visualVariant={visualVariant}
             id="disabilityCategoryStatus"
             isComplete={disabilityCategoryComplete}
             issue={issueByField.disabilityCategory}
@@ -393,7 +468,10 @@ function NationalPensionInputSection({
       {pensionTypeInput === 'old_age' && (
         <fieldset
           id="residenceYearsField"
-          style={getRequiredFieldsetStyle({
+          aria-labelledby={isFreeAppearance ? "residenceYearsLabel" : undefined}
+          className={isFreeAppearance ? "pf-field" : undefined}
+          data-invalid={isFreeAppearance && validationAttempted && Boolean(issueByField.residenceYears)}
+          style={isFreeAppearance ? undefined : getRequiredFieldsetStyle({
             isComplete: residenceYearsComplete,
             issue: issueByField.residenceYears,
             validationAttempted,
@@ -404,9 +482,9 @@ function NationalPensionInputSection({
           }
           aria-describedby="residenceYearsStatus"
         >
-          <legend>Έτη νόμιμης διαμονής</legend>
+          {!isFreeAppearance && <legend>Έτη νόμιμης διαμονής</legend>}
 
-          <label htmlFor="residenceYears">
+          <label id="residenceYearsLabel" htmlFor="residenceYears">
             Έτη νόμιμης διαμονής στην Ελλάδα
           </label>
 
@@ -420,15 +498,27 @@ function NationalPensionInputSection({
               onResidenceYearsChange(event.target.value)
             }
             placeholder="π.χ. 40 ή 39,5"
-            style={residenceInputStyle}
+            className="pf-national-input" style={isFreeAppearance ? { '--pf-input-width': residenceInputStyle.width } : residenceInputStyle}
           />
+          {isFreeAppearance && residenceYearsComplete && (
+            <RequiredFieldStatus
+              visualVariant={visualVariant}
+              id="residenceYearsStatus"
+              isComplete={residenceYearsComplete}
+              issue={issueByField.residenceYears}
+              validationAttempted={validationAttempted}
+            />
+          )}
 
-          <RequiredFieldStatus
-            id="residenceYearsStatus"
-            isComplete={residenceYearsComplete}
-            issue={issueByField.residenceYears}
-            validationAttempted={validationAttempted}
-          />
+          {!(isFreeAppearance && residenceYearsComplete) && (
+            <RequiredFieldStatus
+              visualVariant={visualVariant}
+              id="residenceYearsStatus"
+              isComplete={residenceYearsComplete}
+              issue={issueByField.residenceYears}
+              validationAttempted={validationAttempted}
+            />
+          )}
         </fieldset>
       )}
     </>
@@ -481,6 +571,7 @@ function getFirstInsuranceYearClassification(value) {
 
 function RequiredFieldStatus({
   id,
+  visualVariant = "default",
   isComplete,
   issue,
   validationAttempted,
@@ -493,6 +584,14 @@ function RequiredFieldStatus({
     );
   }
 
+  if (isComplete && visualVariant === "free") {
+    return (
+      <span id={id} className="pf-status pf-status-complete pf-field-complete">
+        ✓ Συμπληρώθηκε
+      </span>
+    );
+  }
+
   if (isComplete) {
     return (
       <p id={id} style={completeStatusStyle}>
@@ -502,7 +601,7 @@ function RequiredFieldStatus({
   }
 
   return (
-    <p id={id} style={requiredStatusStyle}>
+    <p id={id} className={visualVariant === "free" ? "pf-status" : undefined} style={visualVariant === "free" ? undefined : requiredStatusStyle}>
       Απαιτείται
     </p>
   );

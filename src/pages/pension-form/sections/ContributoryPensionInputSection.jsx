@@ -83,7 +83,7 @@ function ContributoryPensionInputSection({
 
   if (calculatorEdition === "free") {
     return (
-      <fieldset id="averageMonthlyPensionableEarningsField" style={fieldsetStyle}>
+      <fieldset id="averageMonthlyPensionableEarningsField" className="pf-card">
         <legend>Μέσος μηνιαίος συντάξιμος μισθός</legend>
         <label htmlFor="averageMonthlyPensionableEarnings">Ποσό μέσου μηνιαίου συντάξιμου μισθού (€)</label>
         <div>
@@ -93,13 +93,16 @@ function ContributoryPensionInputSection({
             placeholder="π.χ. 1450,75"
             aria-invalid={Boolean(validationAttempted && averageMonthlyIssue)}
             aria-describedby={validationAttempted && averageMonthlyIssue ? 'free-average-salary-error' : undefined}
-            style={{ marginTop: '0.5rem', padding: '0.65rem', width: '220px', maxWidth: '100%', fontSize: '16px' }}
+            className="pf-salary-input"
           />
         </div>
         {validationAttempted && averageMonthlyIssue && (
           <p id="free-average-salary-error" role="alert" style={{ color: '#b42318' }}>{averageMonthlyIssue.message}</p>
         )}
-        <p>Δεν γνωρίζετε τον μέσο συντάξιμο μισθό σας; <Link to="/average-salary">Υπολογίστε τον εδώ →</Link></p>
+        <p className="pf-salary-help">
+          Δεν γνωρίζετε το ποσό;{' '}
+          <Link to="/average-salary">Υπολογισμός μέσου συντάξιμου μισθού</Link>
+        </p>
       </fieldset>
     );
   }

@@ -77,7 +77,7 @@ const AverageSalaryPage = () => {
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = 'Υπολογισμός μέσου μηνιαίου συντάξιμου μισθού';
+    document.title = 'Sintaximou — Μέσος μηνιαίος συντάξιμος μισθός';
     return () => { document.title = previousTitle; };
   }, []);
 
@@ -164,20 +164,16 @@ const AverageSalaryPage = () => {
   return (
     <div className="as-page">
       <div className="as-container">
-        <Link to="/free-guide" className="as-back-link">← Οδηγός δωρεάν εκτίμησης</Link>
+        <Link to="/" className="as-back-link">← Αρχική</Link>
 
         <section className="as-card as-hero" aria-labelledby="as-title">
           <span className="as-eyebrow">ΔΩΡΕΑΝ ΕΡΓΑΛΕΙΟ</span>
           <h1 id="as-title">Υπολογίστε τον μέσο μηνιαίο συντάξιμο μισθό σας</h1>
           <p>
-            Ο μέσος μηνιαίος συντάξιμος μισθός είναι ένα από τα στοιχεία που
-            χρειάζονται για την εκτίμηση της ανταποδοτικής σύνταξης. Δεν είναι
-            ο τελευταίος μισθός σας ούτε ένας απλός μέσος όρος των μισθών σας.
-          </p>
-          <p>
-            Το εργαλείο αυτό είναι ξεχωριστό από τη δωρεάν εκτίμηση. Τα ετήσια στοιχεία
-            συμπληρώνονται μόνο εδώ· στη δωρεάν εκτίμηση χρησιμοποιείται ο μέσος μηνιαίος
-            συντάξιμος μισθός που θα προκύψει.
+            Υπολογίστε τον μέσο μηνιαίο συντάξιμο μισθό από τα ετήσια στοιχεία σας.
+            Δεν είναι ο τελευταίος μισθός ούτε ένας απλός μέσος όρος. Το εργαλείο
+            λειτουργεί και αυτόνομα· αν θέλετε, μετά το αποτέλεσμα μπορείτε να
+            συνεχίσετε στη δωρεάν εκτίμηση σύνταξης με το ποσό προσυμπληρωμένο.
           </p>
         </section>
 
@@ -324,10 +320,10 @@ const AverageSalaryPage = () => {
                 <p className="as-result-amount">
                   {new Intl.NumberFormat('el-GR', { style: 'currency', currency: 'EUR' }).format(result.monthlyAmount)}
                 </p>
-                <p>Αυτό είναι το ποσό που μπορείτε να χρησιμοποιήσετε στη δωρεάν εκτίμηση σύνταξης. Αν συνεχίσετε από το κουμπί παρακάτω, το ποσό θα μεταφερθεί αυτόματα και θα εμφανιστεί προσυμπληρωμένο.</p>
+                <p>Αυτό είναι το εκτιμώμενο ποσό του μέσου μηνιαίου συντάξιμου μισθού βάσει των στοιχείων που δηλώσατε. Αν θέλετε να συνεχίσετε στη δωρεάν εκτίμηση σύνταξης, το ποσό θα μεταφερθεί αυτόματα και θα εμφανιστεί προσυμπληρωμένο.</p>
                 <Link className="as-submit as-result-link" to="/calculator?start=main"
                   state={{ averageMonthlyPensionableEarnings: result.monthlyAmount }}>
-                  Ξεκινήστε δωρεάν
+                  Συνέχεια στη δωρεάν εκτίμηση
                 </Link>
               </>
             ) : result?.status === 'error' ? (

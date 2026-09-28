@@ -46,6 +46,7 @@ const GuideIcon = ({ name, className = '' }) => (
     {name === 'info' && <><circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10v.01" /></>}
     {name === 'chevron' && <path d="m6 9 6 6 6-6" />}
     {name === 'table' && <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 10h18M9 10v10m6-10v10" /></>}
+    {name === 'calculator' && <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2m4 0h2M8 15h2m4 0h2M8 18h2m4 0h2" /></>}
   </svg>
 );
 
@@ -105,13 +106,14 @@ const FreeGuidePage = () => {
             <p>Πριν ξεκινήσετε</p>
           </div>
           <nav aria-label="Σε αυτή τη σελίδα">{navigationLinks()}</nav>
-          <div className="fg-quick-access">
-            <h2>Γρήγορη πρόσβαση</h2>
-            <Link to="/calculator?start=main">
-              Ξεκινήστε δωρεάν <GuideIcon name="arrow" />
-            </Link>
-            <Link to="/average-salary">
-              Υπολογισμός μέσου συντάξιμου μισθού <GuideIcon name="arrow" />
+          <div className="fg-salary-card">
+            <div className="fg-salary-card-head">
+              <span className="fg-salary-card-icon"><GuideIcon name="calculator" /></span>
+              <h2>Δεν ξέρετε τον μέσο μισθό;</h2>
+            </div>
+            <p>Υπολογίστε τον από τα ετήσια στοιχεία σας.</p>
+            <Link to="/average-salary" className="fg-button fg-salary-card-button">
+              Υπολογισμός μέσου μισθού <GuideIcon name="arrow" />
             </Link>
           </div>
         </aside>
@@ -171,7 +173,6 @@ const FreeGuidePage = () => {
                   <li>Έχετε περισσότερες από δύο διαφορετικές ασφαλιστικές περιόδους που πρέπει να ληφθούν υπόψη.</li>
                   <li>Έχετε παράλληλη ασφάλιση.</li>
                   <li>Θέλετε να εξεταστούν μελλοντικά έτη.</li>
-                  <li>Θέλετε έλεγχο του ασφαλιστικού ιστορικού ή σύνθετων ασφαλιστικών περιπτώσεων.</li>
                 </ul>
                 <Link to="/report-guide" className="fg-text-link">Δείτε το Αναλυτικό Report <GuideIcon name="arrow" /></Link>
               </div>
@@ -277,8 +278,9 @@ const FreeGuidePage = () => {
               </p>
             </div>
             <div className="fg-salary-tool-action">
+              <p>Το εργαλείο μπορεί να χρησιμοποιηθεί και αυτόνομα, χωρίς να συνεχίσετε στη δωρεάν εκτίμηση.</p>
               <Link to="/average-salary" className="fg-button fg-button-primary">
-                Υπολογίστε τον μέσο συντάξιμο μισθό <GuideIcon name="arrow" />
+                Υπολογισμός μέσου συντάξιμου μισθού <GuideIcon name="arrow" />
               </Link>
             </div>
           </section>

@@ -7,11 +7,13 @@ function RadioOption({
   checked,
   onChange,
   label,
+  visualVariant = "default",
 }) {
   return (
     <label
       htmlFor={id}
-      style={{
+      className={visualVariant === "free" ? "pf-option" : undefined}
+      style={visualVariant === "free" ? undefined : {
         display: 'block',
         marginTop: '0.5rem',
         cursor: 'pointer',

@@ -71,6 +71,59 @@ const Hero = () => {
           </div>
 
         </div>
+
+        {/* ΔΩΡΕΑΝ ΕΡΓΑΛΕΙΟ: ΜΕΣΟΣ ΣΥΝΤΑΞΙΜΟΣ ΜΙΣΘΟΣ */}
+        <aside className="hero-salary-callout" aria-labelledby="hero-salary-title">
+          <div className="hero-salary-description">
+            <span className="hero-salary-label">ΔΩΡΕΑΝ ΕΡΓΑΛΕΙΟ</span>
+            <h2 id="hero-salary-title">Υπολογίστε τον μέσο συντάξιμο μισθό σας</h2>
+            <p>
+              Είναι το στοιχείο που χρειάζεται η δωρεάν εκτίμηση. Συμπληρώστε αποδοχές και ημέρες
+              ασφάλισης για κάθε έτος και δείτε τον αμέσως.
+            </p>
+            <ul className="hero-salary-list">
+              <li>Χωρίς εγγραφή και χωρίς κωδικούς</li>
+              <li>Αποδοχές και ημέρες ανά έτος, όπως στο ασφαλιστικό σας ιστορικό</li>
+            </ul>
+            <Link to="/average-salary" className="hero-salary-button">
+              Υπολογισμός μέσου μισθού
+            </Link>
+          </div>
+
+          {/* Ενδεικτικό απόσπασμα. Δεν πατιέται. */}
+          <div className="hero-salary-preview" aria-hidden="true">
+            <div className="hero-salary-preview-title">Ενδεικτικός υπολογισμός</div>
+
+            <div className="hero-salary-row row-head">
+              <span>Έτος</span><span>Ημέρες</span><span>Αποδοχές</span>
+            </div>
+            <div className="hero-salary-row">
+              <span>2002</span><span>300</span><span>19.500 €</span>
+            </div>
+            <div className="hero-salary-row">
+              <span>2003</span><span>300</span><span>20.400 €</span>
+            </div>
+
+            <div className="hero-salary-gap">⋯</div>
+
+            <div className="hero-salary-row">
+              <span>2024</span><span>300</span><span>38.100 €</span>
+            </div>
+            <div className="hero-salary-row">
+              <span>2025</span><span>300</span><span>39.300 €</span>
+            </div>
+            <div className="hero-salary-row row-current">
+              <span>2026</span><span>200</span><span>26.800 €</span>
+            </div>
+
+            <div className="hero-salary-result">
+              <span className="hero-salary-result-label">ΜΕΣΟΣ ΜΗΝΙΑΙΟΣ<br />ΣΥΝΤΑΞΙΜΟΣ ΜΙΣΘΟΣ</span>
+              <span className="hero-salary-result-value">2.486,70 €</span>
+            </div>
+
+            <div className="hero-salary-next">Στην εκτίμηση →</div>
+          </div>
+        </aside>
       </div>
     </section>
   );

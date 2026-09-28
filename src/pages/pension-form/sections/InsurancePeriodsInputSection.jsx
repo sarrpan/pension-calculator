@@ -112,7 +112,7 @@ function InsurancePeriodsInputSection({
   }
 
   return (
-    <fieldset style={fieldsetStyle}>
+    <fieldset className={calculatorEdition === "free" ? "pf-card" : undefined} style={calculatorEdition === "free" ? undefined : fieldsetStyle}>
       <legend>Ασφαλιστικές περίοδοι</legend>
 
       <p style={{ marginTop: 0, color: '#475569' }}>
@@ -487,7 +487,7 @@ function FreeInsurancePeriodsFlow({
     !hasUnfinishedPeriod;
 
   return (
-    <div style={freeFlowStyle}>
+    <div className="pf-insurance-flow">
       {groups.map((group, index) => {
         const isCompleted = completedPeriodIdSet.has(group.id);
         const isEditing = editingPeriodId === group.id;
@@ -519,7 +519,7 @@ function FreeInsurancePeriodsFlow({
 
         if (isSelectingFund) {
           return (
-            <div key={group.id} style={freeActiveCardStyle}>
+            <div key={group.id} className="pf-period-editor">
               <FreeFlowHeading
                 step="Βήμα 1"
                 title={periodTitle}
@@ -565,16 +565,16 @@ function FreeInsurancePeriodsFlow({
           });
 
         return (
-          <div key={group.id} style={freeActiveCardStyle}>
+          <div key={group.id} className="pf-period-editor">
             <FreeFlowHeading
               step="Βήμα 2"
               title={`Στοιχεία ${periodTitle.toLowerCase()}`}
               description="Συμπληρώστε τα στοιχεία και ολοκληρώστε την περίοδο. Μετά θα εμφανίζεται μόνο η σύνοψή της."
             />
 
-            <div style={selectedFundBarStyle}>
+            <div className="pf-selected-fund">
               <div>
-                <span style={selectedFundCaptionStyle}>
+                <span className="pf-caption">
                   Επιλεγμένος φορέας
                 </span>
                 <strong>{getPeriodFundLabel(group)}</strong>
@@ -584,7 +584,7 @@ function FreeInsurancePeriodsFlow({
                 onClick={() =>
                   markPeriodAsEditing(group.id, true)
                 }
-                style={compactActionButtonStyle}
+                className="pf-secondary"
               >
                 Αλλαγή φορέα
               </button>
@@ -621,17 +621,17 @@ function FreeInsurancePeriodsFlow({
             )}
 
             {completionErrors[group.id] && (
-              <div style={freeCompletionErrorStyle}>
+              <div className="pf-notice pf-notice-error">
                 {completionErrors[group.id]}
               </div>
             )}
 
-            <div style={freeEditorActionsStyle}>
+            <div className="pf-period-actions">
               {index > 0 && (
                 <button
                   type="button"
                   onClick={() => handleRemovePeriod(group.id)}
-                  style={freeRemoveButtonStyle}
+                  className="pf-destructive"
                 >
                   Αφαίρεση περιόδου
                 </button>
@@ -640,7 +640,7 @@ function FreeInsurancePeriodsFlow({
               <button
                 type="button"
                 onClick={() => handleCompletePeriod(group, index)}
-                style={freeCompleteButtonStyle}
+                className="pf-secondary"
               >
                 Ολοκλήρωση ασφαλιστικής περιόδου
               </button>
@@ -653,7 +653,7 @@ function FreeInsurancePeriodsFlow({
         <button
           type="button"
           onClick={handleAddPeriod}
-          style={freeAddPeriodButtonStyle}
+          className="pf-secondary"
         >
           + Προσθήκη δεύτερης ασφαλιστικής περιόδου
         </button>
@@ -663,7 +663,7 @@ function FreeInsurancePeriodsFlow({
         groups.every((group) =>
           completedPeriodIdSet.has(group.id)
         ) && (
-          <div style={freeAllCompleteStyle}>
+          <div className="pf-notice pf-notice-success">
             Οι ασφαλιστικές περίοδοι ολοκληρώθηκαν. Μπορείτε να
             συνεχίσετε στα επόμενα στοιχεία της σύνταξης.
           </div>
@@ -674,11 +674,11 @@ function FreeInsurancePeriodsFlow({
 
 function FreeFlowHeading({ step, title, description }) {
   return (
-    <div style={freeFlowHeadingStyle}>
-      <span style={freeFlowStepStyle}>{step}</span>
+    <div className="pf-period-heading">
+      <span className="pf-step-pill">{step}</span>
       <div>
-        <h2 style={freeFlowTitleStyle}>{title}</h2>
-        <p style={freeFlowDescriptionStyle}>{description}</p>
+        <h2 className="pf-period-title">{title}</h2>
+        <p className="pf-help">{description}</p>
       </div>
     </div>
   );
@@ -695,29 +695,24 @@ function FreeInsurancePeriodSummary({
 }) {
   return (
     <div
-      style={{
-        ...freeSummaryCardStyle,
-        ...(isCompleted
-          ? freeCompletedSummaryCardStyle
-          : freePendingSummaryCardStyle),
-      }}
+      className="pf-period-summary" data-complete={isCompleted}
     >
-      <div style={freeSummaryHeaderStyle}>
+      <div className="pf-summary-header">
         <div>
           <strong>{title}</strong>
-          <span style={freeSummaryStatusStyle}>
+          <span className={isCompleted ? "pf-status pf-status-complete" : "pf-status"}>
             {isCompleted
               ? 'Ολοκληρωμένη'
               : 'Δεν έχει ολοκληρωθεί'}
           </span>
         </div>
 
-        <div style={freeSummaryActionsStyle}>
+        <div className="pf-summary-actions">
           {group.fund && (
             <button
               type="button"
               onClick={onEditFund}
-              style={compactActionButtonStyle}
+              className="pf-secondary"
             >
               Αλλαγή φορέα
             </button>
@@ -725,7 +720,7 @@ function FreeInsurancePeriodSummary({
           <button
             type="button"
             onClick={onEditDetails}
-            style={compactActionButtonStyle}
+            className="pf-secondary"
           >
             {isCompleted ? 'Αλλαγή στοιχείων' : 'Συνέχεια'}
           </button>
@@ -733,7 +728,7 @@ function FreeInsurancePeriodSummary({
             <button
               type="button"
               onClick={onRemove}
-              style={freeCompactRemoveButtonStyle}
+              className="pf-destructive"
             >
               Αφαίρεση
             </button>
@@ -741,7 +736,7 @@ function FreeInsurancePeriodSummary({
         </div>
       </div>
 
-      <div style={freeSummaryDetailsStyle}>
+      <div className="pf-summary-details">
         <strong>
           {group.fund
             ? getPeriodFundLabel(group)
@@ -1057,7 +1052,7 @@ function InsurancePeriodGroupFields({
   }
 
   return (
-    <div style={periodBoxStyle}>
+    <div className="pf-insurance-fields" style={periodBoxStyle}>
       <div style={periodHeaderStyle}>
         <h3 style={{ marginTop: 0, marginBottom: 0 }}>{title}</h3>
 
@@ -2149,7 +2144,7 @@ function RadioGroupWithLabel({
           const optionId = `${id}-${option.value}`;
 
           return (
-            <label key={option.value} htmlFor={optionId} style={radioOptionStyle}>
+            <label key={option.value} htmlFor={optionId} className="pf-option" style={radioOptionStyle}>
               <input
                 id={optionId}
                 type="radio"
@@ -2707,7 +2702,7 @@ function normalizeUniformedSpecialTimeDraft(
 
 const gridStyle = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+  gridTemplateColumns: 'var(--pf-field-grid, repeat(auto-fit, minmax(190px, 1fr)))',
   gap: '0.75rem',
 };
 
@@ -2733,46 +2728,46 @@ const radioOptionStyle = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '0.4rem',
-  padding: '0.55rem 0.75rem',
-  border: '1px solid #cbd5e1',
+  padding: 'var(--pf-option-padding, 0.55rem 0.75rem)',
+  border: '1px solid var(--pf-option-border, #cbd5e1)',
   borderRadius: '8px',
-  background: '#ffffff',
+  background: 'var(--pf-option-background, #ffffff)',
   cursor: 'pointer',
 };
 
 const selectStyle = {
   marginTop: '0.5rem',
-  padding: '0.5rem',
-  width: '260px',
+  padding: 'var(--pf-control-padding, 0.5rem)',
+  width: 'var(--pf-control-width, 260px)',
 };
 
 const inputStyle = {
   marginTop: '0.5rem',
-  padding: '0.5rem',
-  width: '220px',
+  padding: 'var(--pf-control-padding, 0.5rem)',
+  width: 'var(--pf-control-width, 220px)',
 };
 
 const specialRegimeBoxStyle = {
   marginTop: '1rem',
   padding: '1rem',
-  border: '1px solid #f59e0b',
+  border: 'var(--pf-subsection-border, 1px solid #f59e0b)',
   borderRadius: '8px',
-  background: '#fffbeb',
+  background: 'var(--pf-subsection-background, #fffbeb)',
 };
 
 const confirmedValueFieldStyle = {
   marginBottom: '0.75rem',
   padding: '0.65rem 0.75rem',
-  border: '1px solid #86efac',
+  border: 'var(--pf-subsection-border, 1px solid #86efac)',
   borderRadius: '6px',
-  background: '#f0fdf4',
-  color: '#065f46',
+  background: 'var(--pf-subsection-background, #f0fdf4)',
+  color: 'var(--pf-muted, #065f46)',
 };
 
 const confirmedValueLabelStyle = {
   display: 'block',
   marginBottom: '0.25rem',
-  color: '#047857',
+  color: 'var(--pf-muted, #047857)',
   fontSize: '0.82rem',
 };
 
@@ -2784,20 +2779,20 @@ const confirmedValueStatusStyle = {
 };
 
 const confirmedValuePendingFieldStyle = {
-  border: '1px solid #fcd34d',
-  background: '#fffbeb',
-  color: '#92400e',
+  border: 'var(--pf-subsection-border, 1px solid #fcd34d)',
+  background: 'var(--pf-subsection-background, #fffbeb)',
+  color: 'var(--pf-muted, #92400e)',
 };
 
 const confirmedValuePendingStatusStyle = {
-  color: '#b45309',
+  color: 'var(--pf-muted, #b45309)',
 };
 
 const periodBoxStyle = {
   marginTop: '1rem',
-  border: '1px solid #cbd5e1',
-  background: '#f8fafc',
-  padding: '0.75rem',
+  border: 'var(--pf-subsection-border, 1px solid #cbd5e1)',
+  background: 'var(--pf-subsection-background, #f8fafc)',
+  padding: 'var(--pf-period-padding, 0.75rem)',
 };
 
 const periodHeaderStyle = {
@@ -2820,186 +2815,6 @@ const uniformedSubBoxStyle = {
   marginTop: '0.75rem',
   borderTop: '1px solid #e2e8f0',
   paddingTop: '0.75rem',
-};
-
-
-const freeFlowStyle = {
-  marginTop: '1rem',
-};
-
-const freeActiveCardStyle = {
-  marginBottom: '1rem',
-  padding: '1rem',
-  border: '1px solid #cbd5e1',
-  borderRadius: '12px',
-  background: '#f8fafc',
-};
-
-const freeFlowHeadingStyle = {
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: '0.75rem',
-  marginBottom: '1rem',
-};
-
-const freeFlowStepStyle = {
-  minWidth: '72px',
-  padding: '0.35rem 0.55rem',
-  borderRadius: '999px',
-  background: '#1d4ed8',
-  color: '#fff',
-  fontWeight: 700,
-  textAlign: 'center',
-};
-
-const freeFlowTitleStyle = {
-  margin: 0,
-  fontSize: '1.15rem',
-};
-
-const freeFlowDescriptionStyle = {
-  margin: '0.3rem 0 0',
-  color: '#475569',
-};
-
-const selectedFundBarStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: '0.75rem',
-  marginBottom: '1rem',
-  padding: '0.75rem',
-  border: '1px solid #86efac',
-  borderRadius: '8px',
-  background: '#ecfdf5',
-  color: '#065f46',
-};
-
-const selectedFundCaptionStyle = {
-  display: 'block',
-  marginBottom: '0.2rem',
-  color: '#047857',
-  fontSize: '0.8rem',
-};
-
-const compactActionButtonStyle = {
-  padding: '0.4rem 0.6rem',
-  border: '1px solid #93c5fd',
-  borderRadius: '6px',
-  background: '#fff',
-  color: '#1d4ed8',
-  cursor: 'pointer',
-};
-
-const freeEditorActionsStyle = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  flexWrap: 'wrap',
-  gap: '0.65rem',
-  marginTop: '1rem',
-};
-
-const freeCompleteButtonStyle = {
-  padding: '0.7rem 0.95rem',
-  border: '1px solid #15803d',
-  borderRadius: '8px',
-  background: '#15803d',
-  color: '#fff',
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const freeRemoveButtonStyle = {
-  padding: '0.7rem 0.95rem',
-  border: '1px solid #fecaca',
-  borderRadius: '8px',
-  background: '#fff',
-  color: '#b91c1c',
-  cursor: 'pointer',
-};
-
-const freeCompletionErrorStyle = {
-  marginTop: '0.75rem',
-  padding: '0.75rem',
-  border: '1px solid #fca5a5',
-  borderRadius: '8px',
-  background: '#fef2f2',
-  color: '#991b1b',
-};
-
-const freeSummaryCardStyle = {
-  marginBottom: '0.8rem',
-  padding: '0.9rem',
-  borderRadius: '10px',
-};
-
-const freeCompletedSummaryCardStyle = {
-  border: '1px solid #86efac',
-  background: '#f0fdf4',
-};
-
-const freePendingSummaryCardStyle = {
-  border: '1px solid #fcd34d',
-  background: '#fffbeb',
-};
-
-const freeSummaryHeaderStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'flex-start',
-  gap: '0.75rem',
-};
-
-const freeSummaryStatusStyle = {
-  display: 'block',
-  marginTop: '0.25rem',
-  color: '#475569',
-  fontSize: '0.82rem',
-};
-
-const freeSummaryActionsStyle = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  flexWrap: 'wrap',
-  gap: '0.45rem',
-};
-
-const freeCompactRemoveButtonStyle = {
-  padding: '0.4rem 0.6rem',
-  border: '1px solid #fecaca',
-  borderRadius: '6px',
-  background: '#fff',
-  color: '#b91c1c',
-  cursor: 'pointer',
-};
-
-const freeSummaryDetailsStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.25rem',
-  marginTop: '0.75rem',
-  color: '#334155',
-};
-
-const freeAddPeriodButtonStyle = {
-  marginTop: '0.25rem',
-  padding: '0.7rem 0.9rem',
-  border: '1px solid #2563eb',
-  borderRadius: '8px',
-  background: '#fff',
-  color: '#1d4ed8',
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const freeAllCompleteStyle = {
-  marginTop: '0.8rem',
-  padding: '0.75rem',
-  border: '1px solid #86efac',
-  borderRadius: '8px',
-  background: '#f0fdf4',
-  color: '#166534',
-  fontWeight: 600,
 };
 
 const freeDetailsHeadingStyle = {

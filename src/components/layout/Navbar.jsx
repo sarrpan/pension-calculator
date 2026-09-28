@@ -73,7 +73,7 @@ const Navbar = () => {
 
         {/* --- Λογότυπο: πηγαίνει στην Αρχική --- */}
         <Link to={DIADROMES.arxiki} className="nv-logo">
-          Υπολογισμός Σύνταξης
+          <img src="/brand/sintaximou-logo-horizontal.svg" alt="Sintaximou" width="385" height="82" />
         </Link>
 
         {/* --- Κουμπί μενού, φαίνεται μόνο σε μικρές οθόνες --- */}

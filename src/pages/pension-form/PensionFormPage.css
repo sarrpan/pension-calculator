@@ -1,0 +1,162 @@
+/* Public Free calculator only. Shared inline styles retain their default fallbacks. */
+.pf-page {
+  --pf-muted: #475569;
+  --pf-control-padding: 10px 12px;
+  --pf-field-grid: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  --pf-subsection-border: 1px solid #e2e8f0;
+  --pf-subsection-background: #f8fafc;
+  --pf-period-padding: 20px;
+  padding: 32px 24px 80px;
+  background: #f2f4f7;
+  color: #475569;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.pf-page .pf-container { max-width: 960px; margin: 0 auto; }
+.pf-page h1, .pf-page h2, .pf-page h3, .pf-page h4, .pf-page h5, .pf-page legend { color: #0f172a; text-wrap: pretty; }
+.pf-page h1 { margin: 0 0 12px; font-size: clamp(1.8rem, 3vw, 2.5rem); line-height: 1.2; letter-spacing: -0.035em; }
+.pf-page h2, .pf-page .pf-card > legend { font-size: clamp(1.2rem, 2vw, 1.5rem); line-height: 1.4; font-weight: 700; letter-spacing: -0.02em; }
+.pf-page h3 { font-size: 1.1rem; line-height: 1.5; }
+.pf-page h4, .pf-page h5 { font-size: 1rem; }
+.pf-page h2, .pf-page h3 { margin-bottom: 12px; }
+.pf-page p + p { margin-top: 8px; }
+.pf-page .pf-step-intro { margin-bottom: 24px; padding-left: 12px; border-left: 3px solid #ea580c; }
+.pf-page fieldset { min-width: 0; }
+.pf-page legend { max-width: 100%; }
+.pf-page [id] { scroll-margin-top: 100px; }
+.pf-page .pf-card { min-width: 0; margin: 0 0 24px; padding: 28px 32px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; }
+.pf-page .pf-card > legend { float: left; width: 100%; margin-bottom: 20px; padding: 0; }
+.pf-page .pf-card > legend + * { clear: both; }
+.pf-page .pf-card::after { display: block; clear: both; content: ""; }
+.pf-page .pf-field { min-width: 0; margin: 0; padding: 20px 0; border: 0; border-bottom: 1px solid #e2e8f0; }
+.pf-page .pf-field:first-child { padding-top: 0; }
+.pf-page .pf-field:last-child { padding-bottom: 0; border-bottom: 0; }
+.pf-page .pf-field > legend { float: left; width: 100%; margin-bottom: 12px; color: #0f172a; font-size: 1rem; font-weight: 700; }
+.pf-page .pf-field > legend + * { clear: both; }
+.pf-page .pf-field > label, .pf-page .pf-card > label { color: #0f172a; font-weight: 700; }
+.pf-page .pf-field > p { margin-top: 8px; font-size: 0.9rem; }
+.pf-page .pf-field[data-invalid="true"], .pf-page .pf-question[data-invalid="true"] { padding: 16px; border: 1px solid #dc2626; border-radius: 8px; background: #fff7f7; }
+.pf-page .pf-card[data-invalid="true"] { border-color: #dc2626; }
+
+.pf-page input:not([type="radio"]):not([type="checkbox"]), .pf-page select {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.pf-page input.pf-national-input { width: var(--pf-input-width, 220px); }
+.pf-page input.pf-salary-input, .pf-page input.pf-plastic-input { width: 220px; }
+.pf-page input[aria-invalid="true"], .pf-page select[aria-invalid="true"] { border-color: #dc2626; background: #fff7f7; }
+.pf-page input[type="radio"], .pf-page input[type="checkbox"] { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 4px; accent-color: #b5410b; }
+.pf-page a:focus-visible, .pf-page button:focus-visible, .pf-page input:focus-visible, .pf-page select:focus-visible, .pf-page summary:focus-visible, .pf-page [tabindex]:focus-visible { outline: 3px solid #ea580c; outline-offset: 3px; }
+.pf-page .pf-option { display: flex; align-items: flex-start; gap: 10px; min-width: 0; min-height: 48px; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #334155; cursor: pointer; }
+.pf-page .pf-field > .pf-option + .pf-option { margin-top: 8px; }
+.pf-page .pf-option:hover { --pf-option-background: #f8fafc; background: #f8fafc; }
+.pf-page .pf-option:has(input:checked) { --pf-option-border: #b5410b; --pf-option-background: #fff8f2; border-color: #b5410b; background: #fff8f2; }
+.pf-page .pf-option:has(input:focus-visible) { outline: 3px solid #ea580c; outline-offset: 3px; }
+.pf-page .pf-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pf-page .pf-field-grid { display: grid; grid-template-columns: var(--pf-field-grid); gap: 16px; }
+.pf-page .pf-insurance-fields { min-width: 0; border-radius: 10px; }
+.pf-page .pf-insurance-fields > div > * { min-width: 0; }
+.pf-page .pf-insurance-fields fieldset { grid-column: 1 / -1; }
+.pf-page .pf-question { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+.pf-page .pf-question-title { margin-bottom: 12px; color: #0f172a; font-weight: 700; }
+.pf-page .pf-status { display: block; margin-top: 8px; color: #64748b; font-size: 0.85rem; font-weight: 600; }
+.pf-page .pf-status-complete { color: #15803d; }
+.pf-page .pf-field > input + .pf-field-complete { display: inline-block; margin: 8px 0 0 12px; vertical-align: middle; }
+.pf-page .pf-field > input:has(+ .pf-field-complete) { vertical-align: middle; }
+.pf-page .pf-status-error, .pf-page [role="alert"] { color: #b91c1c; }
+.pf-page .pf-help, .pf-page .pf-caption { color: #64748b; }
+.pf-page .pf-help { margin-top: 6px; font-size: 0.92rem; }
+.pf-page .pf-caption { display: block; margin-bottom: 4px; font-size: 0.82rem; }
+.pf-page .pf-salary-help { margin-top: 16px; font-size: 0.95rem; }
+.pf-page a { color: #b5410b; font-weight: 600; text-underline-offset: 4px; }
+.pf-page a:hover { color: #923409; }
+
+.pf-page button { max-width: 100%; min-height: 48px; padding: 10px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #334155; font: inherit; font-weight: 600; line-height: 1.5; cursor: pointer; }
+.pf-page button:hover:not(:disabled) { border-color: #94a3b8; background: #f8fafc; }
+.pf-page button:disabled, .pf-page select:disabled, .pf-page input:disabled { background: #e2e8f0; color: #64748b; cursor: not-allowed; }
+.pf-page .pf-submit { min-height: 48px; padding: 13px 24px; border-color: transparent; border-radius: 10px; background: #ea580c; color: #0f172a; font-weight: 700; }
+.pf-page .pf-submit:hover:not(:disabled) { border-color: transparent; background: #f97316; }
+.pf-page .pf-submit:disabled { background: #e2e8f0; color: #64748b; }
+.pf-page .pf-destructive { border-color: #fecaca; color: #b91c1c; }
+.pf-page .pf-destructive:hover:not(:disabled) { border-color: #dc2626; background: #fff7f7; }
+.pf-page .pf-help-button { margin-top: 12px; padding: 8px 0; border-color: transparent; background: transparent; text-align: left; text-decoration: underline; text-underline-offset: 4px; }
+.pf-page .pf-help-button:hover:not(:disabled) { border-color: transparent; }
+
+.pf-page .pf-insurance-flow { margin-top: 24px; }
+.pf-page .pf-period-editor + .pf-period-editor { margin-top: 24px; }
+.pf-page .pf-period-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; }
+.pf-page .pf-step-pill { flex: 0 0 auto; padding: 4px 10px; border: 1px solid #e2e8f0; border-radius: 20px; background: #f8fafc; color: #475569; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+.pf-page .pf-period-title { margin: 0; font-size: 1.2rem; }
+.pf-page .pf-selector-header, .pf-page .pf-summary-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.pf-page input.pf-category-search { display: block; width: 100%; margin-bottom: 20px; }
+.pf-page .pf-category-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pf-page .pf-category-tile, .pf-page .pf-category-option { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px; text-align: left; }
+.pf-page .pf-category-tile:hover:not(:disabled), .pf-page .pf-category-option:hover:not(:disabled) { border-color: #b5410b; background: #fff8f2; }
+.pf-page .pf-tile-title { color: #0f172a; font-weight: 700; }
+.pf-page .pf-tile-description { color: #64748b; font-size: 0.9rem; font-weight: 400; }
+.pf-page .pf-tile-more { margin-top: auto; padding-top: 8px; color: #b5410b; font-size: 0.82rem; }
+.pf-page .pf-selected-category, .pf-page .pf-selected-fund { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px; border: 1px solid #b5410b; border-radius: 10px; background: #fff8f2; color: #334155; }
+.pf-page .pf-selected-category-text { display: flex; flex-direction: column; gap: 4px; }
+.pf-page .pf-suboptions { margin-top: 20px; }
+.pf-page .pf-suboptions-heading { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.pf-page .pf-suboption-grid, .pf-page .pf-option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.pf-page .pf-suboption-grid button { text-align: left; }
+.pf-page .pf-uniformed-groups { display: grid; gap: 20px; }
+.pf-page .pf-uniformed-title { display: block; }
+.pf-page .pf-search-results { margin-bottom: 20px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+.pf-page .pf-period-actions, .pf-page .pf-summary-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.pf-page .pf-period-actions { margin-top: 20px; }
+.pf-page .pf-period-summary { margin-bottom: 16px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+.pf-page .pf-summary-details { display: flex; flex-direction: column; gap: 4px; color: #475569; }
+
+.pf-page .pf-notice { margin-top: 16px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; color: #475569; }
+.pf-page .pf-notice-warning { border-color: #fde68a; background: #fffbeb; color: #78350f; }
+.pf-page .pf-notice-error { border-color: #fca5a5; background: #fff7f7; color: #991b1b; }
+.pf-page .pf-notice-success { color: #15803d; font-size: 0.92rem; }
+.pf-page .pf-required-summary { margin-bottom: 20px; }
+.pf-page .pf-error-link { min-height: 44px; padding: 6px 0; border: 0; border-radius: 4px; background: transparent; color: #b91c1c; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
+.pf-page .pf-error-link:hover:not(:disabled) { background: transparent; }
+.pf-page .pf-notice ul { padding-left: 24px; }
+
+.pf-page .pf-results { margin-top: 32px; border-top: 3px solid #ea580c; }
+.pf-page .pf-result-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
+.pf-page .pf-result-tile { min-width: 0; padding: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+.pf-page .pf-result-label { margin-bottom: 8px; color: #475569; font-size: 0.9rem; }
+.pf-page .pf-result-value { color: #0f172a; font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pf-page .pf-result-total { border-color: #ea580c; background: #fff8f2; }
+.pf-page .pf-result-total .pf-result-value { font-size: clamp(1.6rem, 3vw, 2rem); }
+.pf-page .pf-result-description { margin-bottom: 20px; color: #475569; }
+.pf-page .pf-result-section { margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e8f0; }
+.pf-page .pf-deductions { border: 1px solid #e2e8f0; border-radius: 8px; }
+.pf-page .pf-deduction-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; }
+.pf-page .pf-deduction-row:last-child { border-bottom: 0; }
+.pf-page .pf-result-details { min-width: 0; margin-top: 16px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+
+@media (max-width: 800px) {
+  .pf-page .pf-category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pf-page .pf-result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .pf-page { --pf-control-width: 100%; --pf-field-grid: minmax(0, 1fr); --pf-period-padding: 16px; padding: 20px 16px 48px; }
+  .pf-page .pf-card { padding: 20px; }
+  .pf-page .pf-category-grid, .pf-page .pf-choice-grid, .pf-page .pf-suboption-grid, .pf-page .pf-option-grid, .pf-page .pf-result-grid { grid-template-columns: minmax(0, 1fr); }
+  .pf-page input.pf-national-input, .pf-page input.pf-salary-input, .pf-page input.pf-plastic-input { width: 100%; }
+  .pf-page .pf-field > input + .pf-field-complete { margin-left: 0; }
+  .pf-page .pf-period-heading { flex-direction: column; }
+  .pf-page .pf-period-summary { padding: 16px; }
+  .pf-page .pf-summary-actions { justify-content: flex-start; }
+  .pf-page .pf-period-actions button, .pf-page .pf-submit { width: 100%; }
+  .pf-page .pf-insurance-fields .pf-option { width: 100%; }
+}

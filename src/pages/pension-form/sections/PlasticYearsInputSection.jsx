@@ -114,14 +114,7 @@ function FreePlasticYearsInputSection({
   return (
     <fieldset
       id="plasticYearsSection"
-      style={{
-        ...fieldsetStyle,
-        ...(sectionHasError
-          ? sectionErrorStyle
-          : sectionIsComplete
-            ? sectionCompleteStyle
-            : {}),
-      }}
+      className="pf-card" data-invalid={sectionHasError} data-complete={sectionIsComplete}
     >
       <legend>Γενικά πλασματικά χρόνια</legend>
 
@@ -136,20 +129,15 @@ function FreePlasticYearsInputSection({
         issue={choiceIssue}
         validationAttempted={validationAttempted}
       >
-        <p style={questionTitleStyle}>
+        <p className="pf-question-title">
           Ποια από τις παρακάτω περιπτώσεις ισχύει;
         </p>
 
-        <div style={choiceGridStyle}>
+        <div className="pf-choice-grid">
           {FREE_FLOW_OPTIONS.map((option) => (
             <label
               key={option.value}
-              style={{
-                ...choiceCardStyle,
-                ...(choice === option.value
-                  ? selectedChoiceCardStyle
-                  : {}),
-              }}
+              className="pf-option"
             >
               <input
                 type="radio"
@@ -165,7 +153,7 @@ function FreePlasticYearsInputSection({
       </QuestionBox>
 
       {choice === "paid_unknown" && (
-        <p style={noticeStyle}>
+        <p className="pf-notice pf-notice-warning">
           Ο υπολογισμός θα συνεχιστεί χωρίς τον πλασματικό χρόνο.
           Επιστρέψτε στη φόρμα όταν γνωρίζετε τον χρόνο, το έτος της
           αίτησης και το συνολικό ποσό εξαγοράς.
@@ -180,13 +168,13 @@ function FreePlasticYearsInputSection({
             issue={durationIssue}
             validationAttempted={validationAttempted}
           >
-            <p style={questionTitleStyle}>
+            <p className="pf-question-title">
               {choice === "free"
                 ? "Πόσος είναι ο πλασματικός χρόνος χωρίς εξαγορά;"
                 : "Πόσος πλασματικός χρόνος εξαγοράστηκε ή θα εξαγοραστεί;"}
             </p>
 
-            <div style={gridStyle}>
+            <div className="pf-field-grid">
               <FreeTextInput
                 id="plasticYearsYears"
                 label="Έτη"
@@ -220,7 +208,7 @@ function FreePlasticYearsInputSection({
           </QuestionBox>
 
           {choice === "free" && (
-            <p style={noticeStyle}>
+            <p className="pf-notice pf-notice-warning">
               Ο χρόνος θα καταγραφεί, αλλά δεν θα προστεθεί στον
               υπολογισμό της ανταποδοτικής σύνταξης επειδή δεν υπάρχει
               εξαγορά.
@@ -259,21 +247,16 @@ function FreePlasticYearsInputSection({
               issue={applicationPeriodIssue}
               validationAttempted={validationAttempted}
             >
-              <p style={questionTitleStyle}>
+              <p className="pf-question-title">
                 Πότε υποβλήθηκε ή θα υποβληθεί η αίτηση μέσα στο
                 2016;
               </p>
 
-              <div style={choiceGridStyle}>
+              <div className="pf-choice-grid">
                 {APPLICATION_PERIOD_2016_OPTIONS.map((option) => (
                   <label
                     key={option.value}
-                    style={{
-                      ...choiceCardStyle,
-                      ...(entry.applicationPeriod2016 === option.value
-                        ? selectedChoiceCardStyle
-                        : {}),
-                    }}
+                    className="pf-option"
                   >
                     <input
                       type="radio"
@@ -318,15 +301,15 @@ function FreePlasticYearsInputSection({
             </p>
           </QuestionBox>
 
-          <p style={calculationRuleStyle}>
+          <p className="pf-notice pf-notice-info">
             Η δωρεάν έκδοση εφαρμόζει ποσοστό 6,67% για αιτήσεις έως
             12/05/2016 και 20% για αιτήσεις από 13/05/2016 και μετά.
           </p>
         </div>
       )}
 
-      {sectionIsComplete && (
-        <p style={sectionCompleteMessageStyle}>
+      {sectionIsComplete && requiresDuration && (
+        <p className="pf-status pf-status-complete">
           ✓ Τα στοιχεία πλασματικού χρόνου έχουν συμπληρωθεί.
         </p>
       )}
@@ -346,25 +329,18 @@ function QuestionBox({
   return (
     <div
       id={id}
-      style={{
-        ...questionBoxStyle,
-        ...(hasError
-          ? questionErrorStyle
-          : isComplete
-            ? questionCompleteStyle
-            : {}),
-      }}
+      className="pf-question" data-invalid={hasError}
     >
       {children}
 
       {hasError && (
-        <p role="alert" style={fieldErrorTextStyle}>
+        <p role="alert" className="pf-status pf-status-error">
           {issue.message}
         </p>
       )}
 
       {!hasError && isComplete && (
-        <p style={fieldCompleteTextStyle}>✓ Συμπληρώθηκε</p>
+        <p className="pf-status pf-status-complete">✓ Συμπληρώθηκε</p>
       )}
     </div>
   );
@@ -388,7 +364,7 @@ function FreeTextInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        style={inputStyle}
+        className="pf-plastic-input"
       />
     </div>
   );
@@ -1058,85 +1034,5 @@ const APPLICATION_PERIOD_2016_OPTIONS = [
     label: "Από 13 Μαΐου 2016 και μετά",
   },
 ];
-
-const choiceGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-  gap: "0.65rem",
-};
-
-const choiceCardStyle = {
-  display: "flex",
-  alignItems: "flex-start",
-  gap: "0.55rem",
-  padding: "0.75rem",
-  border: "1px solid #cbd5e1",
-  borderRadius: "8px",
-  background: "#ffffff",
-  cursor: "pointer",
-};
-
-const selectedChoiceCardStyle = {
-  border: "2px solid #2563eb",
-  background: "#eff6ff",
-};
-
-const questionBoxStyle = {
-  marginBottom: "0.9rem",
-  padding: "0.85rem",
-  border: "1px solid #cbd5e1",
-  borderRadius: "8px",
-  background: "#ffffff",
-};
-
-const questionCompleteStyle = {
-  border: "1px solid #16a34a",
-  background: "#f0fdf4",
-};
-
-const questionErrorStyle = {
-  border: "1px solid #dc2626",
-  background: "#fff7f7",
-};
-
-const sectionCompleteStyle = {
-  border: "2px solid #16a34a",
-};
-
-const sectionErrorStyle = {
-  border: "2px solid #dc2626",
-};
-
-const questionTitleStyle = {
-  margin: "0 0 0.7rem",
-  fontWeight: 700,
-};
-
-const fieldCompleteTextStyle = {
-  margin: "0.6rem 0 0",
-  color: "#166534",
-  fontWeight: 700,
-};
-
-const fieldErrorTextStyle = {
-  margin: "0.6rem 0 0",
-  color: "#b91c1c",
-  fontWeight: 700,
-};
-
-const sectionCompleteMessageStyle = {
-  margin: "0.8rem 0 0",
-  color: "#166534",
-  fontWeight: 700,
-};
-
-const calculationRuleStyle = {
-  margin: "0.75rem 0 0",
-  padding: "0.75rem",
-  border: "1px solid #bfdbfe",
-  borderRadius: "6px",
-  background: "#eff6ff",
-  color: "#1e3a8a",
-};
 
 export default PlasticYearsInputSection;

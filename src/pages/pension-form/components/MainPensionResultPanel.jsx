@@ -1,6 +1,7 @@
 import React from "react";
 
-function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }) {
+function MainPensionResultPanel({ calculationResponse, showDiagnostics = false, visualVariant = "default" }) {
+  const isFreeAppearance = visualVariant === "free";
   const nationalPension = calculationResponse?.nationalPension || {};
   const contributoryPension = calculationResponse?.contributoryPension || {};
   const article30Increase = calculationResponse?.article30Increase || {};
@@ -170,7 +171,8 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
 
   return (
     <section
-      style={{
+      className={isFreeAppearance ? "pf-card pf-results" : undefined}
+      style={isFreeAppearance ? undefined : {
         marginTop: "1rem",
         border: "1px solid #bbf7d0",
         borderRadius: "8px",
@@ -181,44 +183,47 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
       <h2>Αποτέλεσμα κύριας σύνταξης</h2>
 
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: "0.75rem",
-          marginBottom: "1rem",
-        }}
+        className={isFreeAppearance ? "pf-result-grid" : undefined}
+        style={isFreeAppearance ? undefined : resultCardsGridStyle}
       >
         <ResultCard
+          visualVariant={visualVariant}
           title="Εθνική σύνταξη"
           value={formatMoney(nationalAmount)}
         />
         <ResultCard
+          visualVariant={visualVariant}
           title="Βασική ανταποδοτική σύνταξη"
           value={formatMoney(contributoryAmount)}
         />
         <ResultCard
+          visualVariant={visualVariant}
           title="Προσαύξηση άρθρου 30"
           value={formatMoney(article30Amount)}
         />
         {parallelInsurance.hasParallelInsurance === true && (
           <ResultCard
+            visualVariant={visualVariant}
             title="Προσαύξηση παράλληλης ασφάλισης"
             value={formatMoney(parallelInsuranceAmount)}
           />
         )}
         {etaaExtraBenefitEntries.length > 0 && (
           <ResultCard
+            visualVariant={visualVariant}
             title="Πρόσθετη παροχή πρώην ΕΤΑΑ"
             value={formatMoney(etaaExtraBenefitAmount)}
           />
         )}
         <ResultCard
+          visualVariant={visualVariant}
+          emphasis={isFreeAppearance && !hasDeductionsResult}
           title="Σύνολο κύριας σύνταξης"
           value={formatMoney(grossMainPension)}
         />
       </div>
 
-      <div style={{ color: "#166534", marginBottom: "1rem" }}>
+      <div className={isFreeAppearance ? "pf-result-description" : undefined} style={isFreeAppearance ? undefined : { color: "#166534", marginBottom: "1rem" }}>
         {pensionableMonthlyEarnings !== null && (
           <p>
             Μέσος μηνιαίος συντάξιμος μισθός:{" "}
@@ -343,11 +348,12 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
       </div>
 
       {hasAuxiliaryPension && (
-        <section style={auxiliaryResultSectionStyle}>
+        <section className={isFreeAppearance ? "pf-result-section" : undefined} style={isFreeAppearance ? undefined : auxiliaryResultSectionStyle}>
           <h2 style={{ marginTop: 0 }}>Αποτέλεσμα επικουρικής σύνταξης</h2>
 
-          <div style={resultCardsGridStyle}>
+          <div className={isFreeAppearance ? "pf-result-grid" : undefined} style={isFreeAppearance ? undefined : resultCardsGridStyle}>
             <ResultCard
+              visualVariant={visualVariant}
               title="Παλαιό τμήμα έως 31/12/2014"
               value={formatMoney(auxiliaryOldPartAmount)}
             />
@@ -355,6 +361,7 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
             {auxiliaryHigherContributionAmount !== null &&
               auxiliaryHigherContributionAmount > 0 && (
                 <ResultCard
+                  visualVariant={visualVariant}
                   title="Προσαύξηση αυξημένων εισφορών"
                   value={formatMoney(auxiliaryHigherContributionAmount)}
                 />
@@ -362,12 +369,14 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
 
             {hasCalculatedNdcPart && (
               <ResultCard
+                visualVariant={visualVariant}
                 title="Νέο/NDC τμήμα από 1/1/2015"
                 value={formatMoney(auxiliaryNdcAmount)}
               />
             )}
 
             <ResultCard
+              visualVariant={visualVariant}
               title={
                 hasPendingNdcPart
                   ? "Μερικό σύνολο επικουρικής έως 31/12/2014"
@@ -377,7 +386,7 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
             />
           </div>
 
-          <div style={{ color: "#1e3a8a" }}>
+          <div className={isFreeAppearance ? "pf-result-description" : undefined} style={isFreeAppearance ? undefined : { color: "#1e3a8a" }}>
             {auxiliaryInsuranceDaysUntil2014 !== null && (
               <p>
                 Ημέρες επικουρικής έως 31/12/2014:{" "}
@@ -465,7 +474,7 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
                 </p>
 
                 {auxiliaryNdcYearlyBreakdown.length > 0 && (
-                  <details style={ndcBreakdownDetailsStyle}>
+                  <details className={isFreeAppearance ? "pf-result-details" : undefined} style={isFreeAppearance ? undefined : ndcBreakdownDetailsStyle}>
                     <summary style={{ cursor: "pointer", fontWeight: 700 }}>
                       Αναλυτικός υπολογισμός NDC ανά έτος
                     </summary>
@@ -551,7 +560,7 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
           </div>
 
           {hasCalculatedNdcPart && usesProvisionalNdcFactors && (
-            <div style={pendingAuxiliaryNoticeStyle}>
+            <div className={isFreeAppearance ? "pf-notice pf-notice-warning" : undefined} style={isFreeAppearance ? undefined : pendingAuxiliaryNoticeStyle}>
               <strong>
                 Το νέο/NDC τμήμα χρησιμοποιεί προσωρινούς συντελεστές 1+g.
               </strong>
@@ -565,7 +574,7 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
 
           {hasCalculatedNdcPart &&
             usesProvisionalNdcContributionRates && (
-              <div style={pendingAuxiliaryNoticeStyle}>
+              <div className={isFreeAppearance ? "pf-notice pf-notice-warning" : undefined} style={isFreeAppearance ? undefined : pendingAuxiliaryNoticeStyle}>
                 <strong>
                   Χρησιμοποιήθηκε προσωρινή παραδοχή ειδικής πρόσθετης
                   επικουρικής εισφοράς.
@@ -579,7 +588,7 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
             )}
 
           {hasPendingNdcPart && (
-            <div style={pendingAuxiliaryNoticeStyle}>
+            <div className={isFreeAppearance ? "pf-notice pf-notice-warning" : undefined} style={isFreeAppearance ? undefined : pendingAuxiliaryNoticeStyle}>
               <strong>Δεν ολοκληρώθηκε ο υπολογισμός του τμήματος από 1/1/2015.</strong>
               <p style={{ marginBottom: 0 }}>
                 Έχουν καταγραφεί{" "}
@@ -612,29 +621,33 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
       )}
 
       {hasDeductionsResult && (
-        <section style={deductionsResultSectionStyle}>
+        <section className={isFreeAppearance ? "pf-result-section" : undefined} style={isFreeAppearance ? undefined : deductionsResultSectionStyle}>
           <h2 style={{ marginTop: 0 }}>
             Κρατήσεις και πληρωτέο ποσό πριν από φόρο
           </h2>
 
-          <div style={resultCardsGridStyle}>
+          <div className={isFreeAppearance ? "pf-result-grid" : undefined} style={isFreeAppearance ? undefined : resultCardsGridStyle}>
             <FinancialResultCard
+              visualVariant={visualVariant}
               title="Συνολικό μικτό ποσό"
               value={formatMoney(grossGrandTotal)}
             />
             <FinancialResultCard
+              visualVariant={visualVariant}
               title="Σύνολο κρατήσεων"
               value={formatDeductionMoney(totalDeductionsBeforeTax)}
             />
             <FinancialResultCard
+              visualVariant={visualVariant}
               title="Πληρωτέο πριν από φόρο"
               value={formatMoney(payableBeforeTax)}
               emphasis
             />
           </div>
 
-          <div style={deductionsBreakdownStyle}>
+          <div className={isFreeAppearance ? "pf-deductions" : undefined} style={isFreeAppearance ? undefined : deductionsBreakdownStyle}>
             <DeductionRow
+              visualVariant={visualVariant}
               title="ΕΑΣ κύριας σύνταξης"
               value={mainEasDeduction}
             />
@@ -642,6 +655,7 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
             {(grossAuxiliaryPension > 0 ||
               supplementaryEasDeduction > 0) && (
               <DeductionRow
+                visualVariant={visualVariant}
                 title="ΕΑΣ/ΑΚΑΓΕ επικουρικής σύνταξης"
                 value={supplementaryEasDeduction}
               />
@@ -649,12 +663,14 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
 
             {under60Deduction > 0 && (
               <DeductionRow
+                visualVariant={visualVariant}
                 title="Πρόσθετη κράτηση κάτω των 60"
                 value={under60Deduction}
               />
             )}
 
             <DeductionRow
+              visualVariant={visualVariant}
               title="Υγειονομική περίθαλψη κύριας σύνταξης"
               value={mainHealthDeduction}
             />
@@ -662,6 +678,7 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
             {(grossAuxiliaryPension > 0 ||
               supplementaryHealthDeduction > 0) && (
               <DeductionRow
+                visualVariant={visualVariant}
                 title="Υγειονομική περίθαλψη επικουρικής σύνταξης"
                 value={supplementaryHealthDeduction}
               />
@@ -669,7 +686,7 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
 
           </div>
 
-          <p style={deductionsNoticeStyle}>
+          <p className={isFreeAppearance ? "pf-help" : undefined} style={isFreeAppearance ? undefined : deductionsNoticeStyle}>
             Το πληρωτέο ποσό είναι μετά τις παραπάνω κρατήσεις και πριν από
             τυχόν παρακράτηση φόρου.
           </p>
@@ -679,7 +696,8 @@ function MainPensionResultPanel({ calculationResponse, showDiagnostics = false }
       {Array.isArray(calculationResponse?.warnings) &&
         calculationResponse.warnings.length > 0 && (
           <div
-            style={{
+            className={isFreeAppearance ? "pf-notice pf-notice-warning" : undefined}
+            style={isFreeAppearance ? undefined : {
               border: "1px solid #fde68a",
               background: "#fffbeb",
               padding: "0.75rem",
@@ -797,10 +815,12 @@ function shouldShowPremiumDetails(article30Increase = {}) {
   );
 }
 
-function FinancialResultCard({ title, value, emphasis = false }) {
+function FinancialResultCard({ title, value, emphasis = false, visualVariant = "default" }) {
+  const isFreeAppearance = visualVariant === "free";
   return (
     <div
-      style={{
+      className={isFreeAppearance ? `pf-result-tile${emphasis ? " pf-result-total" : ""}` : undefined}
+      style={isFreeAppearance ? undefined : {
         border: emphasis ? "2px solid #16a34a" : "1px solid #f59e0b",
         borderRadius: "8px",
         padding: "0.75rem",
@@ -808,22 +828,21 @@ function FinancialResultCard({ title, value, emphasis = false }) {
       }}
     >
       <div
-        style={{
-          color: emphasis ? "#166534" : "#92400e",
-          fontSize: "0.9rem",
-        }}
+        className={isFreeAppearance ? "pf-result-label" : undefined} style={isFreeAppearance ? undefined : { color: emphasis ? "#166534" : "#92400e", fontSize: "0.9rem" }}
       >
         {title}
       </div>
-      <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>{value}</div>
+      <div className={isFreeAppearance ? "pf-result-value" : undefined} style={isFreeAppearance ? undefined : { fontSize: "1.4rem", fontWeight: 700 }}>{value}</div>
     </div>
   );
 }
 
-function DeductionRow({ title, value, strong = false }) {
+function DeductionRow({ title, value, strong = false, visualVariant = "default" }) {
+  const isFreeAppearance = visualVariant === "free";
   return (
     <div
-      style={{
+      className={isFreeAppearance ? "pf-deduction-row" : undefined}
+      style={isFreeAppearance ? { fontWeight: strong ? 700 : 400 } : {
         display: "flex",
         justifyContent: "space-between",
         gap: "1rem",
@@ -840,18 +859,20 @@ function DeductionRow({ title, value, strong = false }) {
   );
 }
 
-function ResultCard({ title, value }) {
+function ResultCard({ title, value, emphasis = false, visualVariant = "default" }) {
+  const isFreeAppearance = visualVariant === "free";
   return (
     <div
-      style={{
+      className={isFreeAppearance ? `pf-result-tile${emphasis ? " pf-result-total" : ""}` : undefined}
+      style={isFreeAppearance ? undefined : {
         border: "1px solid #86efac",
         borderRadius: "8px",
         padding: "0.75rem",
         background: "#ffffff",
       }}
     >
-      <div style={{ color: "#166534", fontSize: "0.9rem" }}>{title}</div>
-      <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>{value}</div>
+      <div className={isFreeAppearance ? "pf-result-label" : undefined} style={isFreeAppearance ? undefined : { color: "#166534", fontSize: "0.9rem" }}>{title}</div>
+      <div className={isFreeAppearance ? "pf-result-value" : undefined} style={isFreeAppearance ? undefined : { fontSize: "1.4rem", fontWeight: 700 }}>{value}</div>
     </div>
   );
 }

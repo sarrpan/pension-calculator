@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import "./PensionFormPage.css";
 import { useLocation, useNavigate } from "react-router-dom";
 
 
@@ -1017,8 +1018,12 @@ useEffect(() => {
   const canShowDiagnostics =
     calculatorEdition === "professional" && PENSION_DEBUG_ENABLED;
 
+  const isFreeAppearance = calculatorEdition === "free";
+
   return (
-    <main style={{ padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
+    <div className={isFreeAppearance ? "pf-page" : undefined}
+      style={isFreeAppearance ? undefined : { padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
+      <div className={isFreeAppearance ? "pf-container" : undefined}>
       <h1>Υπολογισμός σύνταξης</h1>
 
       {canShowDiagnostics && (
@@ -1062,7 +1067,7 @@ useEffect(() => {
         </section>
       )}
 
-      <p style={{ color: "#555" }}>
+      <p className={isFreeAppearance ? "pf-step-intro" : undefined} style={isFreeAppearance ? undefined : { color: "#555" }}>
         {currentFormStep === "contributory_yearly"
           ? hasNonSalariedPeriodInput
             ? "Βήμα 2: Ετήσια στοιχεία ασφαλιστικών περιόδων"
@@ -1091,7 +1096,9 @@ useEffect(() => {
       >
         {currentFormStep === "main" && (
           <>
+            <div className={isFreeAppearance ? "pf-card pf-national" : undefined}>
             <NationalPensionInputSection
+              visualVariant={isFreeAppearance ? "free" : "default"}
               birthDateInput={birthDateInput}
               firstInsuranceYearInput={firstInsuranceYearInput}
               pensionStartDateInput={pensionStartDateInput}
@@ -1130,6 +1137,8 @@ useEffect(() => {
                 clearBackendResult();
               }}
             />
+
+            </div>
 
             <InsurancePeriodsInputSection
               insurancePeriodsInputMode={insurancePeriodsInputMode}
@@ -1230,6 +1239,7 @@ useEffect(() => {
             />
 
             <AuxiliaryContributionInputSection
+              visualVariant={isFreeAppearance ? "free" : "default"}
               insurancePeriodsInputMode={insurancePeriodsInputMode}
               simpleFundInput={simpleFundInput}
               simpleEmploymentCategoryInput={simpleEmploymentCategoryInput}
@@ -1271,6 +1281,7 @@ useEffect(() => {
             />
 
             <EtaaExtraBenefitInputSection
+              visualVariant={isFreeAppearance ? "free" : "default"}
               insurancePeriodsInputMode={insurancePeriodsInputMode}
               simpleFundInput={simpleFundInput}
               insurancePeriodGroups={insurancePeriodGroups}
@@ -1368,7 +1379,8 @@ useEffect(() => {
           mainFieldIssues.length > 0 && (
             <section
               role="alert"
-              style={requiredFieldsSummaryStyle}
+              className={isFreeAppearance ? "pf-notice pf-notice-error pf-required-summary" : undefined}
+              style={isFreeAppearance ? undefined : requiredFieldsSummaryStyle}
             >
               <strong>
                 Συμπληρώστε τα παρακάτω υποχρεωτικά πεδία:
@@ -1382,7 +1394,8 @@ useEffect(() => {
                       onClick={() =>
                         scrollToFormField(issue.targetId)
                       }
-                      style={requiredFieldLinkStyle}
+                      className={isFreeAppearance ? "pf-error-link" : undefined}
+                      style={isFreeAppearance ? undefined : requiredFieldLinkStyle}
                     >
                       {issue.label}
                     </button>
@@ -1396,7 +1409,8 @@ useEffect(() => {
           <button
             type="submit"
             disabled={isSendingToBackend}
-            style={{
+            className={isFreeAppearance ? "pf-submit" : undefined}
+            style={isFreeAppearance ? undefined : {
               padding: "0.6rem 1rem",
               cursor: isSendingToBackend
                 ? "not-allowed"
@@ -1411,7 +1425,7 @@ useEffect(() => {
       {analysis.error && <p style={{ color: "crimson" }}>{analysis.error}</p>}
 
       {backendError && (
-        <section style={errorSectionStyle}>
+        <section className={isFreeAppearance ? "pf-notice pf-notice-error" : undefined} style={isFreeAppearance ? undefined : errorSectionStyle}>
           <h2>Δεν ήταν δυνατός ο υπολογισμός</h2>
           <p style={{ color: "crimson" }}>
             {getUserFacingBackendError(backendError)}
@@ -1507,11 +1521,13 @@ useEffect(() => {
 
       {calculationResponse && (
         <MainPensionResultPanel
+          visualVariant={isFreeAppearance ? "free" : "default"}
           calculationResponse={calculationResponse}
           showDiagnostics={canShowDiagnostics && isDiagnosticsOpen}
         />
       )}
-    </main>
+      </div>
+    </div>
   );
 }
 
