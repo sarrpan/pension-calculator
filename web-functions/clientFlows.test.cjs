@@ -5,22 +5,24 @@ const vm=require('node:vm');
 const path=require('node:path');
 const {webcrypto}=require('node:crypto');
 const {transformSync}=require('esbuild');
+const paidServiceConfig=require('./test-support/paidServiceConfig.cjs');
 const root=path.resolve(__dirname,'..');
 const clone=value=>JSON.parse(JSON.stringify(value));
 const fixture={name:'sample.pdf',type:'application/pdf',size:1024};
 
 function serviceHarness(responses=[],env={}) {
-  const uploads=[],deletes=[],calls=[];
+  const uploads=[],deletes=[],calls=[],authCalls=[];
   const source=fs.readFileSync(path.join(root,'src/services/stripe/premiumService.js'),'utf8')
     .replace(/^import .*;\r?\n/gm,'').replaceAll('import.meta.env','ENV').replaceAll('export const ','const ');
   const scope={ENV:{VITE_REQUEST_WITHDRAWAL_URL:'http://fixture/withdraw',VITE_SYMPLIROSI_AITISIS_URL:'http://fixture/upload',VITE_GET_REQUEST_STATUS_URL:'http://fixture/status',...env},crypto:webcrypto,
-    storage:{},storageRef:(_storage,filePath)=>filePath,initAuth:async()=>({uid:'owner',getIdToken:async()=>'auth-token'}),
+    ...paidServiceConfig({VITE_PAID_SERVICE_MODE:'live',...env}),
+    storage:{},storageRef:(_storage,filePath)=>filePath,initAuth:async()=>{authCalls.push(true);return {uid:'owner',getIdToken:async()=>'auth-token'};},
     uploadBytes:async(...args)=>{uploads.push(args);},deleteObject:async filePath=>deletes.push(filePath),
     fetch:async(url,options)=>{calls.push({url,...options,body:JSON.parse(options.body)});const result=responses.shift(); if(result instanceof Error)throw result;
       return {ok:result?.ok!==false,status:result?.status||200,json:async()=>result?.data||{success:true}};},
   };
-  vm.runInNewContext(source+'\nthis.api={validateUploadFiles,anevasmaAitisis,prosthikiSeAitisi,katastasiAitisis,ypovoliYpanachorisis};',scope);
-  return {...scope.api,uploads,deletes,calls};
+  vm.runInNewContext(source+'\nthis.api={validateUploadFiles,anevasmaAitisis,prosthikiSeAitisi,katastasiAitisis,ypovoliYpanachorisis,katagrafiPliromis};',scope);
+  return {...scope.api,uploads,deletes,calls,authCalls};
 }
 
 test('upload service blocks bad type/count/bytes before any network upload',async()=>{
@@ -63,7 +65,7 @@ function component(relative,imports={},env={}){
       return [states[index],value=>{states[index]=typeof value==='function'?value(states[index]):value;}];},
     useRef:initial=>{const index=cursor++;return states[index]||=( {current:initial} );},useEffect(){}};
   const scope={module:{exports:{}},ENV:env,console:{error(){}},fetch:imports.fetch,URL,window:{},setTimeout:()=>1,clearTimeout(){},
-    require:name=>name==='react'?React:name==='react-router-dom'?{Link:'Link'}:name.endsWith('.css')?{}:imports[name]||{}};
+    require:name=>name==='react'?React:name==='react-router-dom'?{Link:'Link'}:name.endsWith('/config/paidService')?paidServiceConfig({VITE_PAID_SERVICE_MODE:'live',...env}):name.endsWith('.css')?{}:imports[name]||{}};
   vm.runInNewContext(code,scope);
   const flatten=node=>typeof node==='object'&&node?[node,...(node.props?.children||[]).flatMap(flatten)]:[];
   return {render(props={}){cursor=0;tree=scope.module.exports.default(props);return tree;},
@@ -299,5 +301,21 @@ test('Stripe form accepts succeeded only and translates raw Stripe errors',async
     await h.one(n=>n.type==='form').props.onSubmit({preventDefault(){}});h.render(props);
     assert.equal(submitted,scenario==='succeeded'?1:0);assert.doesNotMatch(h.text(),/Your card was declined/);
     if(scenario==='decline')assert.match(h.text(),/Η κάρτα δεν έγινε δεκτή/);
+  }
+});
+
+
+test('prelaunch service rejects uploads and payment confirmation before auth, storage or HTTP',async()=>{
+  for(const mode of [undefined,'','prelaunch','LIVE','unknown',' live ']){
+    const h=serviceHarness([],{VITE_PAID_SERVICE_MODE:mode});
+    for(const result of [
+      await h.anevasmaAitisis({email:'visitor@example.com'},[fixture]),
+      await h.prosthikiSeAitisi('123456','visitor@example.com',[fixture]),
+      await h.katagrafiPliromis('123456','pi_fixture',{email:'visitor@example.com'}),
+    ]){
+      assert.equal(result.success,false);assert.equal(result.code,'service_not_available');
+    }
+    assert.equal(h.authCalls.length,0);assert.equal(h.uploads.length,0);
+    assert.equal(h.deletes.length,0);assert.equal(h.calls.length,0);
   }
 });

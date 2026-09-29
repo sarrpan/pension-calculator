@@ -1,6 +1,7 @@
 import { ref as storageRef, uploadBytes, deleteObject } from "firebase/storage";
 import { storage } from "../../firebase";
 import { initAuth } from "../../authInit";
+import { isPaidServiceLive } from '../../config/paidService';
 
 const DIEFTHYNSI_SYMPLIROSIS = import.meta.env.VITE_SYMPLIROSI_AITISIS_URL;
 const DIEFTHYNSI_KATASTASIS = import.meta.env.VITE_GET_REQUEST_STATUS_URL;
@@ -20,6 +21,7 @@ export const UPLOAD_LIMITS = { files: 10, bytes: 50 * 1024 * 1024 };
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MESSAGES = {
+  service_not_available: "Η online υπηρεσία δεν είναι διαθέσιμη. Επικοινωνήστε μαζί μας.",
   report_delivered: "Η υπηρεσία έχει ολοκληρωθεί. Για οποιοδήποτε θέμα, επικοινωνήστε μαζί μας.",
   withdrawal_unavailable: "Η υπαναχώρηση δεν είναι διαθέσιμη για αυτή την αίτηση. Επικοινωνήστε μαζί μας.",
   confirmation_required: "Επιβεβαιώστε ότι επιθυμείτε να υπαναχωρήσετε από τη σύμβαση.",
@@ -119,6 +121,7 @@ export const ypovoliYpanachorisis = (pin, email, confirmed, fullName) => {
 };
 
 export const anevasmaAitisis = async (stoicheia, arxeia, onProodos) => {
+  if (!isPaidServiceLive) return { success: false, code: 'service_not_available', error: MESSAGES.service_not_available };
   const email = kanoniko(stoicheia?.email);
   const phone = String(stoicheia?.tilefono || '').trim();
   const files = Array.from(arxeia || []);
@@ -150,6 +153,7 @@ export const anevasmaAitisis = async (stoicheia, arxeia, onProodos) => {
 };
 
 export const prosthikiSeAitisi = async (pin, email, arxeia, onProodos) => {
+  if (!isPaidServiceLive) return { success: false, code: 'service_not_available', error: MESSAGES.service_not_available };
   const kodikos = plirisKodikos(pin);
   const emailKanoniko = kanoniko(email);
   const files = Array.from(arxeia || []);
@@ -185,6 +189,7 @@ export const prosthikiSeAitisi = async (pin, email, arxeia, onProodos) => {
 };
 
 export const katagrafiPliromis = async (pin, paymentIntentId, epipleon = {}) => {
+  if (!isPaidServiceLive) return { success: false, code: 'service_not_available', error: MESSAGES.service_not_available };
   const result = await klisiSynartisis({
     pin: plirisKodikos(pin), email: kanoniko(epipleon.email), paymentIntentId,
     ypanaxorisiAt: epipleon.ypanaxorisiAt || null,

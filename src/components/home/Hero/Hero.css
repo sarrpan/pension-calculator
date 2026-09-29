@@ -419,3 +419,20 @@
     font-size: clamp(1.8rem, 7vw, 2.4rem);
   }
 }
+.option-card .service-coming-soon {
+  color: #245c52;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: right;
+  max-width: 100px;
+}
+
+.option-card .hero-report-contact {
+  margin-top: 12px;
+  color: #245c52;
+  font-size: 0.83rem;
+  line-height: 1.5;
+  text-align: center;
+  text-underline-offset: 3px;
+}

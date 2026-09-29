@@ -9,6 +9,8 @@ import {
   ypovoliYpanachorisis,
 } from '../services/stripe/premiumService';
 import './ReportRecoveryPage.css';
+import { isPaidServiceLive } from '../config/paidService';
+import { RecoveryPrelaunchPage } from '../components/paid-service/PaidServiceNotice';
 import { pasteRequestPin } from '../services/requestPin';
 
 /* Η τιμή της υπηρεσίας. Πρέπει να συμφωνεί με το ReportGuidePage.jsx
@@ -564,4 +566,4 @@ const ReportRecoveryPage = () => {
   );
 };
 
-export default ReportRecoveryPage;
+export default isPaidServiceLive ? ReportRecoveryPage : RecoveryPrelaunchPage;

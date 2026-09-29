@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { isPaidServiceLive } from '../config/paidService';
 import './PdfGuidePage.css';
 
 const ImageSlider = ({ slides }) => {
@@ -55,10 +56,13 @@ const ImageSlider = ({ slides }) => {
       </div>
       <div className="direct-link-container">
         <p>
-          Αφού αποθηκεύσετε το PDF, μπορείτε να το στείλετε μαζί με τυχόν άλλα σχετικά
-          έγγραφα για το Αναλυτικό Report.
+          {isPaidServiceLive
+            ? 'Αφού αποθηκεύσετε το PDF, μπορείτε να το στείλετε μαζί με τυχόν άλλα σχετικά έγγραφα για το Αναλυτικό Report.'
+            : 'Το PDF θα χρειαστεί για το Αναλυτικό Report όταν ενεργοποιηθεί η online υπηρεσία. Μάθετε περισσότερα στον οδηγό της υπηρεσίας.'}
         </p>
-        <Link to="/premium-upload" className="btn-start-now">Αποστολή εγγράφων</Link>
+        <Link to={isPaidServiceLive ? '/premium-upload' : '/report-guide'} className="btn-start-now">
+          {isPaidServiceLive ? 'Αποστολή εγγράφων' : 'Δείτε το Αναλυτικό Report'}
+        </Link>
       </div>
     </div>
   );

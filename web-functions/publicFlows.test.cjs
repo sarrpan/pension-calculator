@@ -250,7 +250,7 @@ function setup(initial = base(), overrides = {}) {
     }})},
   };
   const context={exports:{}, require:name=>{if(!(name in dependencies))throw Error(name); return dependencies[name];},
-    process:{env:{ADMIN_EMAIL_KODIKOS:'admin',STRIPE_SECRET_KEY:'fixture',EMAIL_USER:'configured@example.com',EMAIL_PASS:'fixture',PUBLIC_SITE_URL:'https://example.com',...overrides.env}},
+    process:{env:{PAID_SERVICE_MODE:'live',ADMIN_EMAIL_KODIKOS:'admin',STRIPE_SECRET_KEY:'fixture',EMAIL_USER:'configured@example.com',EMAIL_PASS:'fixture',PUBLIC_SITE_URL:'https://example.com',...overrides.env}},
     console:{error:(...args)=>errors.push(clone(args))}, URL, Date:class extends Date {static now(){return overrides.now ?? Date.now();}}};
   vm.runInNewContext(source,context,{filename:'index.js'});
   return {
@@ -739,4 +739,34 @@ test('contact confirms SMTP acceptance only, uses configured recipient/replyTo a
     const failing=setup(null,options);const result=await failing.call('sendContactMessage',{email,message:'A normal question.'});
     assert.equal(result.success,false);assert.equal(result.error,'Το μήνυμα δεν στάλθηκε. Δοκιμάστε ξανά σε λίγο.');
   }
+});
+
+
+test('prelaunch and missing/unknown server mode block new paid actions independently of client flags',async()=>{
+  for(const mode of [undefined,'','prelaunch','LIVE','unknown',' live ']){
+    for(const [name,initial,body] of [
+      ['symplirosiAitisis',null,{energeia:'nea_aitisi',pin,email,arxeia:[file(1)]}],
+      ['symplirosiAitisis',base(),{energeia:'prosthiki_arxeion',pin,email,arxeia:[file(1)]}],
+      ['symplirosiAitisis',base(),{energeia:'elegxos_kodikou',pin,email}],
+      ['createPaymentIntent',base({status:'awaiting_payment'}),{pin,email}],
+      ['epivevaiosiPliromis',base({status:'awaiting_payment',paymentIntentId:'pi_paid'}),{pin,email,paymentIntentId:'pi_paid',ypanaxorisiAt:1234}],
+    ]){
+      const app=setup(initial,{env:{PAID_SERVICE_MODE:mode,VITE_PAID_SERVICE_MODE:'live'}});
+      app.object(file(1));app.intents.set('pi_paid',paymentFixture());
+      const result=await app.call(name,{...body,paidServiceMode:'live'});
+      assert.equal(result.status,403);assert.equal(result.success,false);
+      assert.equal(result.code,'service_not_available');
+      assert.doesNotMatch(result.error,/PAID_SERVICE_MODE|prelaunch|configuration/i);
+      assert.deepEqual(app.request,initial);assert.equal(app.reads,0);
+      assert.equal(app.creations,0);assert.equal(app.retrievedIntents.length,0);
+      assert.equal(app.mailCount,0);assert.equal(app.errors.length,0);
+    }
+  }
+});
+
+test('prelaunch keeps contact and internal administration operational',async()=>{
+  const app=setup(base(),{env:{PAID_SERVICE_MODE:'prelaunch'}});
+  assert.equal((await app.call('sendContactMessage',{email,message:'Please let me know when the report is available.'})).success,true);
+  assert.equal((await adminAction(app,{katastasi:'awaiting_payment'})).success,true);
+  assert.equal(app.request.status,'awaiting_payment');
 });

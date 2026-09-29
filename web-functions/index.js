@@ -1,5 +1,9 @@
 require("dotenv").config();
 
+// Fail closed independently of the frontend build. Uses the existing Functions
+// environment configuration; only the exact value "live" enables paid actions.
+const isPaidServiceLive = process.env.PAID_SERVICE_MODE === "live";
+
 /* ΝΕΑ ΓΕΝΙΑ. Οι λειτουργίες είναι ήδη ανεβασμένες ως 2ης γενιάς
    (οι διευθύνσεις τους τελειώνουν σε .a.run.app). Δεν γυρίζουν πίσω
    σε 1ης γενιάς κρατώντας το ίδιο όνομα, οπότε το αρχείο γράφεται
@@ -795,6 +799,7 @@ async function existingFiles(pin, request) {
 exports.symplirosiAitisis = onRequest(ORIA, (req, res) => {
   return cors(req, res, async () => {
     if (req.method !== "POST") return fail(res, 405, "method");
+    if (!isPaidServiceLive) return fail(res, 403, "service_not_available", "Η online υπηρεσία δεν είναι διαθέσιμη. Επικοινωνήστε μαζί μας.");
     const { energeia, email, pin, arxeia, phone } = req.body || {};
     if (!["nea_aitisi", "elegxos_kodikou", "prosthiki_arxeion"].includes(energeia)) {
       return fail(res, 400, "invalid_action");
@@ -880,6 +885,7 @@ exports.symplirosiAitisis = onRequest(ORIA, (req, res) => {
 exports.createPaymentIntent = onRequest(ORIA, (req, res) => {
   return cors(req, res, async () => {
     if (req.method !== "POST") return fail(res, 405, "method");
+    if (!isPaidServiceLive) return fail(res, 403, "service_not_available", "Η online υπηρεσία δεν είναι διαθέσιμη. Επικοινωνήστε μαζί μας.");
     const { pin, email } = req.body || {};
     const kodikos = plirisKodikos(pin);
     const emailKanoniko = kanoniko(email);
@@ -1181,6 +1187,7 @@ async function sendClaimedNotification(reference, request, stateKey, claimId, bu
 exports.epivevaiosiPliromis = onRequest(ORIA, (req, res) => {
   return cors(req, res, async () => {
     if (req.method !== "POST") return fail(res, 405, "method");
+    if (!isPaidServiceLive) return fail(res, 403, "service_not_available", "Η online υπηρεσία δεν είναι διαθέσιμη. Επικοινωνήστε μαζί μας.");
     const { pin, email, paymentIntentId, ypanaxorisiAt } = req.body || {};
     const kodikos = plirisKodikos(pin);
     const emailKanoniko = kanoniko(email);

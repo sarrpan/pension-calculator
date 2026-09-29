@@ -2,6 +2,12 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    // false = prelaunch: new customer uploads are closed.
+    // true = live: new customer uploads are enabled again.
+    function paidServiceUploadsEnabled() {
+      return false;
+    }
+
     function isAdmin() {
       return request.auth != null && 'admin' in request.auth.token && request.auth.token.admin == true;
     }
@@ -14,7 +20,7 @@ service firebase.storage {
 
     match /premium_uploads/{requestId}/{fileName} {
       allow read: if isAdmin();
-      allow create: if resource == null && request.auth != null
+      allow create: if paidServiceUploadsEnabled() && resource == null && request.auth != null
         && requestId.matches('PIN-[0-9]{6}')
         && request.resource.metadata.ownerUid == request.auth.uid
         && validDocument();

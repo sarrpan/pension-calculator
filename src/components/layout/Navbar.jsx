@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import './Navbar.css';
+import { isPaidServiceLive } from '../../config/paidService';
 
 /* ============================================================
    ΜΠΑΡΑ ΠΛΟΗΓΗΣΗΣ
@@ -107,6 +108,7 @@ const Navbar = () => {
 
           {/* --- Δευτερεύουσα ομάδα: Αποστολή εγγράφων + παρακολούθηση αίτησης + κουμπί δράσης --- */}
           <div className="nv-secondary">
+            {isPaidServiceLive && <>
             <Link
               to={DIADROMES.apostoli}
               className={`nv-track ${einaiEnergi(DIADROMES.apostoli) ? 'nv-active' : ''}`}
@@ -123,6 +125,7 @@ const Navbar = () => {
               Παρακολούθηση αίτησης
             </Link>
 
+            </>}
             <Link to={DIADROMES.ypologismos} className="nv-cta">
               Ξεκινήστε δωρεάν
             </Link>

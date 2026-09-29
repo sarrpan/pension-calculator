@@ -1,4 +1,5 @@
 import React from 'react';
+import { isPaidServiceLive } from '../../../config/paidService';
 import './Features.css';
 
 /* ══════════════════════════════════════════════════════════════
@@ -129,7 +130,8 @@ const Features = () => {
         <div className="feature-row feature-row-last">
           <div className="feature-text">
             <span className="step-label">Η ΑΞΙΑ ΤΗΣ ΥΠΗΡΕΣΙΑΣ</span>
-            <h3>Ξεκάθαρη εκτίμηση, με 20 €</h3>
+              <h3>{isPaidServiceLive ? 'Ξεκάθαρη εκτίμηση, με 20 €' : 'Ξεκάθαρη εκτίμηση, με εφάπαξ χρέωση'}</h3>
+              {!isPaidServiceLive && <p>Χωρίς συνδρομή.</p>}
             <p>Η ανάγνωση του ασφαλιστικού ιστορικού θέλει εξειδίκευση. Την αναλαμβάνουμε εμείς.</p>
             <ul className="feature-bullets">
               <li>Γλιτώνετε χρόνο και ταλαιπωρία</li>

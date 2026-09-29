@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './CTA.css';
+import { isPaidServiceLive } from '../../../config/paidService';
 
 const CTA = () => {
   return (
@@ -11,7 +12,8 @@ const CTA = () => {
 
           <p>
             Αν γνωρίζετε ήδη τα βασικά στοιχεία σας, ξεκινήστε με τη δωρεάν εκτίμηση. Αν θέλετε
-            πλήρη επεξεργασία με βάση το ασφαλιστικό ιστορικό σας, προχωρήστε στο Αναλυτικό Report.
+            πλήρη επεξεργασία με βάση το ασφαλιστικό ιστορικό σας,{' '}
+            {isPaidServiceLive ? 'προχωρήστε στο Αναλυτικό Report.' : 'ενημερωθείτε για το Αναλυτικό Report που ετοιμάζουμε.'}
           </p>
 
           <div className="cta-buttons">

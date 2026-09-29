@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { isPaidServiceLive } from '../config/paidService';
 import './ContactPage.css';
 
 const EMAIL_EPIKOINONIAS = (import.meta.env.VITE_CONTACT_EMAIL || '').trim();
@@ -262,7 +263,9 @@ const ContactPage = () => {
                 προσωπικά στοιχεία που δεν χρειάζονται για την ερώτησή σας.
               </p>
               <p className="ct-side-note">
-                Για έγγραφα χρησιμοποιήστε τη σελίδα <Link to="/premium-upload">Αποστολή εγγράφων</Link>.
+                {isPaidServiceLive
+                  ? <>Για έγγραφα χρησιμοποιήστε τη σελίδα <Link to="/premium-upload">Αποστολή εγγράφων</Link>.</>
+                  : 'Η online αποστολή εγγράφων για το Αναλυτικό Report δεν είναι ακόμη ενεργή.'}
                 {' '}Δείτε την <Link to="/privacy">Πολιτική Απορρήτου</Link>.
               </p>
             </div>

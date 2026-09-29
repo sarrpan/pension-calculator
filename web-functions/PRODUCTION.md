@@ -4,6 +4,42 @@ This change prepares code and rules; it does not deploy them or configure creden
 
 ## Environment
 
+### Paid service availability
+
+The frontend uses `VITE_PAID_SERVICE_MODE` through `src/config/paidService.js`.
+Firebase Functions independently reads `PAID_SERVICE_MODE` after the existing
+`dotenv` configuration. Use the existing Functions environment mechanism
+(`web-functions/.env` / Firebase project environment), not frontend variables,
+for this server setting. No deployed values are changed by this implementation.
+
+Only the exact value `live` enables the paid service. Missing, `prelaunch`, and
+unknown values all select prelaunch.
+These switches do not change Stripe test/live mode, credentials, URLs or prices.
+
+### REQUIRED LAUNCH CHECKLIST — ALL THREE MUST BE ENABLED
+
+- [ ] Frontend: set `VITE_PAID_SERVICE_MODE=live` and rebuild/release the frontend.
+- [ ] Backend: set `PAID_SERVICE_MODE=live` using the existing Functions environment and release the backend.
+- [ ] Storage: change `paidServiceUploadsEnabled()` in `web-functions/storage.rules`
+      to return `true` **and deploy the Storage rules**.
+
+**Frontend/backend live mode alone does not open uploads. The Storage switch is
+independent of both environment variables; leaving it `false` blocks uploads
+even when the site is live.** Release the backend and Storage rules before the
+frontend. When closing the service again, return both modes to `prelaunch`, set
+the Storage switch to `false`, and release the corresponding changes.
+
+In prelaunch, request creation/supplementation and payment creation/confirmation
+return HTTP 403 with `service_not_available` before database, Stripe or email
+operations. The frontend does not mount upload/tracking/payment forms, start
+uploads or load Stripe. Contact and internal administration remain available.
+Existing status and withdrawal endpoints remain available for existing records.
+Storage rules default `paidServiceUploadsEnabled()` to `false`, denying new
+`premium_uploads` objects even through direct authenticated/anonymous SDK calls.
+Only `allow create` gains this extra condition. Existing read/delete permissions,
+the remaining PIN/owner/type/size checks, and `final_reports` admin access remain
+unchanged. Existing files are not modified or deleted by this switch.
+
 Vercel / frontend build:
 
 | Variable | Value |
@@ -37,7 +73,7 @@ Firebase Functions:
 
 Uploads retain the existing `premium_uploads/PIN-xxxxxx/...` path structure. Server verification reads object metadata and applies cumulative limits in a transaction. Supplementary documents are accepted while a request is `documents_received` or `needs_more_info`; later stages require contacting the service so that an already reviewed/paid request cannot be reset by an upload.
 
-No email is sent automatically when the initial upload completes. The PIN is displayed on screen. Existing administrator-triggered status emails remain in place. Contact messages use the new explicit form endpoint, with no attachments.
+In live mode, the initial upload sends customer confirmation and a new-request admin notification. Verified payment also notifies the administrator. The PIN is displayed on screen. Existing administrator-triggered status emails remain in place. Contact messages use the explicit form endpoint, with no attachments.
 
 Payment is 2000 euro cents with automatic capture, only after the server confirms `awaiting_payment` and an unpaid request. Repeated creation reuses the request's PaymentIntent. Confirmation accepts only a verified `succeeded` payment and is idempotent, preserving later statuses.
 
@@ -90,3 +126,9 @@ node --test --test-force-exit web-functions/storageRules.test.cjs
 ```
 
 Without those variables the emulator test is skipped. Its fixtures use the demo project's `demo-premium-flows-default-rtdb` namespace; it must never target a live database.
+
+The Storage test requires localhost emulator addresses. It loads the repository's
+prelaunch rules, verifies denied direct uploads and unchanged existing-file/admin
+access, then runs all original live cases with an in-memory copy changing only
+`paidServiceUploadsEnabled()` to `true`. It restores the repository rules in the
+emulator afterwards; it never edits the rules file or deploys either variant.

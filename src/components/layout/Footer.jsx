@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './Footer.css';
+import { isPaidServiceLive } from '../../config/paidService';
 
 /* ------------------------------------------------------------------
    ΣΤΟΙΧΕΙΑ ΕΤΑΙΡΕΙΑΣ
@@ -63,8 +64,10 @@ const Footer = () => {
             <li><Link to="/free-guide">Δωρεάν Εκτίμηση</Link></li>
             {/* Ο προορισμός είναι η σελίδα παρουσίασης, όχι η φόρμα. */}
             <li><Link to="/report-guide">Αναλυτικό Report</Link></li>
-            <li><Link to="/premium-upload">Αποστολή εγγράφων</Link></li>
-            <li><Link to="/report-recovery">Παρακολούθηση αίτησης</Link></li>
+            {isPaidServiceLive && <>
+              <li><Link to="/premium-upload">Αποστολή εγγράφων</Link></li>
+              <li><Link to="/report-recovery">Παρακολούθηση αίτησης</Link></li>
+            </>}
           </ul>
         </nav>
 

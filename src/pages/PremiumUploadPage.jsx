@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './PremiumUploadPage.css';
+import { isPaidServiceLive } from '../config/paidService';
+import { UploadPrelaunchPage } from '../components/paid-service/PaidServiceNotice';
 import { copyRequestPin, pasteRequestPin } from '../services/requestPin';
 import {
   anevasmaAitisis,
@@ -791,4 +793,4 @@ const PremiumUploadPage = () => {
   );
 };
 
-export default PremiumUploadPage;
+export default isPaidServiceLive ? PremiumUploadPage : UploadPrelaunchPage;
