@@ -62,7 +62,7 @@ function component(relative,imports={},env={}){
     useState:initial=>{const index=cursor++;if(!(index in states))states[index]=typeof initial==='function'?initial():initial;
       return [states[index],value=>{states[index]=typeof value==='function'?value(states[index]):value;}];},
     useRef:initial=>{const index=cursor++;return states[index]||=( {current:initial} );},useEffect(){}};
-  const scope={module:{exports:{}},ENV:env,console:{error(){}},fetch:imports.fetch,URL,window:{},
+  const scope={module:{exports:{}},ENV:env,console:{error(){}},fetch:imports.fetch,URL,window:{},setTimeout:()=>1,clearTimeout(){},
     require:name=>name==='react'?React:name==='react-router-dom'?{Link:'Link'}:name.endsWith('.css')?{}:imports[name]||{}};
   vm.runInNewContext(code,scope);
   const flatten=node=>typeof node==='object'&&node?[node,...(node.props?.children||[]).flatMap(flatten)]:[];
@@ -107,6 +107,41 @@ test('upload submits directly without PIN and preserves PIN + email supplementat
     if(supplementary)assert.deepEqual(clone(calls[0].args.slice(0,3)),['123456','visitor@example.com',[fixture]]);
     else assert.deepEqual(clone(calls[0].args.slice(0,2)),[{email:'visitor@example.com',tilefono:''},[fixture]]);
     assert.match(h.text(),/PIN-123456/);
+  }
+});
+
+test('PIN copy UI waits for success, locks duplicate clicks, and clears success after a failed retry',async()=>{
+  let finish,fail; const copied=[];
+  const h=component('src/pages/PremiumUploadPage.jsx',{
+    '../services/stripe/premiumService':{validateUploadFiles:()=>'',anevasmaAitisis:async()=>({success:true,pin:'PIN-123456'})},
+    '../services/requestPin':{copyRequestPin:value=>{copied.push(value);return new Promise((resolve,reject)=>{finish=resolve;fail=reject;});}},
+  });
+  h.render(); h.one(n=>n.props.id==='pu-email').props.onChange({target:{value:'visitor@example.com'}});
+  h.one(n=>n.props.type==='file').props.onChange({target:{files:[fixture],value:'sample.pdf'}});
+  h.one(n=>n.props.type==='checkbox').props.onChange({target:{checked:true}});h.render();
+  await h.one(n=>n.type==='form').props.onSubmit({preventDefault(){}});h.render();
+  const click=()=>h.one(n=>n.props.className==='pu-copy-btn').props.onClick();
+  const first=click();await click();h.render();
+  assert.doesNotMatch(h.text(),/Αντιγράφηκε/); assert.deepEqual(copied,['PIN-123456']);
+  finish();await first;h.render(); assert.match(h.text(),/Αντιγράφηκε/);
+  const retry=click();h.render();assert.doesNotMatch(h.text(),/Αντιγράφηκε/);
+  fail(new Error('clipboard denied'));await retry;h.render();
+  assert.doesNotMatch(h.text(),/Αντιγράφηκε/);assert.match(h.text(),/Η αντιγραφή δεν ολοκληρώθηκε/);
+  assert.ok(h.nodes(n=>n.props.role==='alert').length);
+});
+
+test('both PIN inputs handle full-code paste before their six-character limit',async()=>{
+  const pinUtils=await import('../src/services/requestPin.js');
+  for(const [page,id] of [['PremiumUploadPage','pu-kodikos'],['ReportRecoveryPage','pin']]){
+    const h=component(`src/pages/${page}.jsx`,{
+      '../services/requestPin':pinUtils,
+      '../services/stripe/stripeService':{__esModule:true,default:null},
+      '@stripe/react-stripe-js':{Elements:'Elements'},
+    });
+    h.render();let prevented=false;
+    h.one(n=>n.props.id===id).props.onPaste({clipboardData:{getData:()=> 'PIN-123456'},preventDefault(){prevented=true;}});
+    h.render();assert.equal(prevented,true);assert.equal(h.one(n=>n.props.id===id).props.value,'123456');
+    assert.equal(h.one(n=>n.props.id===id).props.maxLength,6);
   }
 });
 

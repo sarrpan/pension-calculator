@@ -53,16 +53,23 @@ test('real emulators: anonymous private uploads, owner-only cleanup, admin repor
 
     // Run the actual upload service and HTTP handlers against emulator Auth/Storage/RTDB.
     // Only the HTTP transport is in-process; Stripe and SMTP must never be contacted here.
-    const backend={exports:{},URL,console,process:{env:{PUBLIC_SITE_URL:'https://example.com'}},require(name){
+    const mails=[];
+    const backend={exports:{},URL,console,process:{env:{PUBLIC_SITE_URL:'https://example.com',EMAIL_USER:'admin@example.com',EMAIL_PASS:'emulator-only'}},require(name){
+      if(name==='node:crypto')return require('node:crypto');
       if(name==='dotenv')return {config(){}};
       if(name==='firebase-functions/v2/https')return {onRequest:(_options,handler)=>handler};
       if(name==='cors')return ()=> (_req,_res,next)=>next();
       if(name==='firebase-admin')return {initializeApp(){},auth:()=>adminApp.auth(),storage:()=>adminApp.storage(),database:()=>adminApp.database()};
       throw Error(`Unexpected external integration: ${name}`);
     }};
-    // Constructors are imported by the module but should not be used by an upload.
+    // SMTP is mocked; assert notifications only see already committed database state.
     const baseRequire=backend.require;
-    backend.require=name=>['stripe','nodemailer'].includes(name)?{}:baseRequire(name);
+    backend.require=name=>name==='stripe'?{}:name==='nodemailer'?{createTransport:()=>({sendMail:async mail=>{
+      const pin=mail.subject.match(/PIN-\d{6}/)[0];
+      const committed=(await adminApp.database().ref(`premium_requests/${pin}`).once('value')).val();
+      assert.equal(committed.status,'documents_received');assert.ok(committed.documentsReceivedEmail.claimId);
+      assert.ok(committed.adminNewRequestNotification.claimId);mails.push(mail);return {accepted:[mail.to]};
+    }})}:baseRequire(name);
     vm.runInNewContext(fs.readFileSync(require.resolve('./index.js'),'utf8'),backend);
     const uploadSource=fs.readFileSync(require.resolve('../src/services/stripe/premiumService.js'),'utf8')
       .replace(/^import .*;\r?\n/gm,'').replaceAll('import.meta.env','ENV').replaceAll('export const ','const ');
@@ -79,10 +86,18 @@ test('real emulators: anonymous private uploads, owner-only cleanup, admin repor
     assert.equal(created.success,true,created.error);
     let stored=(await adminApp.database().ref(`premium_requests/${created.pin}`).once('value')).val();
     assert.equal(stored.files.length,1);assert.equal(stored.totalBytes,6);assert.equal(stored.status,'documents_received');
+    assert.equal(mails.length,2);assert.ok(stored.documentsReceivedEmail.sentAt);assert.ok(stored.adminNewRequestNotification.sentAt);
+    const token=await owner.auth.currentUser.getIdToken();
+    const retries=await Promise.all(Array.from({length:3},()=>clientContext.fetch('symplirosiAitisis',{
+      headers:{Authorization:`Bearer ${token}`},body:JSON.stringify({energeia:'nea_aitisi',pin:created.pin,email:'fixture@example.com',arxeia:stored.files}),
+    })));
+    for(const retry of retries)assert.equal((await retry.json()).success,true);
+    assert.equal(mails.length,2);
     const supplemented=await clientContext.supplement(created.pin,'fixture@example.com',[document]);
     assert.equal(supplemented.success,true,supplemented.error);
     stored=(await adminApp.database().ref(`premium_requests/${created.pin}`).once('value')).val();
     assert.equal(stored.files.length,2);assert.equal(stored.totalBytes,12);assert.equal(stored.paymentStatus,'not_requested');
+    assert.equal(mails.length,2); // Supplementary documents do not send first-upload notifications.
     await adminApp.database().ref('premium_requests/PIN-123456').set({email:'fixture@example.com',status:'documents_received'});
     await assert.rejects(get(dbRef(publicClient.database,'premium_requests/PIN-123456')),/permission[ _]denied/i);
     await assert.rejects(get(dbRef(owner.database,'premium_requests/PIN-123456')),/permission[ _]denied/i);

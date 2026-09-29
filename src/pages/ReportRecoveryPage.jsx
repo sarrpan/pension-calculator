@@ -9,6 +9,7 @@ import {
   ypovoliYpanachorisis,
 } from '../services/stripe/premiumService';
 import './ReportRecoveryPage.css';
+import { pasteRequestPin } from '../services/requestPin';
 
 /* Η τιμή της υπηρεσίας. Πρέπει να συμφωνεί με το ReportGuidePage.jsx
    και το PremiumUploadPage.jsx. */
@@ -315,6 +316,7 @@ const ReportRecoveryPage = () => {
                 <span className="pin-prefix" aria-hidden="true">PIN-</span>
                 <input
                   id="pin"
+                  onPaste={e => pasteRequestPin(e, setPin)}
                   type="text"
                   inputMode="numeric"
                   maxLength={6}

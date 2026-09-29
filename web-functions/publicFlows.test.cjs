@@ -188,7 +188,7 @@ test('tracking exposes withdrawal/refund state without PaymentIntent IDs or a wi
 
 function setup(initial = base(), overrides = {}) {
   let request = clone(initial), creations = 0, mailCount = 0, lastMail, reads = 0;
-  const errors = [], requestsAtSend = [];
+  const errors = [], requestsAtSend = [], mails = [];
   let beforeTransaction;
   const objects = new Map();
   const intents = new Map();
@@ -199,7 +199,7 @@ function setup(initial = base(), overrides = {}) {
   const keys = new Map();
   const snapshot = value => ({val:()=>clone(value), exists:()=>value != null});
   const reference = {
-    child:key=>key===pin?reference:['paymentConfirmationEmail','withdrawalEmail'].includes(key)?{update:async patch=>{
+    child:key=>key===pin?reference:['paymentConfirmationEmail','withdrawalEmail','documentsReceivedEmail','adminNewRequestNotification','adminPaymentNotification'].includes(key)?{update:async patch=>{
       if(overrides.deliveryWriteFail)throw Object.assign(Error('delivery write failed'),{code:'database_unavailable'});
       request[key]={...request[key],...clone(patch)};
     }}:{set:async value=>{const [parent,field]=key.split('/');request[parent]={...request[parent],[field]:value};}},
@@ -242,10 +242,10 @@ function setup(initial = base(), overrides = {}) {
       retrieve:async id=>{retrievedIntents.push(id);if(overrides.retrieveFail)throw Error('Stripe unavailable');return clone(intents.get(id));},
     };}},
     nodemailer:{createTransport:()=>({sendMail:async data=>{
-      mailCount++; lastMail=data;
+      mailCount++; lastMail=data; mails.push(data);
       requestsAtSend.push(clone(request));
-      if(overrides.onSend)await overrides.onSend();
-      if(overrides.smtpFail)throw Error('private SMTP credentials');
+      if(overrides.onSend)await overrides.onSend(data);
+      if(overrides.smtpFail || overrides.failRecipient===data.to)throw Object.assign(Error('private SMTP credentials'),{code:overrides.smtpCode});
       return {accepted:overrides.rejected?[]:[data.to]};
     }})},
   };
@@ -257,7 +257,7 @@ function setup(initial = base(), overrides = {}) {
     get request(){return request;}, set request(value){request=clone(value);},
     get creations(){return creations;}, get mailCount(){return mailCount;}, get lastMail(){return lastMail;},
     get reads(){return reads;},
-    objects,intents,errors,requestsAtSend,retrievedIntents,
+    objects,intents,errors,requestsAtSend,retrievedIntents,mails,
     race(action){beforeTransaction=action;},
     object(value,owner='owner'){objects.set(value.path,{size:String(value.size),contentType:value.type,metadata:{ownerUid:owner}}); return value;},
     call(name,body={},method='POST',token='owner',headers={}){
@@ -275,8 +275,10 @@ test('new upload validates real objects, identity, type, totals; stores only ser
   const result=await app.call('symplirosiAitisis',{energeia:'nea_aitisi',pin,email,arxeia:[{...document,size:1}],status:'delivered',paymentStatus:'paid'});
   assert.equal(result.success,true); assert.equal(app.request.totalBytes,mb);
   assert.equal(app.request.status,'documents_received'); assert.equal(app.request.paymentStatus,'not_requested');
-  assert.equal(app.mailCount,0);
-  const collision=await app.call('symplirosiAitisis',{energeia:'nea_aitisi',pin,email,arxeia:[document]});
+  assert.equal(app.mailCount,2);
+  const retry=await app.call('symplirosiAitisis',{energeia:'nea_aitisi',pin,email,arxeia:[document]});
+  assert.equal(retry.success,true); assert.equal(app.mailCount,2);
+  const collision=await app.call('symplirosiAitisis',{energeia:'nea_aitisi',pin,email:'other@example.com',arxeia:[document]});
   assert.equal(collision.code,'pin_conflict');
 });
 
@@ -289,6 +291,91 @@ test('unauthenticated, wrong-owner, foreign-path, duplicate-path and unsupported
     app.object(document,variant==='owner'?'someone-else':'owner');
     const result=await app.call('symplirosiAitisis',{energeia:'nea_aitisi',pin,email,arxeia:variant==='duplicate'?[document,document]:[document]},'POST',variant==='noauth'?null:'owner');
     assert.equal(result.success,false,variant); assert.equal(app.request,null);
+    assert.equal(app.mailCount,0);
+  }
+});
+
+test('first upload sends the existing receipt and one compact admin notice after persistence',async()=>{
+  for(const contact of [undefined,'admin@example.com']){
+    const app=setup(null,{now:2000,retryTransaction:true,env:{CONTACT_EMAIL:contact}});
+    const documents=[app.object(file(1)),app.object(file(2))];
+    const payload={energeia:'nea_aitisi',pin,email,phone:'2101234567',arxeia:documents};
+    assert.equal((await app.call('symplirosiAitisis',payload)).success,true);
+    assert.equal(app.mailCount,2);
+    const customer=app.mails.find(mail=>mail.to===email),admin=app.mails.find(mail=>mail.to!==email);
+    assert.match(customer.subject,/Λάβαμε τα έγγραφά σας/);assert.ok(customer.subject.includes(pin));
+    for(const text of [customer.text,customer.html]){
+      assert.ok(text.includes(pin));assert.ok(text.includes('https://example.com/report-recovery'));
+      assert.match(text,/email/);assert.match(text,/3 εργάσιμ/);assert.match(text,/Δεν έχει γίνει καμία χρέωση/);
+    }
+    assert.equal(admin.to,contact||'configured@example.com');
+    assert.equal(admin.subject,`Νέα αίτηση Αναλυτικού Report — ${pin}`);
+    for(const text of [pin,email,'2101234567','Αριθμός αρχείων: 2','1970-01-01T00:00:02.000Z'])assert.ok(admin.text.includes(text));
+    for(const mail of app.mails)assert.equal(mail.attachments,undefined);
+    for(const atSend of app.requestsAtSend){
+      assert.equal(atSend.status,'documents_received');assert.equal(atSend.fileCount,2);
+      assert.equal(atSend.paymentStatus,'not_requested');assert.equal(atSend.createdAt,2000);
+      assert.ok(atSend.documentsReceivedEmail.claimId);assert.ok(atSend.adminNewRequestNotification.claimId);
+    }
+    for(const key of ['documentsReceivedEmail','adminNewRequestNotification'])assert.equal(app.request[key].sentAt,2000);
+    assert.notEqual(app.request.documentsReceivedEmail.claimId,app.request.adminNewRequestNotification.claimId);
+    // File ordering and client-supplied status do not alter an exact retry.
+    app.request={...app.request,status:'needs_more_info'};
+    const recorded=clone(app.request);
+    assert.equal((await app.call('symplirosiAitisis',{...payload,arxeia:documents.slice().reverse()})).success,true);
+    assert.deepEqual(app.request,recorded);assert.equal(app.mailCount,2);assert.deepEqual(app.errors,[]);
+  }
+});
+
+test('concurrent first uploads and retries while SMTP is pending own each notification only once',async()=>{
+  let started,finish;
+  const sending=new Promise(resolve=>{started=resolve;}),pending=new Promise(resolve=>{finish=resolve;});
+  const app=setup(null,{retryTransaction:true,onSend:async()=>{started();await pending;}});
+  const payload={energeia:'nea_aitisi',pin,email,arxeia:[app.object(file(1))]};
+  const first=app.call('symplirosiAitisis',payload);
+  const concurrent=Array.from({length:3},()=>app.call('symplirosiAitisis',payload));
+  await sending;
+  assert.ok((await Promise.all(concurrent)).every(result=>result.success));
+  assert.equal((await app.call('symplirosiAitisis',payload)).success,true);assert.equal(app.mailCount,2);
+  finish();assert.equal((await first).success,true);
+  assert.equal(app.mails.filter(mail=>mail.to===email).length,1);
+  assert.equal(app.mails.filter(mail=>mail.to==='configured@example.com').length,1);
+  assert.doesNotMatch(app.mails.find(mail=>mail.to!==email).text,/Τηλέφωνο/);
+});
+
+test('new request mail failures are independent, recorded safely and never remove documents or resend',async()=>{
+  for(const options of [{smtpFail:true,smtpCode:'private SMTP credentials'},{rejected:true},
+    {failRecipient:email},{failRecipient:'configured@example.com'},{env:{EMAIL_PASS:''}},{env:{PUBLIC_SITE_URL:''}}]){
+    const app=setup(null,options),document=app.object(file(1));
+    const payload={energeia:'nea_aitisi',pin,email,arxeia:[document]};
+    assert.equal((await app.call('symplirosiAitisis',payload)).success,true);
+    assert.equal(app.request.status,'documents_received');assert.deepEqual(app.request.files,[document]);
+    assert.ok(app.objects.has(document.path));
+    for(const [key,recipient] of [['documentsReceivedEmail',email],['adminNewRequestNotification','configured@example.com']]){
+      const fails=options.smtpFail||options.rejected||options.failRecipient===recipient||options.env?.EMAIL_PASS===''||(recipient===email&&options.env?.PUBLIC_SITE_URL==='');
+      assert.ok(app.request[key].claimId);
+      if(fails){assert.ok(app.request[key].failedAt);assert.equal(app.request[key].failureStage,'send');assert.equal(app.request[key].sentAt,undefined);}
+      else assert.ok(app.request[key].sentAt);
+    }
+    const recorded=clone(app.request),count=app.mailCount;
+    assert.equal((await app.call('symplirosiAitisis',payload)).success,true);
+    assert.equal(app.mailCount,count);assert.deepEqual(app.request,recorded);
+    assert.doesNotMatch(JSON.stringify([app.errors,app.request]),/private SMTP credentials/);
+  }
+});
+
+test('a failed creation commit sends nothing; failed mail-state writes retain the successful request and claims',async()=>{
+  for(const options of [{paymentWriteFail:true},{deliveryWriteFail:true}]){
+    const app=setup(null,options),document=app.object(file(1));
+    const payload={energeia:'nea_aitisi',pin,email,arxeia:[document]};
+    const result=await app.call('symplirosiAitisis',payload);
+    if(options.paymentWriteFail){assert.equal(result.success,false);assert.equal(app.request,null);assert.equal(app.mailCount,0);}
+    else{
+      assert.equal(result.success,true);assert.deepEqual(app.request.files,[document]);
+      assert.ok(app.request.documentsReceivedEmail.claimId);assert.ok(app.request.adminNewRequestNotification.claimId);
+      assert.equal((await app.call('symplirosiAitisis',payload)).success,true);assert.equal(app.mailCount,2);
+      assert.ok(app.errors.some(entry=>entry[1].stage==='record_delivery'));
+    }
   }
 });
 
@@ -434,11 +521,12 @@ test('payment creation reuses one automatic-capture 20 EUR intent across concurr
 
 const paidIntent = (extra={})=>({id:'pi_paid',status:'succeeded',amount:2000,amount_received:2000,currency:'eur',metadata:{pin,email},...extra});
 test('confirmation requires Stripe succeeded, exact amount/currency and matching PIN + email',async()=>{
-  for(const extra of [{status:'requires_capture'},{amount_received:1900},{amount_received:2100},{currency:'usd'},{metadata:{pin:'PIN-999999',email}},{metadata:{pin,email:'other@example.com'}}]){
+  for(const extra of [{id:'pi_other'},{status:'requires_capture'},{amount:1900},{amount_received:1900},{amount_received:2100},{currency:'usd'},{metadata:{pin:'PIN-999999',email}},{metadata:{pin,email:'other@example.com'}}]){
     const app=setup(base({status:'awaiting_payment'})); app.intents.set('pi_paid',paidIntent(extra));
     const result=await app.call('epivevaiosiPliromis',{pin,email,paymentIntentId:'pi_paid'});
     assert.equal(result.success,false); assert.equal(app.request.paymentStatus,'not_requested');
     assert.equal(app.mailCount,0); assert.equal(app.request.paymentConfirmationEmail,undefined);
+    assert.equal(app.request.adminPaymentNotification,undefined);
   }
 });
 
@@ -450,7 +538,7 @@ test('confirmation is idempotent and never regresses delivered or a concurrently
   assert.equal((await app.call('epivevaiosiPliromis',payload)).success,true);assert.equal(app.request.status,'delivered');assert.equal(app.request.paidAt,paidAt);
   app.request=base({status:'awaiting_payment'});app.race(()=>{app.request=base({status:'needs_more_info'});});
   assert.equal((await app.call('epivevaiosiPliromis',payload)).success,false); assert.equal(app.request.status,'needs_more_info');
-  assert.equal(app.mailCount,1);
+  assert.equal(app.mailCount,2);
 });
 
 const confirmationPayload={pin,email,paymentIntentId:'pi_paid',ypanaxorisiAt:1000};
@@ -460,7 +548,7 @@ test('successful payment sends one order email only after recording payment and 
   app.intents.set('pi_paid',paidIntent());
   const result=await app.call('epivevaiosiPliromis',confirmationPayload);
   assert.equal(result.success,true); assert.equal(result.plirothike,true); assert.equal(result.status,'processing');
-  assert.equal(app.mailCount,1);
+  assert.equal(app.mailCount,2);
   const atSend=app.requestsAtSend[0];
   assert.equal(atSend.paymentStatus,'paid'); assert.equal(atSend.status,'processing');
   assert.equal(atSend.paymentIntentId,'pi_paid'); assert.equal(atSend.paidAt,2000);
@@ -470,11 +558,12 @@ test('successful payment sends one order email only after recording payment and 
   assert.equal(app.request.paymentConfirmationEmail.sentAt,2000);
   const recorded=clone(app.request);
   assert.equal((await app.call('epivevaiosiPliromis',confirmationPayload)).success,true);
-  assert.equal(app.mailCount,1); assert.deepEqual(app.request,recorded);
-  assert.equal(app.lastMail.to,email); assert.equal(app.lastMail.from,'"Sintaximou" <configured@example.com>');
-  assert.match(app.lastMail.subject,/Επιβεβαίωση πληρωμής και παραγγελίας/);
-  assert.equal(app.lastMail.attachments,undefined);
-  for(const content of [app.lastMail.text,app.lastMail.html]){
+  assert.equal(app.mailCount,2); assert.deepEqual(app.request,recorded);
+  const customer=app.mails.find(mail=>mail.to===email);
+  assert.equal(customer.to,email); assert.equal(customer.from,'"Sintaximou" <configured@example.com>');
+  assert.match(customer.subject,/Επιβεβαίωση πληρωμής και παραγγελίας/);
+  assert.equal(customer.attachments,undefined);
+  for(const content of [customer.text,customer.html]){
     assert.match(content,/Η πληρωμή σας ολοκληρώθηκε επιτυχώς/);
     assert.match(content,/Υπηρεσία: Αναλυτικό Report/);
     assert.match(content,/Τελική τιμή για τον καταναλωτή: 20 €/);
@@ -483,7 +572,7 @@ test('successful payment sends one order email only after recording payment and 
     assert.match(content,/Ζητώ να ξεκινήσει άμεσα η εκτέλεση της υπηρεσίας/);
     assert.doesNotMatch(content,/invoice|παραστατικ|receipt|KOR|OSS|myDATA|timologio|με ΦΠΑ|χωρίς ΦΠΑ/i);
   }
-  assert.doesNotMatch(app.lastMail.subject,/invoice|παραστατικ|receipt/i);
+  assert.doesNotMatch(customer.subject,/invoice|παραστατικ|receipt/i);
   assert.deepEqual(app.errors,[]);
 });
 
@@ -498,9 +587,72 @@ test('concurrent confirmations and a retry while SMTP is pending cannot send twi
   await sending;
   assert.ok((await Promise.all(concurrent)).every(result=>result.success));
   assert.equal((await app.call('epivevaiosiPliromis',confirmationPayload)).success,true);
-  assert.equal(app.mailCount,1);
+  assert.equal(app.mailCount,2);
   finish(); assert.equal((await first).success,true);
-  assert.equal(app.mailCount,1);
+  assert.equal(app.mailCount,2);
+  assert.equal(app.mails.filter(mail=>mail.to===email).length,1);
+  assert.equal(app.mails.filter(mail=>mail.to==='configured@example.com').length,1);
+});
+
+test('admin payment notification uses verified Stripe data and configured recipient only after paid is committed',async()=>{
+  for(const contact of [undefined,'admin@example.com']){
+    const app=setup(base({status:'awaiting_payment'}),{now:2000,retryTransaction:true,env:{CONTACT_EMAIL:contact}});
+    app.intents.set('pi_paid',paidIntent());
+    assert.equal((await app.call('epivevaiosiPliromis',{...confirmationPayload,amount:1,currency:'usd'})).success,true);
+    const admin=app.mails.find(mail=>mail.to!==email);
+    assert.equal(admin.to,contact||'configured@example.com');
+    assert.equal(admin.subject,`Πληρώθηκε αίτηση Αναλυτικού Report — ${pin}`);
+    for(const text of [pin,email,'server-side','20.00 EUR','pi_paid','1970-01-01T00:00:02.000Z'])assert.ok(admin.text.includes(text));
+    assert.equal(admin.attachments,undefined);
+    assert.equal(app.mailCount,2);assert.equal(app.mails.filter(mail=>mail.to===email).length,1);
+    for(const atSend of app.requestsAtSend){
+      assert.equal(atSend.paymentStatus,'paid');assert.equal(atSend.status,'processing');
+      assert.ok(atSend.adminPaymentNotification.claimId);assert.equal(atSend.paidAt,2000);
+    }
+    assert.equal(app.request.adminPaymentNotification.sentAt,2000);
+    assert.notEqual(app.request.paymentConfirmationEmail.claimId,app.request.adminPaymentNotification.claimId);
+    const recorded=clone(app.request);
+    await app.call('epivevaiosiPliromis',confirmationPayload);
+    assert.equal(app.mailCount,2);assert.deepEqual(app.request,recorded);
+  }
+});
+
+test('customer and admin payment deliveries fail independently without undoing payment or exposing SMTP details',async()=>{
+  for(const recipient of [email,'configured@example.com']){
+    const app=setup(base({status:'awaiting_payment'}),{failRecipient:recipient,smtpCode:'private SMTP credentials'});
+    app.intents.set('pi_paid',paidIntent());
+    assert.equal((await app.call('epivevaiosiPliromis',confirmationPayload)).success,true);
+    const failed=recipient===email?'paymentConfirmationEmail':'adminPaymentNotification';
+    const sent=recipient===email?'adminPaymentNotification':'paymentConfirmationEmail';
+    assert.equal(app.request.paymentStatus,'paid');assert.ok(app.request[failed].failedAt);
+    assert.equal(app.request[failed].sentAt,undefined);assert.ok(app.request[sent].sentAt);
+    assert.equal(app.request[failed].failureCode,'notification_failed');
+    assert.doesNotMatch(JSON.stringify([app.request,app.errors]),/private SMTP credentials/);
+    assert.equal((await app.call('epivevaiosiPliromis',confirmationPayload)).success,true);assert.equal(app.mailCount,2);
+  }
+});
+
+test('unavailable Stripe and invalid admin recipients never send an unverified or misdirected notification',async()=>{
+  const unverified=setup(base({status:'awaiting_payment'}),{retrieveFail:true});
+  assert.equal((await unverified.call('epivevaiosiPliromis',confirmationPayload)).success,false);
+  assert.equal(unverified.mailCount,0);assert.equal(unverified.request.paymentStatus,'not_requested');
+  for(const creation of [true,false]){
+    const app=setup(creation?null:base({status:'awaiting_payment'}),{env:{CONTACT_EMAIL:'not an email'}});
+    app.intents.set('pi_paid',paidIntent());
+    const result=creation?await app.call('symplirosiAitisis',{energeia:'nea_aitisi',pin,email,arxeia:[app.object(file(1))]})
+      :await app.call('epivevaiosiPliromis',confirmationPayload);
+    assert.equal(result.success,true);assert.equal(app.mailCount,1);assert.equal(app.mails[0].to,email);
+    const state=app.request[creation?'adminNewRequestNotification':'adminPaymentNotification'];
+    assert.ok(state.failedAt);assert.equal(state.failureCode,'invalid_recipient');
+  }
+});
+
+test('an existing admin payment claim does not block the independent customer confirmation',async()=>{
+  const app=setup(base({status:'awaiting_payment',adminPaymentNotification:{claimId:'prior-admin',claimedAt:1500}}));
+  app.intents.set('pi_paid',paidIntent());
+  assert.equal((await app.call('epivevaiosiPliromis',confirmationPayload)).success,true);
+  assert.equal(app.mailCount,1);assert.equal(app.mails[0].to,email);
+  assert.deepEqual(app.request.adminPaymentNotification,{claimId:'prior-admin',claimedAt:1500});
 });
 
 test('SMTP rejection or failure keeps the payment successful and never retries the email',async()=>{
@@ -512,11 +664,13 @@ test('SMTP rejection or failure keeps the payment successful and never retries t
     assert.equal(app.request.withdrawalConsentAt,1000);
     assert.ok(app.request.paymentConfirmationEmail.claimId);
     assert.equal(app.request.paymentConfirmationEmail.sentAt,undefined);
+    assert.ok(app.request.paymentConfirmationEmail.failedAt);
+    assert.ok(app.request.adminPaymentNotification.failedAt);assert.equal(app.request.adminPaymentNotification.sentAt,undefined);
     const recorded=clone(app.request);
     assert.equal((await app.call('epivevaiosiPliromis',confirmationPayload)).success,true);
-    assert.equal(app.mailCount,1); assert.deepEqual(app.request,recorded);
+    assert.equal(app.mailCount,2); assert.deepEqual(app.request,recorded);
     assert.equal(app.errors[0][0],'Payment confirmation email failed:');
-    assert.equal(app.errors[0][1].pin,pin); assert.equal(app.errors[0][1].paymentIntentId,'pi_paid');
+    assert.equal(app.errors[0][1].notification,'paymentConfirmationEmail');
     assert.equal(app.errors[0][1].stage,'send');
     assert.doesNotMatch(JSON.stringify([result,app.errors]),/private SMTP credentials/);
   }
@@ -528,7 +682,7 @@ test('failure to record SMTP acceptance cannot undo payment or allow a duplicate
   assert.equal(app.request.paymentStatus,'paid'); assert.equal(app.request.status,'processing');
   assert.ok(app.request.paymentConfirmationEmail.claimId);
   assert.equal((await app.call('epivevaiosiPliromis',confirmationPayload)).success,true);
-  assert.equal(app.mailCount,1); assert.equal(app.errors[0][1].stage,'record_delivery');
+  assert.equal(app.mailCount,2); assert.equal(app.errors[0][1].stage,'record_delivery');
 });
 
 test('payment database failure or a lost transaction race sends no confirmation email',async()=>{
@@ -547,9 +701,9 @@ test('missing email configuration is logged without failing or retrying a record
     const app=setup(base({status:'awaiting_payment'}),{env}); app.intents.set('pi_paid',paidIntent());
     assert.equal((await app.call('epivevaiosiPliromis',confirmationPayload)).success,true);
     assert.equal(app.request.paymentStatus,'paid'); assert.equal(app.request.status,'processing');
-    assert.equal(app.mailCount,0); assert.equal(app.errors.length,1);
+    assert.equal(app.mailCount,env.EMAIL_PASS===''?0:1); assert.equal(app.errors.length,env.EMAIL_PASS===''?2:1);
     assert.equal((await app.call('epivevaiosiPliromis',confirmationPayload)).success,true);
-    assert.equal(app.mailCount,0); assert.equal(app.errors.length,1);
+    assert.equal(app.mailCount,env.EMAIL_PASS===''?0:1); assert.equal(app.errors.length,env.EMAIL_PASS===''?2:1);
   }
 });
 
@@ -562,7 +716,8 @@ test('previously paid or already claimed requests do not receive another order e
   const app=setup(base({status:'awaiting_payment',paymentConfirmationEmail:{claimId:'prior-claim',claimedAt:1500}}));
   app.intents.set('pi_paid',paidIntent());
   assert.equal((await app.call('epivevaiosiPliromis',confirmationPayload)).success,true);
-  assert.equal(app.mailCount,0); assert.equal(app.request.paymentConfirmationEmail.claimId,'prior-claim');
+  assert.equal(app.mailCount,1); assert.equal(app.mails[0].to,'configured@example.com');
+  assert.equal(app.request.paymentConfirmationEmail.claimId,'prior-claim');
 });
 
 test('contact validates method, lengths, email and rejects attachments without sending mail',async()=>{

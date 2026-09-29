@@ -813,13 +813,30 @@ exports.symplirosiAitisis = onRequest(ORIA, (req, res) => {
         if (phone != null && (typeof phone !== "string" || phone.length > 40)) return fail(res, 400, "invalid_phone");
         const files = await verifiedFiles(kodikos, arxeia, user.uid);
         const createdAt = Date.now();
+        const { randomUUID, createHash } = require("node:crypto");
+        // Recognize a retry of this exact upload, without accepting PIN collisions.
+        const creationFingerprint = createHash("sha256").update(JSON.stringify([
+          user.uid, emailKanoniko, phone || null,
+          files.map(({ path, size, type }) => [path, size, type]).sort((a, b) => a[0].localeCompare(b[0])),
+        ])).digest("hex");
+        const customerClaimId = randomUUID();
+        const adminClaimId = randomUUID();
         const result = await reference.transaction((current) => {
-          if (current) return;
+          if (current) return current.creationFingerprint === creationFingerprint ? current : undefined;
           return { pin: kodikos, email: emailKanoniko, phone: phone || null, ownerUid: user.uid,
             files, ...fileTotals(files), uploadLimitsVersion: 1, status: KATASTASEIS.PARALIFTHIKAN,
-            createdAt, consentAt: createdAt, paymentStatus: "not_requested" };
+            createdAt, consentAt: createdAt, paymentStatus: "not_requested", creationFingerprint,
+            documentsReceivedEmail: { claimId: customerClaimId, claimedAt: createdAt },
+            adminNewRequestNotification: { claimId: adminClaimId, claimedAt: createdAt } };
         });
         if (!result.committed) return fail(res, 409, "pin_conflict");
+        const created = result.snapshot.val();
+        await Promise.all([
+          sendClaimedNotification(reference, created, "documentsReceivedEmail", customerClaimId,
+            () => customerNotification(KATASTASEIS.PARALIFTHIKAN, created)),
+          sendClaimedNotification(reference, created, "adminNewRequestNotification", adminClaimId,
+            () => adminNewRequestNotification(created)),
+        ]);
         return res.status(200).json({ success: true, pin: kodikos, plithosArxeion: files.length });
       }
 
@@ -1081,28 +1098,83 @@ exports.requestWithdrawal = onRequest(ORIA, (req, res) => {
   });
 });
 
-async function sendPaymentConfirmationEmail(reference, request, pin, paymentIntentId) {
+function customerNotification(template, request) {
+  if (!DIEFTHYNSI_SITE) throw Object.assign(new Error(), { code: "missing_public_site_url" });
+  const { thema, blokia } = KEIMENA[template](request);
+  return { to: request.email, subject: thema, text: keimenoApoBlokia(blokia), html: htmlApoBlokia(blokia) };
+}
+
+function adminNotificationRecipient() {
+  const recipient = (process.env.CONTACT_EMAIL || process.env.EMAIL_USER || "").trim();
+  if (!validEmail(recipient)) throw Object.assign(new Error(), { code: "invalid_recipient" });
+  return recipient;
+}
+
+function adminNewRequestNotification(request) {
+  return {
+    to: adminNotificationRecipient(),
+    subject: `Νέα αίτηση Αναλυτικού Report — ${request.pin}`,
+    text: [
+      `PIN: ${request.pin}`,
+      `Email πελάτη: ${request.email}`,
+      ...(request.phone ? [`Τηλέφωνο: ${request.phone}`] : []),
+      `Αριθμός αρχείων: ${request.fileCount}`,
+      `Ημερομηνία/ώρα δημιουργίας (UTC): ${new Date(request.createdAt).toISOString()}`,
+    ].join("\n"),
+  };
+}
+
+function adminPaymentNotification(request, payment) {
+  return {
+    to: adminNotificationRecipient(),
+    subject: `Πληρώθηκε αίτηση Αναλυτικού Report — ${request.pin}`,
+    text: [
+      `PIN: ${request.pin}`,
+      `Email πελάτη: ${request.email}`,
+      "Η πληρωμή επαληθεύτηκε server-side μέσω Stripe και καταχωρίστηκε ως paid.",
+      `Ποσό: ${(payment.amount_received / 100).toFixed(2)} ${payment.currency.toUpperCase()}`,
+      `PaymentIntent: ${payment.id}`,
+      `Ημερομηνία/ώρα πληρωμής (UTC): ${new Date(request.paidAt).toISOString()}`,
+    ].join("\n"),
+  };
+}
+
+// Never persist or log SMTP responses/messages (which may contain credentials or PII).
+function notificationFailureCode(error) {
+  const allowed = ["EAUTH", "ETIMEDOUT", "ESOCKET", "ECONNECTION", "ECONNRESET", "ECONNREFUSED", "ETLS",
+    "EDNS", "EENVELOPE", "EMESSAGE", "email_not_accepted", "missing_public_site_url", "invalid_recipient"];
+  return allowed.includes(error?.code) ? error.code : "notification_failed";
+}
+
+async function sendClaimedNotification(reference, request, stateKey, claimId, buildMessage) {
+  if (request[stateKey]?.claimId !== claimId) return;
   let stage = "send";
   try {
-    if (!DIEFTHYNSI_SITE) throw Object.assign(new Error(), { code: "missing_public_site_url" });
-    const { thema, blokia } = KEIMENA.payment_confirmation({ ...request, pin });
-    // Bound SMTP waits so an email outage does not hold up the paid response.
+    const message = buildMessage();
+    // Bound SMTP waits; notifications run independently after the business commit.
     const transporter = getEmailTransporter({ connectionTimeout: 5000, greetingTimeout: 5000, socketTimeout: 10000 });
     const delivery = await transporter.sendMail({
       from: `"${ONOMA_APOSTOLEA}" <${process.env.EMAIL_USER}>`,
-      to: request.email,
-      subject: thema,
-      text: keimenoApoBlokia(blokia),
-      html: htmlApoBlokia(blokia),
+      ...message,
+      disableFileAccess: true,
+      disableUrlAccess: true,
     });
-    if (!delivery.accepted?.some((recipient) => kanoniko(recipient) === kanoniko(request.email))) {
+    if (!delivery.accepted?.some((recipient) => kanoniko(recipient) === kanoniko(message.to))) {
       throw Object.assign(new Error(), { code: "email_not_accepted" });
     }
     stage = "record_delivery";
-    await reference.child("paymentConfirmationEmail").update({ sentAt: Date.now() });
+    await reference.child(stateKey).update({ sentAt: Date.now() });
   } catch (error) {
-    // Keep the claim even after ambiguous SMTP/DB failures; retrying could send twice.
-    console.error("Payment confirmation email failed:", { pin, paymentIntentId, stage, code: error.code || error.name });
+    // Retain claims even after ambiguous SMTP/DB failures. Automatic retries could
+    // send twice; a failed/unfinished claim requires operational investigation.
+    const code = notificationFailureCode(error);
+    const label = stateKey === "paymentConfirmationEmail" ? "Payment confirmation email failed:" : "Request notification failed:";
+    console.error(label, { notification: stateKey, stage, code });
+    try {
+      await reference.child(stateKey).update({ failedAt: Date.now(), failureStage: stage, failureCode: code });
+    } catch {
+      console.error("Notification failure state unavailable:", { notification: stateKey, stage: "record_failure" });
+    }
   }
 }
 
@@ -1128,13 +1200,14 @@ exports.epivevaiosiPliromis = onRequest(ORIA, (req, res) => {
         return fail(res, 409, "payment_unavailable");
       }
       const payment = await getStripeClient().paymentIntents.retrieve(paymentIntentId);
-      if (!payment || payment.status !== "succeeded" || payment.currency !== "eur"
+      if (!payment || payment.id !== paymentIntentId || payment.status !== "succeeded" || payment.currency !== "eur"
         || payment.amount_received !== POSO_SE_LEPTA || payment.amount !== POSO_SE_LEPTA
         || plirisKodikos(payment.metadata?.pin) !== kodikos
         || kanoniko(payment.metadata?.email) !== emailKanoniko) {
         return fail(res, 409, "payment_unverified", "Η πληρωμή δεν επιβεβαιώθηκε.");
       }
       const emailClaimId = require("node:crypto").randomUUID();
+      const adminClaimId = require("node:crypto").randomUUID();
       const result = await reference.transaction((current) => {
         if (current === null) return null;
         if (!current || kanoniko(current.email) !== emailKanoniko) return;
@@ -1145,14 +1218,19 @@ exports.epivevaiosiPliromis = onRequest(ORIA, (req, res) => {
           status: KATASTASEIS.SE_EPEXERGASIA,
           // Claim atomically with payment: only this transaction's owner may send.
           paymentConfirmationEmail: current.paymentConfirmationEmail || { claimId: emailClaimId, claimedAt: Date.now() },
+          adminPaymentNotification: current.adminPaymentNotification || { claimId: adminClaimId, claimedAt: Date.now() },
           withdrawalConsentAt: Number.isSafeInteger(ypanaxorisiAt) && ypanaxorisiAt > 0 && ypanaxorisiAt <= Date.now()
             ? ypanaxorisiAt : Date.now() };
       });
       if (!result.committed || !result.snapshot.exists()) return fail(res, 409, "payment_unavailable");
       const confirmed = result.snapshot.val();
-      if (confirmed.status === KATASTASEIS.SE_EPEXERGASIA
-        && confirmed.paymentConfirmationEmail?.claimId === emailClaimId) {
-        await sendPaymentConfirmationEmail(reference, confirmed, kodikos, paymentIntentId);
+      if (confirmed.status === KATASTASEIS.SE_EPEXERGASIA) {
+        await Promise.all([
+          sendClaimedNotification(reference, confirmed, "paymentConfirmationEmail", emailClaimId,
+            () => customerNotification("payment_confirmation", { ...confirmed, pin: kodikos })),
+          sendClaimedNotification(reference, confirmed, "adminPaymentNotification", adminClaimId,
+            () => adminPaymentNotification({ ...confirmed, pin: kodikos }, payment)),
+        ]);
       }
       return res.status(200).json({ success: true, plirothike: true, status: confirmed.status });
     } catch (error) {

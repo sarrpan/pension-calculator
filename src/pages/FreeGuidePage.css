@@ -107,36 +107,72 @@
   font-weight: 700;
 }
 .fg-nav-list a[aria-current="location"]:hover { background: #fff8f2; }
-/* Match the Home salary callout's scoped palette without coupling layouts. */
+/* Average Salary helper card — dark teal version used before the Codex light-cyan pass. */
 .fg-salary-card {
-  --salary-cyan: #2fa7b8;
-  --salary-tint: color-mix(in srgb, var(--salary-cyan) 8%, white);
-  --salary-outline: color-mix(in srgb, var(--salary-cyan) 80%, var(--primary, #0f172a));
+  --salary-teal: #226d7f;
+  --salary-teal-dark: #1c5163;
+  --salary-teal-hover: #174656;
+
   margin-top: 24px;
   padding: 16px;
+  border: 1px solid #2fa7b8;
   border-radius: 12px;
-  /* Inset outline preserves the card's existing dimensions and content width. */
-  outline: 1px solid color-mix(in srgb, var(--salary-cyan) 65%, white);
-  outline-offset: -1px;
-  background: var(--salary-tint);
-  color: var(--primary, #0f172a);
+  background: var(--salary-teal);
+  color: #ffffff;
 }
-.fg-salary-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.fg-salary-card-icon { display: grid; flex: 0 0 36px; height: 36px; place-items: center; border-radius: 8px; background: #fff; color: var(--salary-cyan); }
-.fg-page .fg-salary-card h2 { margin: 0; color: var(--primary, #0f172a); font-size: 0.95rem; letter-spacing: 0; line-height: 1.4; }
-.fg-page .fg-salary-card p { margin-bottom: 14px; font-size: 0.84rem; line-height: 1.55; }
+
+.fg-salary-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.fg-salary-card-icon {
+  display: grid;
+  flex: 0 0 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.fg-page .fg-salary-card h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.fg-page .fg-salary-card p {
+  margin-bottom: 14px;
+  color: #e7f4f6;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
 .fg-salary-card .fg-salary-card-button {
   width: 100%;
   min-height: 44px;
   gap: 8px;
   padding: 10px 12px;
-  border-color: var(--salary-outline);
-  background: #fff;
-  color: var(--primary, #0f172a);
+  border-color: var(--salary-teal-dark);
+  background: var(--salary-teal-dark);
+  color: #ffffff;
   font-size: 0.84rem;
 }
-.fg-salary-card .fg-salary-card-button:hover { background: var(--salary-tint); }
-.fg-salary-card .fg-salary-card-button:focus-visible { outline-color: var(--salary-outline); }
+
+.fg-salary-card .fg-salary-card-button:hover {
+  border-color: var(--salary-teal-hover);
+  background: var(--salary-teal-hover);
+  color: #ffffff;
+}
+
+.fg-salary-card .fg-salary-card-button:focus-visible {
+  outline-color: #a1d7df;
+}
 .fg-mobile-nav { display: none; }
 
 /* White guide cards and the introductory summary. */

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './PremiumUploadPage.css';
+import { copyRequestPin, pasteRequestPin } from '../services/requestPin';
 import {
   anevasmaAitisis,
   prosthikiSeAitisi,
@@ -157,6 +158,10 @@ const PremiumUploadPage = () => {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const copyPending = useRef(false);
+  const copyTimer = useRef(null);
+  useEffect(() => () => clearTimeout(copyTimer.current), []);
 
   /* ── Συμπληρωματικά έγγραφα σε υπάρχουσα αίτηση ──
      Ο κωδικός είναι ΠΡΟΑΙΡΕΤΙΚΟΣ και κενός. Όποιος στέλνει για
@@ -338,12 +343,20 @@ const PremiumUploadPage = () => {
   };
 
   const handleCopyPin = async () => {
+    if (copyPending.current) return;
+    copyPending.current = true;
+    clearTimeout(copyTimer.current);
+    setCopied(false);
+    setCopyError('');
     try {
-      await navigator.clipboard.writeText(generatedPin);
+      await copyRequestPin(generatedPin);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      copyTimer.current = setTimeout(() => setCopied(false), 2500);
     } catch {
       setCopied(false);
+      setCopyError('Η αντιγραφή δεν ολοκληρώθηκε. Επιλέξτε και αντιγράψτε τον κωδικό που εμφανίζεται παραπάνω.');
+    } finally {
+      copyPending.current = false;
     }
   };
 
@@ -421,6 +434,7 @@ const PremiumUploadPage = () => {
               {copied ? <IconCheck className="pu-icon-sm" /> : <IconCopy className="pu-icon-sm" />}
               {copied ? 'Αντιγράφηκε' : 'Αντιγραφή κωδικού'}
             </button>
+            {copyError && <p role="alert">{copyError}</p>}
 
             <div className="pu-notice pu-notice--warn">
               <IconAlert className="pu-icon" />
@@ -533,6 +547,7 @@ const PremiumUploadPage = () => {
                 <span className="pu-pin-prefix">PIN-</span>
                 <input
                   id="pu-kodikos"
+                  onPaste={e => pasteRequestPin(e, setKodikosAitisis)}
                   type="text"
                   value={kodikosAitisis}
                   onChange={(e) => setKodikosAitisis(e.target.value.replace(/\D/g, '').slice(0, 6))}

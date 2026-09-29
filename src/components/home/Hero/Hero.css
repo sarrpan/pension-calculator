@@ -378,13 +378,6 @@
   white-space: nowrap;
 }
 
-.hero-salary-next {
-  margin-top: 10px;
-  color: var(--accent, #ea580c);
-  font-size: 0.82rem;
-  text-align: right;
-}
-
 @media (max-width: 900px) {
   .hero-salary-callout {
     grid-template-columns: minmax(0, 1fr);
