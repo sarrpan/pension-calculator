@@ -54,6 +54,36 @@
   color: #e2e8f0;
 }
 
+/* Μελλοντική προβολή — ξεχωρίζει ως βασικό όφελος του Report */
+.feature-projection {
+  margin: 14px 0 18px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.feature-projection-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #fb923c;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  line-height: 1.4;
+}
+
+.feature-row-last .feature-text .feature-projection-text {
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.feature-row-last .feature-bullets li {
+  margin-bottom: 8px;
+}
 /* Η παλιά εναλλαγή στηλών (direction: rtl) καταργήθηκε. Όλες οι
    σειρές έχουν πλέον το κείμενο αριστερά και το γραφικό δεξιά,
    ώστε το μάτι να μη χοροπηδά από τη μία πλευρά στην άλλη. */
@@ -136,7 +166,15 @@
   flex-direction: column;
   gap: 10px;
 }
-
+/* Τα τρία πρώτα παραδείγματα είναι λίγο μεγαλύτερα
+   για ευκολότερη ανάγνωση. Το Report έχει δική του γεωμετρία. */
+.mk-form,
+.mk-stats,
+.mk-scenarios {
+  max-width: 390px;
+  min-height: 330px;
+  padding: 26px;
+}
 .mk-caption {
   margin: 0 0 4px;
   color: #64748b;
@@ -159,20 +197,21 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 11px 14px;
+  padding: 13px 14px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #ffffff;
 }
 
 .mk-label {
-  color: #475569;
-  font-size: 0.85rem;
+  color: var(--primary);
+  font-size: 0.92rem;
+  font-weight: 700;
 }
 
 .mk-value {
   color: var(--primary);
-  font-size: 0.92rem;
+  font-size: 0.94rem;
   font-weight: 700;
 }
 
@@ -195,8 +234,8 @@
   border: 1px solid #e2e8f0;
   color: var(--primary);
   border-radius: 999px;
-  padding: 9px 16px;
-  font-size: 0.9rem;
+  padding: 11px 16px;
+  font-size: 0.94rem;
   font-weight: 700;
   display: flex;
   justify-content: space-between;
@@ -214,23 +253,31 @@
   margin-top: 4px;
   background: var(--primary);
   color: #ffffff;
-  border-radius: 12px;
-  padding: 13px 16px;
-  font-size: 1.02rem;
-  font-weight: 800;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 0.94rem;
+  font-weight: 700;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
 }
 
+.stat-total span:first-child {
+  min-width: 0;
+}
+
+.stat-total span:last-child {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 /* ── 3. Σύγκριση σεναρίων ───────────────────────────────── */
 .mk-scenario {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 10px;
-  padding: 11px 14px;
+  padding: 13px 14px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #ffffff;
@@ -238,31 +285,35 @@
 
 .mk-age {
   color: var(--primary);
-  font-size: 0.92rem;
-  font-weight: 800;
+  font-size: 0.94rem;
+  font-weight: 700;
 }
 
 .mk-type {
   color: #475569;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .mk-amount {
   color: var(--accent);
-  font-size: 0.98rem;
-  font-weight: 800;
+  font-size: 0.96rem;
+  font-weight: 700;
   white-space: nowrap;
 }
 
 /* ── 4. Απόσπασμα έκθεσης ───────────────────────────────── */
 .mk-report {
+  max-width: 410px;
+  min-height: 350px;
+  padding: 28px;
   border-top: 4px solid var(--accent);
 }
 
 .mk-report-title {
-  margin: 0 0 4px;
+  margin: 0 0 8px;
   color: var(--primary);
-  font-size: 1rem;
+  font-size: 1.12rem;
   font-weight: 800;
 }
 
@@ -270,10 +321,11 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 12px;
-  padding: 9px 0;
+  gap: 18px;
+  padding: 13px 0;
   border-bottom: 1px solid #f1f5f9;
-  font-size: 0.86rem;
+  font-size: 0.94rem;
+  line-height: 1.4;
   color: #475569;
 }
 
@@ -283,8 +335,16 @@
 
 .mk-report-row strong {
   color: var(--primary);
-  font-size: 0.92rem;
+  font-size: 1rem;
   white-space: nowrap;
+}
+.mk-report .mk-caption {
+  font-size: 0.78rem;
+}
+
+.mk-report .mk-note {
+  margin-top: 10px;
+  font-size: 0.84rem;
 }
 
 /* ── Κινητά ─────────────────────────────────────────────── */

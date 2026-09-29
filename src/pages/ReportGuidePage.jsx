@@ -432,7 +432,7 @@ const ReportGuidePage = () => {
               {isPaidServiceLive ? 'Αποστολή εγγράφων' : 'Επικοινωνήστε μαζί μας'}
             </Link>
             <Link to={isPaidServiceLive ? DIADROMES.odigosPdf : '/free-guide'} className="rg-button rg-button-outline">
-              {isPaidServiceLive ? 'Οδηγός λήψης PDF από τον e-ΕΦΚΑ' : 'Ξεκινήστε με τη δωρεάν εκτίμηση'}
+              {isPaidServiceLive ? 'Οδηγός λήψης PDF από τον e-ΕΦΚΑ' : 'Δείτε τη δωρεάν εκτίμηση'}
             </Link>
           </div>
         </section>

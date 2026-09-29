@@ -9,9 +9,9 @@ import './Features.css';
    για να καταλάβει ο επισκέπτης τι θα δει. Αλλάζουν από εδώ.
    ══════════════════════════════════════════════════════════════ */
 const SENARIA = [
-  { ilikia: '62', typos: 'Μειωμένη', poso: '664,50 €' },
-  { ilikia: '65', typos: 'Μειωμένη', poso: '747,60 €' },
-  { ilikia: '67', typos: 'Πλήρης', poso: '830,67 €' },
+  { ilikia: '62', typos: 'Μειωμένη', poso: '1.077,18 €' },
+  { ilikia: '65', typos: 'Μειωμένη', poso: '1.152,79 €' },
+  { ilikia: '67', typos: 'Πλήρης', poso: '1.203,20 €' },
 ];
 
 const Features = () => {
@@ -41,15 +41,15 @@ const Features = () => {
                 <span className="mk-value">1964</span>
               </div>
               <div className="mk-field">
-                <span className="mk-label">Ένσημα έως 2001</span>
-                <span className="mk-value">4.320</span>
+                <span className="mk-label">Συνολικές ημέρες ασφάλισης</span>
+                <span className="mk-value">10.200</span>
               </div>
               <div className="mk-field">
-                <span className="mk-label">Μικτές αποδοχές 2024</span>
-                <span className="mk-value">1.480 €</span>
+                <span className="mk-label">Ετήσιες μικτές αποδοχές 2024</span>
+                <span className="mk-value">25.200 €</span>
               </div>
               <div className="mk-field mk-field-empty">
-                <span className="mk-label">Μικτές αποδοχές 2025</span>
+                <span className="mk-label">Ετήσιες μικτές αποδοχές 2025</span>
                 <span className="mk-cursor" />
               </div>
             </div>
@@ -74,23 +74,23 @@ const Features = () => {
               <p className="mk-caption">Ενδεικτική ανάλυση ποσού</p>
               <div className="stat-chip">
                 <span>Εθνική</span>
-                <span>426,17 €</span>
+                <span>446,87 €</span>
               </div>
               <div className="stat-chip">
                 <span>Ανταποδοτική</span>
-                <span>345,50 €</span>
+                <span>573,13 €</span>
               </div>
               <div className="stat-chip">
                 <span>Επικουρική</span>
-                <span>112,00 €</span>
+                <span>260,00 €</span>
               </div>
               <div className="stat-chip deduction">
                 <span>Κρατήσεις</span>
-                <span>− 53,00 €</span>
+                <span>− 76,80 €</span>
               </div>
               <div className="stat-total">
-                <span>ΕΚΤΙΜΩΜΕΝΟ ΚΑΘΑΡΟ ΠΟΣΟ</span>
-                <span>830,67 €</span>
+                <span>Εκτιμώμενο καθαρό ποσό</span>
+                <span>1.203,20 €</span>
               </div>
             </div>
           </div>
@@ -130,33 +130,59 @@ const Features = () => {
         <div className="feature-row feature-row-last">
           <div className="feature-text">
             <span className="step-label">Η ΑΞΙΑ ΤΗΣ ΥΠΗΡΕΣΙΑΣ</span>
-              <h3>{isPaidServiceLive ? 'Ξεκάθαρη εκτίμηση, με 20 €' : 'Ξεκάθαρη εκτίμηση, με εφάπαξ χρέωση'}</h3>
-              {!isPaidServiceLive && <p>Χωρίς συνδρομή.</p>}
-            <p>Η ανάγνωση του ασφαλιστικού ιστορικού θέλει εξειδίκευση. Την αναλαμβάνουμε εμείς.</p>
+
+            <h3>
+              {isPaidServiceLive
+                ? 'Ξεκάθαρη εκτίμηση, με 20 €'
+                : 'Ξεκάθαρη εκτίμηση, με εφάπαξ χρέωση'}
+            </h3>
+
+            {!isPaidServiceLive && <p>Χωρίς συνδρομή.</p>}
+
+            <div className="feature-projection">
+              <span className="feature-projection-label">ΜΕΛΛΟΝΤΙΚΗ ΠΡΟΒΟΛΗ</span>
+              <p className="feature-projection-text">
+                Όπου η περίπτωση το επιτρέπει, εξετάζουμε και μελλοντικά
+                σενάρια συνταξιοδότησης.
+              </p>
+            </div>
+
+            <p>
+              Η ανάγνωση του ασφαλιστικού ιστορικού θέλει εξειδίκευση.
+              Την αναλαμβάνουμε εμείς.
+            </p>
+
             <ul className="feature-bullets">
               <li>Γλιτώνετε χρόνο και ταλαιπωρία</li>
+              <li>Συγκρίνετε διαφορετικά σενάρια εξόδου</li>
               <li>Έχετε οργανωμένη επεξεργασία των στοιχείων σας</li>
               <li>Λαμβάνετε αρχείο PDF στο email σας</li>
             </ul>
           </div>
+
           <div className="feature-visual">
-            {/* Αντικαθιστά το ξεθωριασμένο «REPORT (20 €)» */}
             <div className="ui-mockup mk-report">
-              <p className="mk-caption">Απόσπασμα της έκθεσης</p>
+              <p className="mk-caption">Ενδεικτικό απόσπασμα της έκθεσης</p>
               <p className="mk-report-title">Έκθεση εκτίμησης σύνταξης</p>
+
               <div className="mk-report-row">
-                <span>Εκτίμηση θεμελίωσης δικαιώματος</span>
+                <span>Μελλοντικό σενάριο εξόδου</span>
                 <strong>Μάρτιος 2029</strong>
               </div>
+
               <div className="mk-report-row">
-                <span>Χρόνος ασφάλισης</span>
+                <span>Χρόνος ασφάλισης στο σενάριο</span>
                 <strong>36 έτη, 4 μήνες</strong>
               </div>
+
               <div className="mk-report-row">
-                <span>Εκτιμώμενο καθαρό ποσό</span>
-                <strong>830,67 €</strong>
+                <span>Εκτιμώμενο πληρωτέο ποσό πριν από φόρο</span>
+                <strong>1.285,00 €</strong>
               </div>
-              <p className="mk-note">Το πλήρες αρχείο περιλαμβάνει και τη σύγκριση σεναρίων.</p>
+
+              <p className="mk-note">
+                Το πλήρες αρχείο περιλαμβάνει και τη σύγκριση διαφορετικών σεναρίων.
+              </p>
             </div>
           </div>
         </div>

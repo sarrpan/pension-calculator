@@ -129,7 +129,7 @@ const Hero = () => {
             </div>
 
             <div className="hero-salary-result">
-              <span className="hero-salary-result-label">ΜΕΣΟΣ ΜΗΝΙΑΙΟΣ<br />ΣΥΝΤΑΞΙΜΟΣ ΜΙΣΘΟΣ</span>
+              <span className="hero-salary-result-label">Μέσος μηνιαίος<br />συντάξιμος μισθός</span>
               <span className="hero-salary-result-value">2.486,70 €</span>
             </div>
           </div>
