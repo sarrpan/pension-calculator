@@ -158,13 +158,21 @@
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-.nv-cta:hover {
+.nv-cta:not(.nv-cta-current):hover {
   background-color: #cf4e18;
   color: #ffffff;
 }
 
-.nv-cta:active {
+.nv-cta:not(.nv-cta-current):active {
   transform: translateY(1px);
+}
+
+.nv-cta-current {
+  background-color: #f1f5f9;
+  color: #526174;
+  box-shadow: none;
+  cursor: default;
+  transition: none;
 }
 
 /* ---------- Ορατή εστίαση για πλοήγηση με πληκτρολόγιο ---------- */

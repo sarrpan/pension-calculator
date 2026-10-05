@@ -23,7 +23,7 @@ const DIADROMES = {
   epikoinonia:    '/contact',
   apostoli:       '/premium-upload',
   parakolouthisi: '/report-recovery',
-  ypologismos:    '/calculator?start=main',
+  ypologismos:    '/free-estimation',
 };
 
 const Navbar = () => {
@@ -126,9 +126,15 @@ const Navbar = () => {
             </Link>
 
             </>}
-            <Link to={DIADROMES.ypologismos} className="nv-cta">
-              Ξεκινήστε δωρεάν
-            </Link>
+            {location.pathname === '/free-estimation' ? (
+              <span className="nv-cta nv-cta-current" aria-current="page">
+                Ξεκινήστε δωρεάν
+              </span>
+            ) : (
+              <Link to={DIADROMES.ypologismos} className="nv-cta">
+                Ξεκινήστε δωρεάν
+              </Link>
+            )}
           </div>
 
         </div>

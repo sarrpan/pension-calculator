@@ -145,7 +145,7 @@ const FreeGuidePage = () => {
               </dl>
             </div>
             <div className="fg-hero-actions">
-              <Link to="/calculator?start=main" className="fg-button fg-button-primary">
+              <Link to="/free-estimation" className="fg-button fg-button-primary">
                 Ξεκινήστε τη δωρεάν εκτίμηση <GuideIcon name="arrow" />
               </Link>
               <a href="#mesos-syntaksimos" className="fg-button fg-button-secondary">
@@ -225,7 +225,7 @@ const FreeGuidePage = () => {
             <div className="fg-salary-options">
               <div>
                 <h3>Γνωρίζετε ήδη το ποσό;</h3>
-                <p>Αν τον γνωρίζετε ήδη, μπορείτε να τον εισαγάγετε απευθείας στη <Link to="/calculator?start=main">δωρεάν εκτίμηση</Link>.</p>
+                <p>Αν τον γνωρίζετε ήδη, μπορείτε να τον εισαγάγετε απευθείας στη <Link to="/free-estimation">δωρεάν εκτίμηση</Link>.</p>
               </div>
               <div>
                 <h3>Δεν το γνωρίζετε;</h3>
@@ -384,7 +384,7 @@ const FreeGuidePage = () => {
             <h2 id="fg-cta-title">Έχετε τα στοιχεία σας; Ξεκινήστε.</h2>
             <p>Μια πρώτη εκτίμηση ποσού, δωρεάν και χωρίς εγγραφή.</p>
             <div className="fg-cta-actions">
-              <Link to="/calculator?start=main" className="fg-button fg-button-primary">Ξεκινήστε δωρεάν <GuideIcon name="arrow" /></Link>
+              <Link to="/free-estimation" className="fg-button fg-button-primary">Ξεκινήστε δωρεάν <GuideIcon name="arrow" /></Link>
               <Link to="/report-guide" className="fg-button fg-button-outline">Έχω πιο σύνθετη περίπτωση</Link>
             </div>
           </section>

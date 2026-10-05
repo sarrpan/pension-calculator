@@ -11,6 +11,7 @@ import PrivacyPage from './pages/legal/PrivacyPage';
 import DisclaimerPage from './pages/legal/DisclaimerPage';
 
 import FreeGuidePage from './pages/FreeGuidePage';
+import FreeEstimationPage from './pages/FreeEstimationPage';
 import AverageSalaryPage from './pages/AverageSalaryPage';
 import ReportGuidePage from './pages/ReportGuidePage';
 
@@ -35,6 +36,7 @@ function App() {
           <Route path="/start" element={<Navigate to="/pdf-guide" replace />} />
 
           <Route path="/free-guide" element={<FreeGuidePage />} />
+          <Route path="/free-estimation" element={<FreeEstimationPage />} />
           <Route path="/average-salary" element={<AverageSalaryPage />} />
           <Route path="/report-guide" element={<ReportGuidePage />} />
 

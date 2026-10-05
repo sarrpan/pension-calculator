@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./PensionFormPage.css";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { freeEstimationCategories } from "../../config/freeEstimationCategories";
 
 
 import BackendResponsePanel from "./components/BackendResponsePanel";
@@ -42,6 +43,10 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
   const location = useLocation();
   const navigate = useNavigate();
   const savedDraft = useMemo(() => loadSavedDraft(), []);
+  const consumedHandoffKey = useRef(null);
+  const primaryFund = calculatorEdition === "free" &&
+    freeEstimationCategories.some((category) => category.active && category.fund === location.state?.primaryFund)
+      ? location.state.primaryFund : "";
 
   const [currentFormStep, setCurrentFormStep] = useState(() =>
     calculatorEdition === "free" || shouldOpenMainStep(location.search)
@@ -152,7 +157,12 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
   );
 
   const [insurancePeriodGroups, setInsurancePeriodGroups] = useState(() => {
-    return normalizeSavedInsurancePeriodGroups(savedDraft);
+    const groups = normalizeSavedInsurancePeriodGroups(savedDraft);
+    // Initialize before the period editor mounts, so it opens the selected fund's fields.
+    if (primaryFund) {
+      groups[0] = changeInsurancePeriodFund(groups[0], primaryFund);
+    }
+    return groups;
   });
 
   const [parallelInsuranceDraft, setParallelInsuranceDraft] = useState(
@@ -204,17 +214,34 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
 
   useEffect(() => {
     const amount = location.state?.averageMonthlyPensionableEarnings;
-    if (calculatorEdition !== "free" || !Number.isFinite(amount) || amount <= 0) return;
-    setAverageMonthlyPensionableEarningsInput(String(amount).replace('.', ','));
+    const hasHandoff = calculatorEdition === "free" && location.state && (
+      Object.prototype.hasOwnProperty.call(location.state, "primaryFund") ||
+      Object.prototype.hasOwnProperty.call(location.state, "averageMonthlyPensionableEarnings")
+    );
+    const openMain = shouldOpenMainStep(location.search);
+    if (!hasHandoff && !openMain) return;
+    if (consumedHandoffKey.current === location.key) return;
+    consumedHandoffKey.current = location.key;
+
+    if (hasHandoff && primaryFund && insurancePeriodGroups[0]) {
+      handleInsurancePeriodGroupChange(insurancePeriodGroups[0].id, "fund", primaryFund);
+    }
+    if (hasHandoff && Number.isFinite(amount) && amount > 0) {
+      setAverageMonthlyPensionableEarningsInput(String(amount).replace('.', ','));
+    }
     setCurrentFormStep("main");
-    setBackendResponse(null);
-    setBackendError("");
-    setCalculationResponse(null);
-    setPensionInputExportError("");
-    // Consume the Router handoff once so refresh/back cannot overwrite an edit.
+    clearBackendResult();
+
+    // Consume both handoff values and start=main in a single history replacement.
     const remainingState = { ...location.state };
-    delete remainingState.averageMonthlyPensionableEarnings;
-    navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, {
+    if (hasHandoff) {
+      delete remainingState.primaryFund;
+      delete remainingState.averageMonthlyPensionableEarnings;
+    }
+    const searchParams = new URLSearchParams(location.search);
+    if (openMain) searchParams.delete("start");
+    const nextSearch = searchParams.toString();
+    navigate({ pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : "", hash: location.hash }, {
       replace: true, state: Object.keys(remainingState).length ? remainingState : null,
     });
   }, [calculatorEdition, location.key, location.state, location.pathname, location.search, location.hash, navigate]);
@@ -289,31 +316,6 @@ function PensionFormPage({ calculatorEdition = "professional" }) {
     derivedInsuredTypeInput,
     simpleFundInput,
   ]);
-
-  useEffect(() => {
-    if (!shouldOpenMainStep(location.search)) {
-      return;
-    }
-
-    setCurrentFormStep("main");
-    setBackendResponse(null);
-    setBackendError("");
-    setCalculationResponse(null);
-    setPensionInputExportError("");
-
-    const searchParams = new URLSearchParams(location.search);
-    searchParams.delete("start");
-
-    const nextSearch = searchParams.toString();
-
-    navigate(
-      {
-        pathname: location.pathname,
-        search: nextSearch ? `?${nextSearch}` : "",
-      },
-      { replace: true },
-    );
-  }, [location.pathname, location.search, navigate]);
 
 useEffect(() => {
   const latestDeclaredEmploymentYear =
@@ -699,6 +701,24 @@ useEffect(() => {
     clearBackendResult();
   }
 
+  function changeInsurancePeriodFund(group, fund) {
+    return {
+      ...group,
+      fund,
+      uniformedBody: "",
+      insuredType:
+        calculatorEdition === "free"
+          ? getInsuredTypeForFund({
+              fund,
+              derivedInsuredType: getInsuredTypeFromFirstInsuranceYear(firstInsuranceYearInput),
+            })
+          : "",
+      employmentCategory: "",
+      nonSalariedEarningsInputMode: "",
+      uniformedSpecialTimeDraft: createEmptyUniformedSpecialTimeDraft(),
+    };
+  }
+
   function handleInsurancePeriodGroupChange(groupId, field, value) {
     setInsurancePeriodGroups((currentGroups) => {
       return currentGroups.map((group) => {
@@ -731,22 +751,7 @@ useEffect(() => {
         }
 
         if (field === "fund") {
-          return {
-            ...group,
-            fund: value,
-            uniformedBody: "",
-            insuredType:
-              calculatorEdition === "free"
-                ? getInsuredTypeForFund({
-                    fund: value,
-                    derivedInsuredType: derivedInsuredTypeInput,
-                  })
-                : "",
-            employmentCategory: "",
-            nonSalariedEarningsInputMode: "",
-            uniformedSpecialTimeDraft:
-              createEmptyUniformedSpecialTimeDraft(),
-          };
+          return changeInsurancePeriodFund(group, value);
         }
 
         if (field === "uniformedBody") {
@@ -1019,11 +1024,26 @@ useEffect(() => {
     calculatorEdition === "professional" && PENSION_DEBUG_ENABLED;
 
   const isFreeAppearance = calculatorEdition === "free";
+  const categoryReturnState = { ...location.state };
+  delete categoryReturnState.primaryFund;
+  delete categoryReturnState.averageMonthlyPensionableEarnings;
+  const currentAverageSalary = parseSavedOptionalDecimal(averageMonthlyPensionableEarningsInput);
+  if (Number.isFinite(currentAverageSalary) && currentAverageSalary > 0) {
+    categoryReturnState.averageMonthlyPensionableEarnings = currentAverageSalary;
+  }
 
   return (
     <div className={isFreeAppearance ? "pf-page" : undefined}
       style={isFreeAppearance ? undefined : { padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
       <div className={isFreeAppearance ? "pf-container" : undefined}>
+      {isFreeAppearance && (
+        <nav className="pf-category-nav" aria-label="Ασφαλιστική κατηγορία">
+        <Link className="pf-category-back" to="/free-estimation"
+          state={Object.keys(categoryReturnState).length ? categoryReturnState : null}>
+          ← Αλλαγή ασφαλιστικής κατηγορίας
+        </Link>
+        </nav>
+      )}
       <h1>Υπολογισμός σύνταξης</h1>
 
       {canShowDiagnostics && (
