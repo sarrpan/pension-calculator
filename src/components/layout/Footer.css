@@ -6,6 +6,12 @@
    αν λείψει κάποια μεταβλητή.
 ================================================================== */
 
+/* Match the page surface beneath the transparent footer margin.
+   Keep its spacing and the short-page flex layout unchanged. */
+.App:has(> .app-main > :is(.fg-page, .rg-page, .rr-page, .info-page, .partners-page)) {
+  background-color: #f2f4f7;
+}
+
 .ft-footer {
   background-color: #F5F7F9;
   color: #475569;

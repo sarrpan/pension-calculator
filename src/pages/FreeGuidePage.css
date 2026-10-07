@@ -2,7 +2,7 @@
 .fg-page {
   --fg-border: #e1e6ed;
   --fg-muted: #4a5568;
-  --fg-orange-ink: #b5410b;
+  --fg-brand: #2fa7b8;
   min-height: 70vh;
   padding: 48px 24px 80px;
   background: #f2f4f7;
@@ -47,7 +47,7 @@
 .fg-page .fg-eyebrow {
   display: block;
   margin-bottom: 12px;
-  color: var(--fg-orange-ink);
+  color: var(--fg-brand);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.09em;
@@ -59,7 +59,7 @@
 .fg-page button:focus-visible,
 .fg-page summary:focus-visible,
 .fg-page section[tabindex]:focus-visible {
-  outline: 3px solid var(--accent, #ea580c);
+  outline: 3px solid #2fa7b8;
   outline-offset: 4px;
 }
 .fg-page section[id] { scroll-margin-top: 108px; }
@@ -69,10 +69,10 @@
    end of the sidebar always stays in view. */
 .fg-sidebar {
   position: sticky;
-  top: 104px;
+  top: calc(var(--sticky-offset) + 16px);
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - 128px);
+  max-height: calc(100dvh - var(--sticky-offset) - 40px);
   padding: 8px 6px;
 }
 .fg-sidebar > nav {
@@ -99,14 +99,14 @@
   line-height: 1.5;
   transition: color 0.18s ease, background-color 0.18s ease;
 }
-.fg-nav-list a:hover { background: #fff8f2; color: var(--primary, #0f172a); }
+.fg-nav-list a:hover { background: #eff9fa; color: var(--primary, #0f172a); }
 .fg-nav-list a[aria-current="location"] {
-  border-left-color: var(--accent, #ea580c);
+  border-left-color: #2fa7b8;
   background: #fff;
   color: var(--primary, #0f172a);
   font-weight: 700;
 }
-.fg-nav-list a[aria-current="location"]:hover { background: #fff8f2; }
+.fg-nav-list a[aria-current="location"]:hover { background: #eff9fa; }
 /* Average Salary helper card — dark teal version used before the Codex light-cyan pass. */
 .fg-salary-card {
   --salary-teal: #226d7f;
@@ -197,11 +197,11 @@
   gap: 16px;
   padding: 20px;
   border-radius: 14px;
-  background: linear-gradient(160deg, #18253f, var(--primary, #0f172a));
-  color: #fff;
+  background: #f1f5f9;
+  color: var(--primary, #0f172a);
 }
-.fg-summary div + div { padding-left: 16px; border-left: 1px solid #354055; }
-.fg-summary dt { color: #bac6d8; font-size: 0.8rem; }
+.fg-summary div + div { padding-left: 16px; border-left: 1px solid #dce3eb; }
+.fg-summary dt { color: #526174; font-size: 0.8rem; }
 .fg-summary dd { margin: 4px 0 0; font-size: 0.95rem; font-weight: 700; line-height: 1.5; }
 .fg-hero-actions, .fg-cta-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .fg-hero-actions .fg-button { flex: 1 1 260px; }
@@ -229,16 +229,18 @@
   color: var(--primary, #0f172a);
 }
 .fg-button-primary:hover { background: #f97316; }
+.fg-button-tool, .fg-button-report { background: transparent; border-color: #c3d7dc; color: #146b79; }
+.fg-button-tool:hover, .fg-button-report:hover { background: transparent; border-color: #146b79; }
 .fg-button-secondary { background: #fff; border-color: #cbd5e1; color: var(--primary, #0f172a); }
 .fg-button-secondary:hover { background: #f8fafc; border-color: #94a3b8; }
-.fg-button-outline { background: transparent; border-color: #64748b; color: #fff; }
-.fg-button-outline:hover { background: #25324a; border-color: #94a3b8; }
+.fg-button-outline { background: transparent; border-color: #64748b; color: var(--primary, #0f172a); }
+.fg-button-outline:hover { background: #e2e8f0; border-color: #94a3b8; }
 .fg-text-link {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   min-height: 44px;
-  color: var(--fg-orange-ink);
+  color: var(--fg-brand);
   font-size: 0.94rem;
   font-weight: 700;
   line-height: 1.6;
@@ -246,7 +248,7 @@
   text-underline-offset: 4px;
   text-decoration-thickness: 1px;
 }
-.fg-text-link:hover { color: #7c2d12; }
+.fg-text-link:hover { color: #238493; }
 .fg-page .fg-section-intro { margin-bottom: 24px; }
 
 /* Suitability and the entitlement notice. */
@@ -255,7 +257,7 @@
 .fg-suitability-card h3 { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
 .fg-icon-badge { display: grid; flex: 0 0 30px; height: 30px; place-items: center; border-radius: 50%; background: #eaf0f7; color: var(--primary, #0f172a); }
 .fg-suitability-alternative { background: #fafbfc; }
-.fg-suitability-alternative .fg-icon-badge { background: #fcebdc; color: #9a3412; }
+.fg-suitability-alternative .fg-icon-badge { background: #e3f5f7; color: #2fa7b8; }
 .fg-check-list { padding-left: 18px; font-size: 0.94rem; }
 .fg-check-list li + li { margin-top: 12px; }
 .fg-check-list li::marker { color: #64748b; }
@@ -266,13 +268,13 @@
   gap: 14px;
   margin-top: 24px;
   padding: 24px;
-  border: 1px solid #f0d5b9;
-  border-left: 4px solid var(--accent, #ea580c);
+  border: 1px solid #cce9ed;
+  border-left: 4px solid #2fa7b8;
   border-radius: 12px;
-  background: #fff8ef;
+  background: #eff9fa;
 }
-.fg-notice > .fg-icon { margin-top: 3px; color: var(--fg-orange-ink); }
-.fg-notice p { color: #644a35; font-size: 0.94rem; }
+.fg-notice > .fg-icon { margin-top: 3px; color: var(--fg-brand); }
+.fg-notice p { color: var(--primary, #0f172a); font-size: 0.94rem; }
 
 /* The preparation checklist. */
 .fg-details-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 0; list-style: none; }
@@ -284,7 +286,7 @@
 .fg-details-link { margin-top: 12px; }
 
 /* The future salary tool is a clearly labelled, non-interactive preview. */
-.fg-salary-section { border-color: #e7ddd2; border-top: 2px solid #e3b388; background: #fffdf9; }
+.fg-salary-section { border-color: #e7ddd2; border-top: 2px solid #2fa7b8; background: #fffdf9; }
 .fg-salary-requirements { margin-bottom: 24px; padding: 24px; border: 1px solid #e9dfd3; border-radius: 12px; background: #fbf7f1; }
 .fg-salary-requirements h3 { margin-bottom: 8px; }
 .fg-salary-requirements p { font-size: 0.94rem; }
@@ -295,7 +297,8 @@
 .fg-salary-options { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
 .fg-salary-options > div + div { padding-left: 24px; border-left: 1px solid #e8ded2; }
 .fg-salary-options p { font-size: 0.94rem; }
-.fg-salary-options a { color: var(--fg-orange-ink); text-underline-offset: 3px; }
+.fg-salary-options a { color: var(--fg-brand); text-underline-offset: 3px; }
+.fg-salary-options a[href="/free-estimation"] { color: var(--accent, #ea580c); }
 .fg-tool-preview { overflow: hidden; border: 1px solid #cdd6e3; border-radius: 14px; background: #fff; }
 .fg-preview-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 20px 24px; }
 .fg-preview-title { display: flex; align-items: center; gap: 10px; color: var(--primary, #0f172a); }
@@ -315,19 +318,19 @@
 /* Coverage, result and accuracy. */
 .fg-periods-diagram { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
 .fg-periods-diagram > div { padding: 20px; border: 1px solid var(--fg-border); border-radius: 12px; }
-.fg-periods-diagram span { display: block; margin-bottom: 12px; color: var(--fg-orange-ink); font-size: 0.8rem; font-weight: 700; }
+.fg-periods-diagram span { display: block; margin-bottom: 12px; color: var(--fg-brand); font-size: 0.8rem; font-weight: 700; }
 .fg-periods-diagram strong { display: block; color: var(--primary, #0f172a); font-size: 0.95rem; }
 .fg-periods-diagram p { margin-top: 6px; font-size: 0.88rem; }
 .fg-info-block { margin-top: 24px; padding: 20px 24px; border: 1px solid #dae4f2; border-radius: 12px; background: #f4f8ff; }
 .fg-info-block p { font-size: 0.94rem; }
 .fg-limits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; list-style: none; padding: 0; }
 .fg-limits-grid li { display: flex; align-items: flex-start; gap: 12px; padding: 20px; border: 1px solid var(--fg-border); border-radius: 12px; }
-.fg-limits-grid .fg-icon { margin-top: 3px; color: var(--fg-orange-ink); }
+.fg-limits-grid .fg-icon { margin-top: 3px; color: var(--fg-brand); }
 .fg-limits-grid h3 { font-size: 0.95rem; }
 .fg-limits-grid p { font-size: 0.9rem; }
 .fg-report-prompt { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--fg-border); }
 .fg-report-prompt p { font-size: 0.94rem; }
-.fg-report-prompt .fg-text-link { margin-top: 4px; }
+.fg-report-prompt .fg-button-report { margin-top: 4px; }
 .fg-result-card { min-width: 0; padding: 24px; border: 1px solid var(--fg-border); border-radius: 12px; }
 .fg-result-card h3 { margin-bottom: 12px; color: #526078; font-size: 0.74rem; letter-spacing: 0.08em; }
 .fg-result-stage + .fg-result-stage { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--fg-border); }
@@ -338,25 +341,23 @@
 .fg-result-flow { display: grid; gap: 8px; }
 .fg-flow-arrow { padding-left: 4px; color: #64748b; font-size: 1.2rem; line-height: 1; }
 .fg-gross-total { color: var(--primary, #0f172a); font-size: 0.96rem; font-weight: 600; }
-.fg-flow-deductions { display: flex; align-items: baseline; gap: 10px; color: #7c3d19; font-size: 0.94rem; }
-.fg-flow-deductions .fg-equation-operator { color: var(--fg-orange-ink); }
-.fg-flow-payable { padding: 12px 16px; border-left: 3px solid var(--accent, #ea580c); border-radius: 0 6px 6px 0; background: #f4f7fb; color: var(--primary, #0f172a); font-size: 1.18rem; line-height: 1.5; }
-.fg-page .fg-tax-note { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; color: #7c3d19; font-size: 0.88rem; font-weight: 700; }
+.fg-flow-deductions { display: flex; align-items: baseline; gap: 10px; color: #2fa7b8; font-size: 0.94rem; }
+.fg-flow-deductions .fg-equation-operator { color: var(--fg-brand); }
+.fg-flow-payable { padding: 12px 16px; border-left: 3px solid #2fa7b8; border-radius: 0 6px 6px 0; background: #f4f7fb; color: var(--primary, #0f172a); font-size: 1.18rem; line-height: 1.5; }
+.fg-page .fg-tax-note { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; color: #2fa7b8; font-size: 0.88rem; font-weight: 700; }
 .fg-tax-note .fg-icon { margin-top: 2px; }
 .fg-result-notice { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; padding: 14px; border: 1px solid #d6dfeb; border-radius: 8px; background: #f4f7fb; color: var(--primary, #0f172a); font-size: 0.84rem; line-height: 1.6; }
 .fg-result-notice .fg-icon { margin-top: 1px; }
 .fg-accuracy-tip { display: flex; gap: 14px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--fg-border); font-size: 0.94rem; }
-.fg-accuracy-tip .fg-icon { margin-top: 3px; color: var(--fg-orange-ink); }
+.fg-accuracy-tip .fg-icon { margin-top: 3px; color: var(--fg-brand); }
 
-.fg-cta { position: relative; overflow: hidden; padding: 36px; border-radius: 20px; background: linear-gradient(135deg, #18253f, var(--primary, #0f172a)); }
-.fg-cta::after { position: absolute; top: -90px; right: -60px; width: 260px; height: 260px; border: 44px solid rgba(234, 88, 12, 0.1); border-radius: 50%; content: ''; pointer-events: none; }
+.fg-cta { position: relative; overflow: hidden; padding: 36px; border-radius: 20px; background: #f1f5f9; }
 .fg-cta > * { position: relative; z-index: 1; }
-.fg-cta .fg-eyebrow { color: #f8b27d; }
-.fg-cta h2 { margin-bottom: 12px; color: #fff; }
-.fg-cta p { color: #ced7e5; }
+.fg-cta .fg-eyebrow { color: var(--fg-brand); }
+.fg-cta h2 { margin-bottom: 12px; color: var(--primary, #0f172a); }
+.fg-cta p { color: #4a5568; }
 
 @media (max-width: 1180px) {
-  .fg-sidebar { top: 86px; max-height: calc(100dvh - 110px); }
   .fg-page section[id] { scroll-margin-top: 90px; }
   .fg-hero, .fg-section, .fg-cta { padding: 28px; }
   .fg-suitability-card { padding: 20px; }
@@ -388,7 +389,7 @@
   .fg-button { width: 100%; padding: 14px 16px; }
   .fg-summary { grid-template-columns: 1fr; gap: 12px; }
   .fg-summary div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
-  .fg-summary div + div { padding: 12px 0 0; border-left: 0; border-top: 1px solid #354055; }
+  .fg-summary div + div { padding: 12px 0 0; border-left: 0; border-top: 1px solid #dce3eb; }
   .fg-summary dd { margin: 0; text-align: right; }
   .fg-suitability-grid, .fg-details-grid, .fg-salary-options, .fg-insurance-categories, .fg-periods-diagram, .fg-limits-grid { grid-template-columns: minmax(0, 1fr); }
   .fg-mobile-nav .fg-nav-list { grid-template-columns: 1fr; }

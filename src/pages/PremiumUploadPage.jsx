@@ -376,7 +376,7 @@ const PremiumUploadPage = () => {
         <div className="pu-wrapper" ref={successRef}>
           <div className="pu-inner">
             <header className="pu-header">
-              <p className="pu-eyebrow">ΑΠΟΣΤΟΛΗ ΕΓΓΡΑΦΩΝ</p>
+              <p className="pu-eyebrow">ΑΝΑΛΥΤΙΚΗ ΕΚΘΕΣΗ</p>
               <h1 className="pu-title">Τα επιπλέον έγγραφα παραλήφθηκαν</h1>
               <p className="pu-subtitle">
                 Προστέθηκαν στην αίτηση <strong>{generatedPin}</strong>. Δεν άνοιξε
@@ -420,7 +420,7 @@ const PremiumUploadPage = () => {
       <div className="pu-wrapper" ref={successRef}>
         <div className="pu-inner">
           <header className="pu-header">
-            <p className="pu-eyebrow">ΑΠΟΣΤΟΛΗ ΕΓΓΡΑΦΩΝ</p>
+            <p className="pu-eyebrow">ΑΝΑΛΥΤΙΚΗ ΕΚΘΕΣΗ</p>
             <h1 className="pu-title">Τα έγγραφά σας παραλήφθηκαν</h1>
             <p className="pu-subtitle">
               Θα τα ελέγξουμε και θα επικοινωνήσουμε μαζί σας στο <strong>{email.trim()}</strong>.
@@ -429,7 +429,7 @@ const PremiumUploadPage = () => {
           </header>
 
           <section className="pu-card pu-pin-card">
-            <p className="pu-pin-label">Ο κωδικός παρακολούθησης της αίτησής σας</p>
+            <p className="pu-pin-label">Ο κωδικός αίτησής σας</p>
             <p className="pu-pin-value">{generatedPin}</p>
 
             <button type="button" className="pu-copy-btn" onClick={handleCopyPin}>
@@ -497,12 +497,10 @@ const PremiumUploadPage = () => {
       <div className="pu-inner">
 
         <header className="pu-header">
-          <p className="pu-eyebrow">ΑΠΟΣΤΟΛΗ ΕΓΓΡΑΦΩΝ</p>
-          <h1 className="pu-title">Αποστολή εγγράφων</h1>
+          <p className="pu-eyebrow">ΑΝΑΛΥΤΙΚΗ ΕΚΘΕΣΗ</p>
+          <h1 className="pu-title">Αίτηση για Αναλυτική Έκθεση</h1>
           <p className="pu-subtitle">
-            Στείλτε το PDF ασφαλιστικού ιστορικού από τον e-ΕΦΚΑ και άλλα σχετικά
-            αποδεικτικά για χρόνο ασφάλισης, εργασία, αποδοχές ή εισφορές.
-            Θα ελέγξουμε τι υπάρχει και τι λείπει, πριν ζητηθεί πληρωμή.
+            Για να ξεκινήσετε, στείλτε τα έγγραφα που ήδη διαθέτετε. Με την αποστολή δημιουργείται η αίτησή σας για Αναλυτική Έκθεση και λαμβάνετε κωδικό αίτησης, με τον οποίο μπορείτε να παρακολουθείτε την πορεία της.
           </p>
         </header>
 
@@ -520,7 +518,7 @@ const PremiumUploadPage = () => {
           </div>
 
           <ul className="pu-order-list">
-            <li><IconCheck className="pu-icon-sm" />Στέλνετε τα έγγραφά σας και παίρνετε κωδικό παρακολούθησης</li>
+            <li><IconCheck className="pu-icon-sm" />Στέλνετε τα έγγραφά σας και παίρνετε κωδικό αίτησης</li>
             <li><IconCheck className="pu-icon-sm" />Ελέγχουμε τον φάκελο και σας λέμε αν λείπει κάτι</li>
             <li><IconCheck className="pu-icon-sm" />Πληρώνετε μόνο εφόσον ο φάκελος επαρκεί</li>
           </ul>
@@ -535,7 +533,7 @@ const PremiumUploadPage = () => {
 
         {/* ── Η φόρμα ── */}
         <section className="pu-card">
-          <h2 className="pu-card-title">Τα στοιχεία σας</h2>
+          <h2 className="pu-card-title">Αποστολή εγγράφων</h2>
 
           <form onSubmit={handleSubmit} className="pu-form" noValidate>
             {/* ── Κωδικός υπάρχουσας αίτησης ──
@@ -616,6 +614,7 @@ const PremiumUploadPage = () => {
                 Τα έγγραφά σας (PDF, JPG/JPEG ή PNG — έως {MEGISTA_ARCHEIA} αρχεία, συνολικά {MEGISTO_SYNOLO_MB} MB ανά αίτηση)
               </span>
 
+              <p className="pu-field-hint"><Link to="/pdf-guide">Πώς βρίσκω το ασφαλιστικό ιστορικό μου;</Link></p>
               {files.length === 0 ? (
                 <label
                   className={`pu-drop ${isDragging ? 'is-dragging' : ''}`}

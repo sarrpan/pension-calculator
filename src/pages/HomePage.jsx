@@ -4,7 +4,6 @@ import { isPaidServiceLive } from '../config/paidService';
 import { supportingTools } from '../config/toolsNavigation';
 import Hero from '../components/home/Hero/Hero';
 import Report from '../components/home/Report/Report';
-import Features from '../components/home/Features/Features';
 import Trust from '../components/home/Trust/Trust';
 import './HomePage.css';
 
@@ -31,7 +30,8 @@ export default function HomePage() {
   return (
     <div className="home-page">
       <section className="home-intro" aria-labelledby="home-title">
-        <div className="container">
+        <div className="container home-intro-layout">
+          <div className="home-intro-copy">
           <p className="home-eyebrow">Δωρεάν Εκτίμηση · Sintaximou</p>
           <h1 id="home-title">Μια πιο καθαρή εικόνα<br className="home-title-break" /> για τη σύνταξή σας.</h1>
           <p className="home-intro-text">Ξεκινήστε με τον χρόνο ασφάλισης και τον μέσο συντάξιμο μισθό σας.
@@ -46,6 +46,8 @@ export default function HomePage() {
             </div>
           </div>
           <p className="home-disclaimer"><span aria-hidden="true">ⓘ</span> Η εκτίμηση δεν αποτελεί επίσημη απόφαση του e-ΕΦΚΑ.</p>
+          </div>
+          <div className="home-handwritten" aria-hidden="true">Ενημερωθείτε<br />Σχεδιάστε<br />Αποφασίστε<br /><span>πιο σίγουρα</span></div>
         </div>
       </section>
 
@@ -69,7 +71,6 @@ export default function HomePage() {
 
       <Hero />
       <section className="home-report-section"><div className="container"><Report /></div></section>
-      <Features />
       <Trust />
     </div>
   );

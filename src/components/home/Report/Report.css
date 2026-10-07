@@ -37,3 +37,17 @@
   .home-report-preview { max-width: 280px; }
   .home-document-title { font-size: 1rem; }
 }
+
+.home-example-title { margin: 22px 0 8px; font-size: .95rem; line-height: 1.5; }
+.home-example-amounts { margin: 0 0 16px; font-size: .92rem; }
+.home-example-amounts > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; padding: 9px 0; border-bottom: 1px solid #bfdcde; }
+.home-example-amounts dt { line-height: 1.5; }
+.home-example-amounts dd { margin: 0; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.home-example-amounts .home-example-total { padding-top: 14px; border-bottom: 0; font-weight: 700; color: #146b79; }
+.home-example-total dd { font-size: 1.2rem; }
+.home-report-copy > .home-example-note { margin: 12px 0 0; font-size: .8rem; line-height: 1.65; }
+@media (max-width: 600px) { .home-example-amounts { font-size: .85rem; } .home-example-total dd { font-size: 1.05rem; } }
+
+.home-report-notice { grid-column: 1 / -1; padding: 18px 22px; border-left: 3px solid #146b79; border-radius: 6px; background: #fff; color: #243f48; font-size: 16px; line-height: 1.5; }
+.home-report-notice h3 { margin: 0 0 6px; font-size: 16px; line-height: 1.5; }
+.home-report-notice p { margin: 0; }

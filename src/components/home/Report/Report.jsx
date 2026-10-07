@@ -1,28 +1,21 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { isPaidServiceLive } from '../../../config/paidService';
 import './Report.css';
 
 export default function Report() {
   return (
     <section className="home-report-panel" aria-labelledby="home-report-title">
           <div className="home-report-copy">
-            <div className="home-report-labels"><span className="home-eyebrow">Μια πιο αναλυτική ματιά</span>
-              {!isPaidServiceLive && <span className="home-coming-soon">Σύντομα διαθέσιμο</span>}</div>
-            <h2 id="home-report-title">Αναλυτική Έκθεση</h2>
-            <p>{isPaidServiceLive ? 'Ανάλυση του ασφαλιστικού σας ιστορικού, με τους υπολογισμούς από εμάς.'
-              : 'Ετοιμάζουμε μια αναλυτική εκτίμηση με βάση το ασφαλιστικό σας ιστορικό, με τους υπολογισμούς από εμάς.'}</p>
-            <ul>
-              <li>Οργανωμένη επεξεργασία του ασφαλιστικού ιστορικού</li>
-              <li>Ανάλυση ποσού και σύγκριση σεναρίων εξόδου</li>
-              <li>Τα αποτελέσματα συγκεντρωμένα σε αρχείο PDF</li>
-            </ul>
-            <div className="home-report-actions">
-              <Link className="home-button home-button-primary" to="/report-guide">
-                Δείτε πώς λειτουργεί <span aria-hidden="true">→</span>
-              </Link>
-              {!isPaidServiceLive && <Link className="home-text-link" to="/contact">Επικοινωνία ενδιαφέροντος</Link>}
-            </div>
+            <h2 id="home-report-title">Τι θα δείτε στην Αναλυτική Έκθεση</h2>
+            <p>Θα λάβετε μια προσωπική και αναλυτική έκθεση με τα αποτελέσματα της εκτίμησης, σε εύκολη και κατανοητή μορφή.</p>
+            <h3 className="home-example-title">Ενδεικτικό παράδειγμα</h3>
+            <dl className="home-example-amounts">
+              <div><dt>Εθνική σύνταξη</dt><dd>446,87 €</dd></div>
+              <div><dt>Ανταποδοτική σύνταξη</dt><dd>573,13 €</dd></div>
+              <div><dt>Επικουρική σύνταξη</dt><dd>260,00 €</dd></div>
+              <div><dt>Κρατήσεις</dt><dd>−76,80 €</dd></div>
+              <div className="home-example-total"><dt>Εκτιμώμενο καθαρό ποσό</dt><dd>1.203,20 €</dd></div>
+            </dl>
+            <p className="home-example-note">Ενδεικτικά ποσά για την παρουσίαση της μορφής της Έκθεσης. Δεν αποτελούν πραγματική εκτίμηση συγκεκριμένου προσώπου.</p>
           </div>
           <figure className="home-report-preview">
             <div className="home-document" aria-hidden="true">
@@ -39,6 +32,10 @@ export default function Report() {
             </div>
             <figcaption>Ενδεικτική εικόνα εγγράφου, χωρίς προσωπικά στοιχεία.</figcaption>
           </figure>
+          <aside className="home-report-notice" aria-labelledby="home-report-notice-title">
+            <h3 id="home-report-notice-title">Σημαντικό</h3>
+            <p>Η Αναλυτική Έκθεση αποτελεί εκτίμηση βάσει των διαθέσιμων στοιχείων και <strong>δεν είναι επίσημη απόφαση του e-ΕΦΚΑ</strong>.</p>
+          </aside>
     </section>
   );
 }

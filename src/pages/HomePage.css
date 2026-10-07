@@ -56,3 +56,15 @@
   .home-tool-card { padding: 24px; }
   .home-tool-card .home-button { width: 100%; padding-left: 12px; padding-right: 12px; gap: 10px; font-size: .87rem; }
 }
+
+/* Handwritten accent beside the existing introduction. */
+.home-intro-layout { display: grid; grid-template-columns: minmax(0, 1fr) 220px; align-items: center; gap: 40px; }
+.home-intro-copy { text-align: left; }
+.home-intro-copy h1, .home-intro-copy .home-intro-text { margin-left: 0; }
+.home-intro-copy .home-intro-actions, .home-intro-copy .home-disclaimer { justify-content: flex-start; }
+.home-handwritten { font-family: 'Segoe Print', 'Comic Sans MS', cursive; font-size: 1.65rem; line-height: 1.85; color: #397784; transform: rotate(-5deg); text-align: left; }
+.home-handwritten span { display: inline-block; border-bottom: 2px solid #a9cdd2; }
+@media (max-width: 900px) {
+  .home-intro-layout { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .home-handwritten { justify-self: end; font-size: 1.15rem; line-height: 1.55; margin-right: 12px; }
+}

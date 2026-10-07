@@ -27,6 +27,8 @@
 .nv-tools-open { display: block; }
 .nv-tools-links .nv-link { display: flex; padding: 12px; border-radius: 6px; }
 .nv-tools-links .nv-link:hover { background: #f1f5f9; }
+.nv-tools-helper { border-top: 1px solid #e2e8f0; margin-top: 6px; padding-top: 6px; }
+.nv-tools-helper .nv-link { white-space: normal; }
 .nv-cta { margin-left: auto; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 12px 20px; border-radius: 8px; background: var(--accent, #ea580c); color: #fff; text-decoration: none; font-size: .94rem; line-height: 1.4; font-weight: 700; }
 .nv-cta:not(.nv-cta-current):hover { background: #cf4e18; }
 .nv-cta-current { background: #f1f5f9; color: #526174; }
@@ -77,6 +79,7 @@
 @media (max-width: 600px) {
   :root { --navbar-height: 116px; }
   .navbar { --nv-main-height: 116px; }
+  .navbar.nv-in-free-flow { --nv-main-height: 64px; }
   .nv-container { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 8px 20px; }
   .nv-logo img { width: 158px; }
   .nv-menu-toggle { font-size: .85rem; padding: 8px 10px; }

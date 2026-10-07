@@ -7,58 +7,49 @@ const Hero = () => {
   return (
     <section className="hero-section hero-services" aria-label="Επιλογές υπηρεσιών">
       <div className="container hero-vertical-layout">
-        <h2 className="hero-services-title">Οι υπηρεσίες μας</h2>
+        <h2 className="hero-services-title">Δύο υπηρεσίες, ανάλογα με τις ανάγκες σας</h2>
+        <p className="hero-services-intro">Επιλέξτε τη λύση που ταιριάζει σε εσάς.</p>
         <div className="hero-cards-row">
-
-          {/* ΚΑΡΤΑ 1: PREMIUM */}
-          <div className="option-card premium">
-            <div className="card-header">
-              <h3>Αναλυτική Έκθεση</h3>
-              <span className={`price-tag ${isPaidServiceLive ? 'price-paid' : 'service-coming-soon'}`}>
-                {isPaidServiceLive ? '20 €' : 'Σύντομα διαθέσιμο'}
-              </span>
-            </div>
-
-            <p className="option-intro">
-              {isPaidServiceLive
-                ? 'Στέλνετε το ασφαλιστικό σας ιστορικό και τους υπολογισμούς τους κάνουμε εμείς.'
-                : 'Ανάλυση του ασφαλιστικού σας ιστορικού, με τους υπολογισμούς από εμάς.'}
-            </p>
-
-            <ul>
-              <li>{isPaidServiceLive ? 'Αποστολή του ιστορικού (PDF από τον e-ΕΦΚΑ)' : 'Έλεγχος του ιστορικού (PDF από τον e-ΕΦΚΑ)'}</li>
-              <li>{isPaidServiceLive ? 'Μας δηλώνετε χρόνο που δεν φαίνεται στο ιστορικό' : 'Συνυπολογισμός χρόνου που δεν φαίνεται στο ιστορικό'}</li>
-              <li>Εκτίμηση ποσού και σύγκριση σεναρίων εξόδου</li>
-            </ul>
-
-            {!isPaidServiceLive && (
-              <div className="hero-service-actions">
-                <Link to="/contact" className="hero-service-link">Ενδιαφέρεστε; Επικοινωνήστε μαζί μας →</Link>
-              </div>
-            )}
-          </div>
-
-          {/* ΚΑΡΤΑ 2: ΔΩΡΕΑΝ */}
           <div className="option-card free">
             <div className="card-header">
               <h3>Δωρεάν Εκτίμηση</h3>
               <span className="price-tag price-free">Δωρεάν</span>
             </div>
-
-            <p className="option-intro">
-              Για μια πρώτη εκτίμηση ποσού, με έως δύο μη επικαλυπτόμενες ασφαλιστικές περιόδους.
-              Δεν ελέγχει θεμελίωση συνταξιοδοτικού δικαιώματος.
-            </p>
-
+            <p className="option-intro">Μια πρώτη εικόνα του ποσού της κύριας σύνταξής σας από τα στοιχεία που δηλώνετε εσείς.</p>
             <ul>
-              <li>Δηλώνετε τον ασφαλιστικό χρόνο και τον μέσο μηνιαίο συντάξιμο μισθό</li>
-              <li>Εκτίμηση κύριας σύνταξης</li>
+              <li>Με βάση τα στοιχεία που δηλώνετε εσείς</li>
+              <li>Έως δύο ασφαλιστικές περιόδους (χωρίς επικάλυψη)</li>
               <li>Άμεσο αποτέλεσμα στην οθόνη</li>
+              <li>Χωρίς εγγραφή και χωρίς αποστολή εγγράφων</li>
             </ul>
-
+            <p className="hero-service-note">Δεν ελέγχει αν θεμελιώνετε συνταξιοδοτικό δικαίωμα.</p>
+            <div className="hero-service-actions">
+              <Link to="/free-guide" className="hero-service-button hero-service-free">Δείτε πώς λειτουργεί</Link>
+            </div>
           </div>
-
+          <div className="option-card premium">
+            <div className="card-header">
+              <h3>Αναλυτική Έκθεση</h3>
+              <span className={"price-tag " + (isPaidServiceLive ? "price-paid" : "service-coming-soon")}>
+                {isPaidServiceLive ? '20 € εφάπαξ' : 'Σύντομα διαθέσιμο'}
+              </span>
+            </div>
+            <p className="option-intro">Αναλυτική εκτίμηση της σύνταξής σας, με εξέταση της προσωπικής σας περίπτωσης.</p>
+            <ul>
+              <li>Κύρια και επικουρική σύνταξη (όπου υπάρχουν στοιχεία)</li>
+              <li>Διαφορετικά ταμεία, διαδοχική και παράλληλη ασφάλιση</li>
+              <li>Σύγκριση διαφορετικών σεναρίων συνταξιοδότησης</li>
+              <li>Μελλοντικές προβολές (π.χ. με επιπλέον χρόνο ασφάλισης)</li>
+              <li>Κρατήσεις και εκτιμώμενο ποσό πριν από φόρο</li>
+              <li>Προσωπική έκθεση σε PDF με επεξηγήσεις και παραδοχές</li>
+            </ul>
+            <div className="hero-service-actions">
+              <Link to="/report-guide" className="hero-service-button hero-service-report">Δείτε πώς λειτουργεί</Link>
+            </div>
+          </div>
         </div>
+        <aside className="hero-services-notice">Οι εκτιμήσεις μας βασίζονται στα στοιχεία που μας παρέχετε και σε ισχύουσα νομοθεσία. Δεν αποτελούν επίσημη απόφαση του e-ΕΦΚΑ ούτε δεσμεύουν οποιονδήποτε φορέα. Για την οριστική θεμελίωση και καταβολή της σύνταξης, αρμόδιος είναι ο e-ΕΦΚΑ.</aside>
+        {!isPaidServiceLive && <Link to="/contact" className="hero-service-link hero-interest-link">Ενδιαφέρεστε; Επικοινωνήστε μαζί μας →</Link>}
 
 
       </div>

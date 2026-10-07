@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { isPaidServiceLive } from '../../config/paidService';
 import { informationSections } from '../../content/information/navigation.js';
@@ -77,9 +77,21 @@ function ArticleList({ section }) {
 }
 
 function SectionContent({ section }) {
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (section !== 'faq' || !['#faq-report-access', '#faq-report-retention'].includes(hash)) return;
+    const frame = window.requestAnimationFrame(() => {
+      const answer = document.getElementById(hash.slice(1));
+      if (!answer) return;
+      answer.open = true;
+      answer.querySelector('summary')?.focus({ preventScroll: true });
+      answer.scrollIntoView({ block: 'start' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [section, hash]);
   if (['guides', 'concepts', 'news'].includes(section)) return <ArticleList section={section} />;
   if (section === 'faq') return <div className="info-faq">
-    {getFaq(isPaidServiceLive).map(faq => <details key={faq.id}>
+    {getFaq(isPaidServiceLive).map(faq => <details key={faq.id} id={`faq-${faq.id}`}>
       <summary>{faq.question}</summary>
       <div className="info-faq-answer">
         {faq.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}

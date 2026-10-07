@@ -28,7 +28,7 @@
    οι τόνοι στα ελληνικά κεφαλαία. */
 .ct-eyebrow {
   margin: 0 0 8px;
-  color: var(--accent, #ea580c);
+  color: #2fa7b8;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.09em;
@@ -155,8 +155,8 @@
 .ct-submit {
   width: 100%;
   padding: 14px 28px;
-  background: var(--accent, #ea580c);
-  color: #ffffff;
+  background: #2fa7b8;
+  color: var(--primary, #0f172a);
   border: none;
   border-radius: 8px;
   font-family: inherit;
@@ -167,7 +167,7 @@
 }
 
 .ct-submit:hover {
-  background: #c2410c;
+  background: #51b7c5;
 }
 
 .ct-form-foot {

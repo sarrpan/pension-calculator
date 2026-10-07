@@ -313,7 +313,7 @@ const AverageSalaryPage = () => {
                 <p>Αυτό είναι το εκτιμώμενο ποσό του μέσου μηνιαίου συντάξιμου μισθού βάσει των στοιχείων που δηλώσατε. Αν θέλετε να συνεχίσετε στη δωρεάν εκτίμηση σύνταξης, το ποσό θα μεταφερθεί αυτόματα και θα εμφανιστεί προσυμπληρωμένο.</p>
                 <Link className="as-submit as-result-link" to="/free-estimation"
                   state={{ averageMonthlyPensionableEarnings: result.monthlyAmount }}>
-                  Συνέχεια στη δωρεάν εκτίμηση
+                  Κάντε δωρεάν εκτίμηση
                 </Link>
               </>
             ) : result?.status === 'error' ? (

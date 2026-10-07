@@ -28,7 +28,7 @@
    μετατρέπει το «ή» σε «Ή» και αφήνει τον τόνο. */
 .pu-eyebrow {
   margin: 0 0 8px;
-  color: #e85d24;
+  color: #2fa7b8;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.09em;
@@ -96,7 +96,7 @@
 
 .pu-price-amount {
   display: block;
-  color: #e85d24;
+  color: #2fa7b8;
   font-size: 1.75rem;
   font-weight: 800;
   line-height: 1.1;
@@ -127,7 +127,7 @@
 }
 
 .pu-order-list svg {
-  color: #e85d24;
+  color: #2fa7b8;
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -245,7 +245,7 @@
 .pu-drop-icon {
   width: 28px;
   height: 28px;
-  color: #e85d24;
+  color: #2fa7b8;
   margin-bottom: 4px;
 }
 
@@ -283,7 +283,7 @@
 .pu-file-icon {
   width: 22px;
   height: 22px;
-  color: #e85d24;
+  color: #2fa7b8;
   flex-shrink: 0;
 }
 

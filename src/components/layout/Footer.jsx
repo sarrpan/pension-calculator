@@ -15,7 +15,7 @@ const Footer = () => (
       <nav className="ft-links" aria-label="Υπηρεσίες στο υποσέλιδο">
         <h2 className="ft-title">Υπηρεσίες / Εργαλεία</h2>
         <ul>
-          <li><Link to={toolPaths['free-estimation']}>Δωρεάν Εκτίμηση</Link></li>
+          <li><Link to={toolPaths['free-estimation']}>Κάντε δωρεάν εκτίμηση</Link></li>
           {toolsNavigation.filter(tool => tool.id !== 'free-estimation').map(tool => <li key={tool.id}><Link to={tool.path}>{tool.footerLabel}</Link></li>)}
           <li><Link to="/report-guide">Αναλυτική Έκθεση</Link></li>
           <li><Link to="/free-guide">Οδηγός δωρεάν εκτίμησης</Link></li>
@@ -33,7 +33,7 @@ const Footer = () => (
             <li><Link to="/contact">Επικοινωνία</Link></li>
             <li><Link to="/synergasies">Συνεργασία με τη Sintaximou</Link></li>
             {isPaidServiceLive && <>
-              <li><Link to="/premium-upload">Αποστολή εγγράφων</Link></li>
+              <li><Link to="/premium-upload">Αίτηση για Αναλυτική Έκθεση</Link></li>
               <li><Link to="/report-recovery">Παρακολούθηση αίτησης</Link></li>
             </>}
           </ul>

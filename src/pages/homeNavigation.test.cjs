@@ -16,8 +16,8 @@ function load(entry, mode) {
   vm.runInNewContext(source, context);
   return context.module.exports;
 }
-function render(entry, mode) {
-  return renderToStaticMarkup(React.createElement(StaticRouter, { location: '/' },
+function render(entry, mode, location = '/') {
+  return renderToStaticMarkup(React.createElement(StaticRouter, { location },
     React.createElement(load(entry, mode).default)));
 }
 const home = 'src/pages/HomePage.jsx';
@@ -32,10 +32,10 @@ for (const mode of [undefined, 'prelaunch', 'LIVE', 'true', 'live']) {
     assert.equal(load('src/config/paidService.js', mode).isPaidServiceLive, isLive);
     assert.equal(links(html).includes('/premium-upload'), false);
     const report = render('src/components/home/Report/Report.jsx', mode);
-    assert.deepEqual(links(report), isLive ? ['/report-guide'] : ['/report-guide', '/contact']);
-    assert.match(report, /Δείτε πώς λειτουργεί/);
+    assert.deepEqual(links(report), []);
+    assert.match(report, /Τι θα δείτε στην Αναλυτική Έκθεση/);
     const services = render('src/components/home/Hero/Hero.jsx', mode);
-    assert.deepEqual(links(services), isLive ? [] : ['/contact']);
+    assert.deepEqual(links(services), isLive ? ['/free-guide', '/report-guide'] : ['/free-guide', '/report-guide', '/contact']);
     assert.doesNotMatch(services, /Οδηγός αναλυτικής έκθεσης|Οδηγός δωρεάν εκτίμησης/);
     assert.equal(links(nav).includes('/premium-upload'), isLive);
     assert.equal(links(nav).includes('/report-recovery'), isLive);
@@ -67,15 +67,15 @@ test('home has the agreed section order, one document and no obsolete analysis b
   const html = render(home, 'prelaunch');
   assert.equal((html.match(/<h1\b/g) || []).length, 1);
   const sections = ['id="home-title"', 'id="home-tools-title"', 'class="hero-section hero-services"',
-    'class="home-report-panel"', 'class="home-analysis"', 'class="trust-section"'];
+    'class="hero-services-notice"', 'class="home-report-panel"', 'class="trust-section"'];
   for (let i = 1; i < sections.length; i++) assert.ok(html.indexOf(sections[i]) > html.indexOf(sections[i - 1]));
   assert.equal((html.match(/class="home-tool-card"/g) || []).length, 2);
   assert.match(html, /δεν αποτελεί επίσημη απόφαση του e-ΕΦΚΑ/);
-  assert.equal(links(html).filter(href => href === '/free-guide').length, 1);
+  assert.equal(links(html).filter(href => href === '/free-guide').length, 2);
   assert.match(html, /class="option-card free"/);
   assert.match(html, /class="option-card premium"/);
-  assert.ok(html.indexOf('class="option-card premium"') < html.indexOf('class="option-card free"'));
-  assert.doesNotMatch(html, /cta-section|Επιλέξτε τη διαδρομή που σας ταιριάζει|hero-service-button/);
+  assert.ok(html.indexOf('class="option-card free"') < html.indexOf('class="option-card premium"'));
+  assert.doesNotMatch(html, /cta-section|Επιλέξτε τη διαδρομή που σας ταιριάζει/);
   const intro = html.match(/<div class="home-intro-actions">(.*?)<p class="home-disclaimer"/)[1];
   assert.deepEqual(links(intro), ['/free-guide', '/report-guide']);
   assert.match(intro, /Γνωρίστε τη Δωρεάν Εκτίμηση/);
@@ -83,7 +83,9 @@ test('home has the agreed section order, one document and no obsolete analysis b
   assert.match(html, /class="home-document"/);
   assert.match(html, /Η εικόνα σας,<br\/>με περισσότερη λεπτομέρεια/);
   assert.equal((html.match(/class="home-document"/g) || []).length, 1);
-  assert.equal((html.match(/class="home-analysis-card"/g) || []).length, 3);
+  assert.doesNotMatch(html, /home-analysis|Τι εξετάζουμε για τη δική σας περίπτωση/);
+  assert.match(html, /home-handwritten/);
+  assert.match(html, /1.203,20 €/);
   assert.match(html, /Ενδεικτικό παράδειγμα/);
   assert.match(html, /Δεν αποτελούν πραγματική εκτίμηση συγκεκριμένου προσώπου/);
   assert.doesNotMatch(html, /hero-salary-callout|report-sheets|home-help-grid|feature-row|ΤΙ ΧΡΕΙΑΖΟΜΑΣΤΕ ΑΠΟ ΕΣΑΣ|ΤΙ ΥΠΟΛΟΓΙΖΟΥΜΕ|ΤΙ ΣΕΝΑΡΙΑ ΕΞΕΤΑΖΟΥΜΕ|διαγράμματα|Αναλυτικό Report/);
@@ -100,8 +102,22 @@ test('guides share a directly visible group and tools retain their accessible di
   assert.match(html, /aria-label="Οδηγός δωρεάν εκτίμησης"/);
   assert.match(html, /aria-label="Οδηγός αναλυτικής έκθεσης"/);
   const tools = html.match(/<ul id="nv-tools-links"[^>]*>(.*?)<\/ul>/)[1];
-  assert.deepEqual(links(tools), ['/average-salary', '/replacement-rate']);
+  assert.deepEqual(links(tools), ['/average-salary', '/replacement-rate', '/pdf-guide']);
+  assert.match(tools, /class="nv-tools-helper"/);
   assert.ok(html.indexOf('href="/free-guide"') < html.indexOf('class="nv-tools"'));
+});
+
+test('navbar omits the start action entirely inside the free flow in both modes', () => {
+  for (const mode of ['live', 'prelaunch']) {
+    for (const route of ['/free-estimation', '/calculator']) {
+      const html = render(navbar, mode, route);
+      assert.doesNotMatch(html, /class="nv-cta|Κάντε δωρεάν εκτίμηση/);
+      assert.match(html, /nv-in-free-flow/);
+    }
+    for (const route of ['/', '/free-guide', '/report-guide', '/pdf-guide']) {
+      assert.match(render(navbar, mode, route), /class="nv-cta"/);
+    }
+  }
 });
 
 test('all home, header and footer links resolve to existing public routes', () => {

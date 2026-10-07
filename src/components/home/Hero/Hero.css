@@ -456,8 +456,8 @@
 .hero-services .option-card ul { flex-grow: 0; margin-bottom: 0; }
 .hero-services .option-card li:last-child { margin-bottom: 0; }
 .hero-service-button { display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 20px; border: 1px solid transparent; border-radius: 8px; font-size: .94rem; font-weight: 700; line-height: 1.5; text-align: center; text-decoration: none; }
-.hero-service-free { background: var(--accent, #ea580c); color: #fff; }
-.hero-service-free:hover { background: #cf4e18; }
+.hero-service-free { background: transparent; border-color: #94a3b8; color: #374151; }
+.hero-service-free:hover { background: #eef1f3; }
 .hero-service-report { background: #146b79; color: #fff; }
 .hero-service-report:hover { background: #0e5360; }
 .hero-service-link { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; color: #146b79; font-size: .88rem; line-height: 1.6; text-align: center; text-decoration: underline; text-underline-offset: 3px; }
@@ -467,3 +467,11 @@
   .hero-services .hero-vertical-layout { padding-left: 20px; padding-right: 20px; }
   .hero-services .option-card { padding: 24px; }
 }
+
+.hero-services-title { margin-bottom: 8px; }
+.hero-services-intro { margin: 0 0 24px; color: #566971; line-height: 1.6; }
+.hero-services .hero-service-actions { margin-top: auto; padding-top: 22px; }
+.hero-service-note { margin: 18px 0 0; color: #566971; font-size: .85rem; line-height: 1.6; }
+.hero-services .price-paid { color: #146b79; font-size: 1.1rem; }
+.hero-services-notice { margin-top: 24px; padding: 16px 20px; border-left: 3px solid #b5d3d8; border-radius: 6px; background: #f4f7f8; color: #566971; font-size: .85rem; line-height: 1.7; }
+.hero-interest-link { align-self: flex-start; margin-top: 10px; }

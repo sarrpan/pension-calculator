@@ -7,6 +7,6 @@
 .partners-content .partners-note { border-left: 3px solid #cad9de; padding: 10px 16px; font-size: 0.92rem; background: #fff; }
 .partners-contact { display: inline-block; padding: 11px 18px; border: 1px solid #167487; border-radius: 7px; color: #167487; background: #fff; font-weight: 600; text-decoration: none; }
 .partners-contact:hover { background: #edf6f7; color: #105868; }
-.partners-content h1:focus-visible, .partners-contact:focus-visible { outline: 2px solid #167487; outline-offset: 5px; }
+.partners-contact:focus-visible { outline: 2px solid #167487; outline-offset: 5px; }
 @media (max-width: 1180px) { .partners-content h1 { scroll-margin-top: 86px; } }
 @media (max-width: 600px) { .partners-page { padding: 28px 20px 44px; } }

@@ -14,6 +14,7 @@ export default function Navbar() {
   const toolsGroup = useRef(null);
   const active = path => location.pathname === path
     || (path === '/enimerosi' && location.pathname.startsWith('/enimerosi/'));
+  const inFreeFlow = ['/free-estimation', '/calculator'].includes(location.pathname);
 
   const closeMenus = () => { setMenuOpen(false); setToolsOpen(false); };
   useEffect(closeMenus, [location.pathname, location.search, location.key]);
@@ -64,13 +65,13 @@ export default function Navbar() {
       <div className="container nv-client-container">
         {navLink('/report-recovery', 'Παρακολούθηση αίτησης', 'nv-client-link')}
         <span className="nv-client-separator" aria-hidden="true">|</span>
-        {navLink('/premium-upload', 'Αποστολή εγγράφων', 'nv-client-link')}
+        {navLink('/premium-upload', 'Αίτηση για Αναλυτική Έκθεση', 'nv-client-link')}
       </div>
     </div>
   );
 
   return (
-    <nav ref={navbar} className={`navbar${isPaidServiceLive ? ' nv-paid-live' : ''}`} aria-label="Κύρια πλοήγηση"
+    <nav ref={navbar} className={`navbar${isPaidServiceLive ? ' nv-paid-live' : ''}${inFreeFlow ? ' nv-in-free-flow' : ''}`} aria-label="Κύρια πλοήγηση"
       onKeyDown={event => {
         if (event.key !== 'Escape') return;
         if (toolsOpen) { setToolsOpen(false); toolsButton.current?.focus(); }
@@ -115,6 +116,7 @@ export default function Navbar() {
               <span className="nv-mobile-label">Εργαλεία</span>
               <ul id="nv-tools-links" className={`nv-tools-links${toolsOpen ? ' nv-tools-open' : ''}`}>
                 {supportingTools.map(tool => <li key={tool.id}>{navLink(tool.path, tool.label)}</li>)}
+                <li className="nv-tools-helper">{navLink('/pdf-guide', 'Λήψη ασφαλιστικού ιστορικού PDF')}</li>
               </ul>
             </li>
             <li>{navLink('/enimerosi', 'Ενημέρωση')}</li>
@@ -122,9 +124,7 @@ export default function Navbar() {
           </ul>
         </div>
 
-        {active(toolPaths['free-estimation']) ? (
-          <span className="nv-cta nv-cta-current" aria-current="page">Κάντε δωρεάν εκτίμηση</span>
-        ) : navLink(toolPaths['free-estimation'], 'Κάντε δωρεάν εκτίμηση', 'nv-cta')}
+        {!inFreeFlow && navLink(toolPaths['free-estimation'], 'Κάντε δωρεάν εκτίμηση', 'nv-cta')}
         </div>
       </div>
       {isPaidServiceLive && clientActions('nv-client-mobile')}

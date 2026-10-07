@@ -16,7 +16,7 @@ const guideSections = [
 const requiredDetails = [
   ['Βασικά στοιχεία', 'Στοιχεία που συνήθως γνωρίζετε ήδη, όπως ημερομηνία γέννησης, πρώτη ασφάλιση, ημερομηνία για την οποία γίνεται η εκτίμηση, είδος σύνταξης και, όπου χρειάζεται, πλήρης ή μειωμένη σύνταξη και έτη νόμιμης διαμονής.'],
   ['Έως δύο ασφαλιστικές περίοδοι', 'Για κάθε ασφαλιστική περίοδο θα χρειαστούν ο ασφαλιστικός φορέας ή η κατηγορία, το χρονικό διάστημα και ο ασφαλιστικός χρόνος.'],
-  ['Στοιχεία για την ανταποδοτική σύνταξη', 'Χρειάζεται ο μέσος μηνιαίος συντάξιμος μισθός σας. Αν δεν τον γνωρίζετε, μπορείτε να τον υπολογίσετε δωρεάν από τα ετήσια στοιχεία σας.', '#mesos-syntaksimos'],
+  ['Στοιχεία για την ανταποδοτική σύνταξη', 'Χρειάζεται ο μέσος μηνιαίος συντάξιμος μισθός σας. Αν δεν τον γνωρίζετε, μπορείτε να τον υπολογίσετε δωρεάν από τα ετήσια στοιχεία σας.'],
 ];
 
 const exclusions = [
@@ -146,7 +146,7 @@ const FreeGuidePage = () => {
             </div>
             <div className="fg-hero-actions">
               <Link to="/free-estimation" className="fg-button fg-button-primary">
-                Ξεκινήστε τη δωρεάν εκτίμηση <GuideIcon name="arrow" />
+                Κάντε δωρεάν εκτίμηση <GuideIcon name="arrow" />
               </Link>
               <a href="#mesos-syntaksimos" className="fg-button fg-button-secondary">
                 Δείτε τι χρειάζεται για τον μέσο συντάξιμο μισθό
@@ -197,17 +197,12 @@ const FreeGuidePage = () => {
             <h2 id="fg-details-title">Τι θα χρειαστείτε</h2>
             <p className="fg-section-intro">Τα στοιχεία που θα συμπληρώσετε χωρίζονται σε τρεις βασικές κατηγορίες.</p>
             <ol className="fg-details-grid">
-              {requiredDetails.map(([title, description, href], index) => (
+              {requiredDetails.map(([title, description], index) => (
                 <li key={title}>
                   <span className="fg-detail-number" aria-hidden="true">{index + 1}</span>
                   <div>
                     <h3>{title}</h3>
                     <p>{description}</p>
-                    {href && (
-                      <a href={href} className="fg-text-link fg-details-link">
-                        Δείτε τι χρειάζεται για τον μέσο συντάξιμο μισθό <GuideIcon name="arrow" />
-                      </a>
-                    )}
                   </div>
                 </li>
               ))}
@@ -225,7 +220,7 @@ const FreeGuidePage = () => {
             <div className="fg-salary-options">
               <div>
                 <h3>Γνωρίζετε ήδη το ποσό;</h3>
-                <p>Αν τον γνωρίζετε ήδη, μπορείτε να τον εισαγάγετε απευθείας στη <Link to="/free-estimation">δωρεάν εκτίμηση</Link>.</p>
+                <p>Αν τον γνωρίζετε ήδη, μπορείτε να τον εισαγάγετε απευθείας στην εφαρμογή. <Link to="/free-estimation">Κάντε δωρεάν εκτίμηση</Link>.</p>
               </div>
               <div>
                 <h3>Δεν το γνωρίζετε;</h3>
@@ -279,7 +274,7 @@ const FreeGuidePage = () => {
             </div>
             <div className="fg-salary-tool-action">
               <p>Το εργαλείο μπορεί να χρησιμοποιηθεί και αυτόνομα, χωρίς να συνεχίσετε στη δωρεάν εκτίμηση.</p>
-              <Link to="/average-salary" className="fg-button fg-button-primary">
+              <Link to="/average-salary" className="fg-button fg-button-tool">
                 Υπολογισμός μέσου συντάξιμου μισθού <GuideIcon name="arrow" />
               </Link>
             </div>
@@ -321,7 +316,7 @@ const FreeGuidePage = () => {
             </ul>
             <div className="fg-report-prompt">
               <p>Αν η περίπτωσή σας χρειάζεται κάποιο από τα παραπάνω, δείτε την Αναλυτική Έκθεση.</p>
-              <Link to="/report-guide" className="fg-text-link">Δείτε την Αναλυτική Έκθεση <GuideIcon name="arrow" /></Link>
+              <Link to="/report-guide" className="fg-button fg-button-report">Δείτε την Αναλυτική Έκθεση <GuideIcon name="arrow" /></Link>
             </div>
           </section>
 
@@ -384,7 +379,7 @@ const FreeGuidePage = () => {
             <h2 id="fg-cta-title">Έχετε τα στοιχεία σας; Ξεκινήστε.</h2>
             <p>Μια πρώτη εκτίμηση ποσού, δωρεάν και χωρίς εγγραφή.</p>
             <div className="fg-cta-actions">
-              <Link to="/free-estimation" className="fg-button fg-button-primary">Ξεκινήστε δωρεάν <GuideIcon name="arrow" /></Link>
+              <Link to="/free-estimation" className="fg-button fg-button-primary">Κάντε δωρεάν εκτίμηση <GuideIcon name="arrow" /></Link>
               <Link to="/report-guide" className="fg-button fg-button-outline">Έχω πιο σύνθετη περίπτωση</Link>
             </div>
           </section>

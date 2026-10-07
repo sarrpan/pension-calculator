@@ -131,19 +131,19 @@ for (const mode of ['prelaunch', 'live']) test(`new copy and paid navigation res
   }
 });
 
-test('Navbar removes Home item, names logo and preserves nonclickable current CTA', () => {
+test('Navbar names logo and omits the start CTA within the free flow', () => {
   const html = render(navbar, '/free-estimation');
   assert.match(html, /aria-label="Sintaximou — Αρχική"/);
   assert.doesNotMatch(html, />Αρχική<\/a>/);
-  assert.match(html, /<span class="nv-cta nv-cta-current" aria-current="page">Κάντε δωρεάν εκτίμηση<\/span>/);
+  assert.doesNotMatch(html, /nv-cta|Κάντε δωρεάν εκτίμηση/);
   assert.equal(links(html).includes('/free-estimation'), false);
   assert.equal(links(render(navbar, '/enimerosi')).includes('/free-estimation'), true);
-  assert.equal(links(render(navbar, '/calculator')).includes('/free-estimation'), true);
+  assert.equal(links(render(navbar, '/calculator')).includes('/free-estimation'), false);
 });
 
 test('FAQ answers remain in accessible disclosures without rewriting their content', () => {
   const html = render(page, '/enimerosi/sychnes-erotiseis');
-  assert.equal((html.match(/<details>/g) || []).length, 12);
+  assert.equal((html.match(/<details id="faq-[^"]+">/g) || []).length, 14);
   assert.match(html, /στον browser της συσκευής/);
   assert.match(html, /αποστέλλονται στην υπηρεσία υπολογισμού/);
 });
