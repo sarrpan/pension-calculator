@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import './CTA.css';
 import { isPaidServiceLive } from '../../../config/paidService';
+import { toolPaths } from '../../../config/toolsNavigation';
 
 const CTA = () => {
   return (
@@ -13,17 +14,21 @@ const CTA = () => {
           <p>
             Αν γνωρίζετε ήδη τα βασικά στοιχεία σας, ξεκινήστε με τη δωρεάν εκτίμηση. Αν θέλετε
             πλήρη επεξεργασία με βάση το ασφαλιστικό ιστορικό σας,{' '}
-            {isPaidServiceLive ? 'προχωρήστε στο Αναλυτικό Report.' : 'ενημερωθείτε για το Αναλυτικό Report που ετοιμάζουμε.'}
+            {isPaidServiceLive ? 'προχωρήστε στην Αναλυτική Έκθεση.' : 'ενημερωθείτε για την Αναλυτική Έκθεση που ετοιμάζουμε.'}
           </p>
 
           <div className="cta-buttons">
-            <Link to="/free-guide" className="cta-btn secondary">
-              Δείτε τη δωρεάν εκτίμηση
+            <Link to={toolPaths['free-estimation']} className="cta-btn primary">
+              Κάντε δωρεάν εκτίμηση
             </Link>
-            <Link to="/report-guide" className="cta-btn primary">
-              Δείτε το Αναλυτικό Report
+            <Link to="/report-guide" className="cta-btn secondary">
+              Γνωρίστε την Αναλυτική Έκθεση
             </Link>
           </div>
+          {!isPaidServiceLive && <div className="cta-availability">
+            <span className="home-coming-soon">Σύντομα διαθέσιμο</span>
+            <Link to="/contact">Επικοινωνία ενδιαφέροντος</Link>
+          </div>}
         </div>
       </div>
     </section>

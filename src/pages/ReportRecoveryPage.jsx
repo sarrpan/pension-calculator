@@ -67,7 +67,7 @@ const KATASTASEIS = {
   },
   delivered: {
     stadio: 3,
-    perigrafi: 'Η εκτίμηση σύνταξης ολοκληρώθηκε και το Αναλυτικό Report είναι έτοιμο.',
+    perigrafi: 'Η εκτίμηση σύνταξης ολοκληρώθηκε και η Αναλυτική Έκθεση είναι έτοιμη.',
   },
   withdrawn: {
     perigrafi: 'Η επεξεργασία της αίτησης σταμάτησε λόγω υπαναχώρησης.',
@@ -447,7 +447,7 @@ const ReportRecoveryPage = () => {
                 <label>
                   <input type="checkbox" required checked={withdrawalConfirmed} disabled={withdrawalBusy}
                     onChange={(e) => setWithdrawalConfirmed(e.target.checked)} />{' '}
-                  Δηλώνω ότι επιθυμώ να υπαναχωρήσω από τη σύμβαση για το Αναλυτικό Report.
+                  Δηλώνω ότι επιθυμώ να υπαναχωρήσω από τη σύμβαση για την Αναλυτική Έκθεση.
                 </label>
                 <button type="submit" className="pay-btn" disabled={!withdrawalConfirmed || withdrawalFullName.trim().length < 2 || withdrawalBusy}>
                   {withdrawalBusy ? 'Υποβολή…' : 'Επιβεβαίωση υπαναχώρησης'}
@@ -484,7 +484,7 @@ const ReportRecoveryPage = () => {
             {zitisiPliromis && !deixePliromi && (
               <div className="pay-block">
                 <p className="pay-intro">
-                  Το Αναλυτικό Report κοστίζει <strong>{TIMI}</strong>, εφάπαξ.
+                  Η Αναλυτική Έκθεση κοστίζει <strong>{TIMI}</strong>, εφάπαξ.
                   Ο φάκελός σας έχει ήδη ελεγχθεί. Η έκθεση παραδίδεται το αργότερο
                   εντός 10 εργάσιμων ημερών από την πληρωμή, με email και από αυτή τη σελίδα.
                 </p>
@@ -504,7 +504,7 @@ const ReportRecoveryPage = () => {
 
             {zitisiPliromis && deixePliromi && stripeClient && (
               <div className="pay-block">
-                <p className="pay-intro">Αναλυτικό Report — {TIMI} εφάπαξ. Ο φάκελος έχει ελεγχθεί. Παράδοση έως 10 εργάσιμες ημέρες από την πληρωμή.</p>
+                <p className="pay-intro">Αναλυτική Έκθεση — {TIMI} εφάπαξ. Ο φάκελος έχει ελεγχθεί. Παράδοση έως 10 εργάσιμες ημέρες από την πληρωμή.</p>
                 <Elements stripe={stripeClient} options={{ locale: 'el' }}>
                   <StripePaymentForm
                     onFileSubmit={meta_tin_pliromi}

@@ -4,12 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "test:home": "node --test src/pages/homeNavigation.test.cjs",
+    "test:tools": "node --test src/pages/tools.test.cjs",
+    "test:information": "node --test src/pages/information/information.test.cjs",
     "test:average-salary": "node --test src/services/averageSalary.test.js",
     "test:free-insurance": "node --test src/pages/pension-form/utils/freeInsuranceValidation.test.js",
     "test:free-handoff": "node --test src/pages/pension-form/routerHandoff.test.cjs",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:replacement-rate": "node --test src/services/replacementRate.test.js"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.6.0",

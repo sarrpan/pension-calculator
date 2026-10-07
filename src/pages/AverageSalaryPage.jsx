@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import {
   AVERAGE_SALARY_FAILURE_MESSAGE, CONTRIBUTION_FUND_OPTIONS,
   calculateAveragePensionableEarnings, getInsuranceDaysError, parseAmount,
-  prepareAverageSalaryInput,
+  prepareAverageSalaryInput, AVERAGE_SALARY_YEARS, DEFAULT_PENSION_YEAR,
+  DRAFT_STORAGE_KEY, createDefaultRows, loadAverageSalaryDraft, saveAverageSalaryDraft, getVisibleSalaryRows,
 } from '../services/averageSalary';
 import './AverageSalaryPage.css';
 
@@ -25,42 +26,11 @@ const inputTypes = [
   },
 ];
 
-const DRAFT_STORAGE_KEY = 'geodora_average_salary_draft_v1';
-
-const createDefaultRows = (currentYear) => Array.from(
-  { length: currentYear - 2002 + 1 },
-  (_, index) => ({ year: 2002 + index, amount: '0', days: '300' }),
-);
-
-const loadDraft = (currentYear) => {
-  const defaults = { rows: createDefaultRows(currentYear), inputType: inputTypes[0].value, fund: '' };
-  if (typeof window === 'undefined') return defaults;
-
-  try {
-    const draft = JSON.parse(window.localStorage.getItem(DRAFT_STORAGE_KEY));
-    if (!draft || !inputTypes.some(({ value }) => value === draft.inputType)
-      || (draft.fund !== '' && !CONTRIBUTION_FUND_OPTIONS.some(({ value }) => value === draft.fund))
-      || !Array.isArray(draft.rows)
-      || !draft.rows.every((row) => row && Number.isInteger(row.year)
-        && row.year >= 2002 && row.year <= currentYear
-        && typeof row.amount === 'string' && typeof row.days === 'string')) {
-      return defaults;
-    }
-
-    const savedRows = new Map(draft.rows.map(({ year, amount, days }) => [year, { year, amount, days }]));
-    return {
-      rows: defaults.rows.map((row) => savedRows.get(row.year) || row),
-      inputType: draft.inputType,
-      fund: draft.fund,
-    };
-  } catch {
-    return defaults;
-  }
-};
-
 const AverageSalaryPage = () => {
-  const currentYear = new Date().getFullYear();
-  const [initialDraft] = useState(() => loadDraft(currentYear));
+  const [initialDraft] = useState(() => {
+    try { return loadAverageSalaryDraft(window.localStorage); } catch { return loadAverageSalaryDraft(); }
+  });
+  const [pensionYear, setPensionYear] = useState(initialDraft.pensionYear);
   const [inputType, setInputType] = useState(initialDraft.inputType);
   const [fund, setFund] = useState(initialDraft.fund);
   const [fundError, setFundError] = useState('');
@@ -71,7 +41,8 @@ const AverageSalaryPage = () => {
   const [result, setResult] = useState(null);
   const [submissionError, setSubmissionError] = useState(false);
   const { amountLabel } = inputTypes.find(({ value }) => value === inputType);
-  const hasPositiveAmount = rows.some(({ amount }) => parseAmount(amount) > 0);
+  const visibleRows = getVisibleSalaryRows(rows, pensionYear);
+  const hasPositiveAmount = visibleRows.some(({ amount }) => parseAmount(amount) > 0);
   const hasNumericResult = result?.status === 'success'
     && Number.isFinite(result.monthlyAmount) && result.monthlyAmount >= 0;
 
@@ -87,11 +58,11 @@ const AverageSalaryPage = () => {
     // Keep a cleared draft absent until the user edits the form again.
     if (!draftChangedRef.current || typeof window === 'undefined') return;
     try {
-      window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ rows, inputType, fund }));
+      saveAverageSalaryDraft(window.localStorage, { rows, inputType, fund, pensionYear });
     } catch {
       // The form remains usable when browser storage is unavailable.
     }
-  }, [rows, inputType, fund]);
+  }, [rows, inputType, fund, pensionYear]);
 
   const clearResult = () => {
     requestRef.current?.abort();
@@ -110,7 +81,8 @@ const AverageSalaryPage = () => {
     }
     setInputType(inputTypes[0].value);
     setFund('');
-    setRows(createDefaultRows(currentYear));
+    setRows(createDefaultRows());
+    setPensionYear(DEFAULT_PENSION_YEAR);
     setFundError('');
     clearResult();
   };
@@ -127,7 +99,7 @@ const AverageSalaryPage = () => {
     event.preventDefault();
     if (!hasPositiveAmount || requestRef.current) return;
 
-    const form = { inputType, fund, rows };
+    const form = { inputType, fund, rows, pensionYear };
     const preparation = prepareAverageSalaryInput(form);
     setFundError(preparation.fundError || '');
     if (!preparation.ok) {
@@ -178,6 +150,23 @@ const AverageSalaryPage = () => {
         </section>
 
         <form className="as-card as-form" onSubmit={handleSubmit} noValidate>
+          <fieldset className="as-input-types as-pension-year" aria-describedby="as-year-help">
+            <legend>Ποιο είναι το έτος έναρξης της σύνταξης που θέλετε να εξετάσετε;</legend>
+            <p className="as-help" id="as-year-help">Επιλέξτε το έτος στο οποίο αντιστοιχεί η ημερομηνία έναρξης της σύνταξης που χρησιμοποιείτε για την εκτίμηση.</p>
+            <div className="as-options as-year-options">
+              {AVERAGE_SALARY_YEARS.map(year => (
+                <label key={year} className={`as-option${pensionYear === year ? ' as-option-selected' : ''}`}>
+                  <input type="radio" name="pension-year" value={year} checked={pensionYear === year}
+                    onChange={() => {
+                      draftChangedRef.current = true;
+                      setPensionYear(year);
+                      clearResult();
+                    }} />
+                  <span>{year}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <fieldset className="as-input-types">
             <legend>Ποια στοιχεία έχετε;</legend>
             <div className="as-options">
@@ -221,7 +210,7 @@ const AverageSalaryPage = () => {
 
           <div className="as-years-heading">
             <h2>Τα ετήσια στοιχεία σας</h2>
-            <span className="as-year-range">2002–{currentYear}</span>
+            <span className="as-year-range">2002–{pensionYear}</span>
           </div>
           <div className="as-draft-tools">
             <p className="as-help">Τα ποσά και οι ημέρες που συμπληρώνετε αποθηκεύονται μόνο στον browser αυτής της συσκευής, ώστε να μη χρειάζεται να τα εισάγετε ξανά.</p>
@@ -235,7 +224,7 @@ const AverageSalaryPage = () => {
           </p>
 
           <table className="as-table" role="table" aria-describedby="as-input-help">
-            <caption className="as-sr-only">Ποσά και ημέρες ασφάλισης ανά έτος, από το 2002 έως το {currentYear}</caption>
+            <caption className="as-sr-only">Ποσά και ημέρες ασφάλισης ανά έτος, από το 2002 έως το {pensionYear}</caption>
             <thead role="rowgroup">
               <tr role="row">
                 <th scope="col" role="columnheader">Έτος</th>
@@ -244,7 +233,7 @@ const AverageSalaryPage = () => {
               </tr>
             </thead>
             <tbody role="rowgroup">
-              {rows.map(({ year, amount, days }) => {
+              {visibleRows.map(({ year, amount, days }) => {
                 const amountError = parseAmount(amount) === null;
                 const daysError = getInsuranceDaysError(amount, days);
                 return (
@@ -317,6 +306,7 @@ const AverageSalaryPage = () => {
             </h2>
             {hasNumericResult ? (
               <>
+                <p className="as-help">Έτος συνταξιοδότησης: {pensionYear}</p>
                 <p className="as-result-amount">
                   {new Intl.NumberFormat('el-GR', { style: 'currency', currency: 'EUR' }).format(result.monthlyAmount)}
                 </p>

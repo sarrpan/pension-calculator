@@ -1,31 +1,17 @@
 .cta-section {
   /* Ήταν 100px. Συμπύκνωση. */
   padding: 64px 0;
-  /* Απαλό φόντο, ώστε το navy κουτί να μην κάθεται σε λευκό κενό. */
-  background-color: #f1f5f9;
+  background-color: #fff;
 }
 
 .cta-box {
-  background: var(--primary);
-  border-radius: 24px;
-  /* Ήταν 80px 40px. */
-  padding: 56px 40px;
+  background: #eaf0f1;
+  border-radius: 16px;
+  padding: 48px 40px;
   text-align: center;
-  color: white;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+  color: #243f48;
   position: relative;
   overflow: hidden;
-}
-
-.cta-box::before {
-  content: "";
-  position: absolute;
-  top: -50px;
-  right: -50px;
-  width: 200px;
-  height: 200px;
-  background: rgba(234, 88, 12, 0.1);
-  border-radius: 50%;
 }
 
 .cta-box h2 {
@@ -37,7 +23,7 @@
 
 .cta-box p {
   font-size: 1.1rem;
-  color: #cbd5e1;
+  color: #566971;
   max-width: 640px;
   margin: 0 auto 32px;
   line-height: 1.7;
@@ -60,7 +46,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: none;
+  border: 1px solid transparent;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -74,14 +60,19 @@
 }
 
 .cta-btn.secondary {
-  background-color: white;
-  color: var(--primary);
+  background-color: transparent;
+  color: #146b79;
+  border-color: #146b79;
 }
 
 .cta-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
+
+.cta-availability { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+.cta-availability a { color: #146b79; font-size: .94rem; line-height: 1.6; text-underline-offset: 3px; }
+.cta-section a:focus-visible { outline: 3px solid #328d9c; outline-offset: 4px; }
 
 @media (max-width: 768px) {
   .cta-section {
@@ -93,7 +84,7 @@
   }
 
   .cta-box {
-    padding: 40px 20px;
+    padding: 32px 20px;
   }
 
   .cta-box p {

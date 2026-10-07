@@ -7,78 +7,49 @@
 ================================================================== */
 
 .ft-footer {
-  background-color: var(--primary, #0F172A);
-  color: #cbd5e1;
+  background-color: #F5F7F9;
+  color: #475569;
   margin-top: 80px;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid #dce5e7;
 }
 
 /* ---------- Πλέγμα ---------- */
 
 .ft-grid {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 48px;
-  padding: 56px 0 40px 0;
+  padding-top: 48px;
+  padding-bottom: 40px;
   align-items: start;
 }
 
 /* ---------- Στήλη ταυτότητας ---------- */
 
-.ft-logo {
-  display: block;
-  height: 40px;
-  width: auto;
-  margin-bottom: 20px;
-}
-
-/* Ουδέτερο πλαίσιο στη θέση του λογοτύπου, όσο δεν υπάρχει αρχείο. */
-.ft-logo-thesi {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 40px;
-  padding: 0 18px;
-  margin-bottom: 20px;
-  border: 1px dashed #334155;
-  border-radius: 4px;
-  color: #475569;
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-}
+.ft-brand { grid-column: 1 / -1; }
+.ft-support-column { display: grid; gap: 28px; }
 
 .ft-brand-title {
-  color: var(--accent, #ea580c);
+  color: #243f48;
   margin: 0 0 12px 0;
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   font-weight: 700;
   text-transform: none;
 }
 
 .ft-brand-text {
   margin: 0;
-  max-width: 34ch;
+  max-width: 68ch;
   font-size: 0.95rem;
   line-height: 1.7;
-  color: #94a3b8;
+  color: #566971;
   text-align: left; /* ποτέ justified σε ελληνικό κείμενο */
-}
-
-.ft-etaireia {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 24px;
-  font-style: normal;
-  font-size: 0.85rem;
-  line-height: 1.6;
-  color: #64748b;
 }
 
 /* ---------- Στήλες συνδέσμων ---------- */
 
 .ft-title {
-  color: var(--accent, #ea580c);
+  color: #243f48;
   margin: 0 0 20px 0;
   font-size: 1.05rem;
   font-weight: 700;
@@ -100,7 +71,7 @@
 }
 
 .ft-links a {
-  color: #cbd5e1;
+  color: #475569;
   text-decoration: none;
   font-size: 0.95rem;
   line-height: 1.5;
@@ -109,13 +80,13 @@
 
 .ft-links a:hover,
 .ft-links a:focus-visible {
-  color: var(--accent, #ea580c);
+  color: #146b79;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .ft-links a:focus-visible {
-  outline: 2px solid var(--accent, #ea580c);
+  outline: 2px solid #146b79;
   outline-offset: 3px;
   border-radius: 2px;
 }
@@ -123,17 +94,17 @@
 /* ---------- Κάτω μπάρα ---------- */
 
 .ft-bottom {
-  background-color: #020617;
+  background-color: #F5F7F9;
   padding: 20px 0;
   text-align: center;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid #dce5e7;
 }
 
 .ft-disclaimer {
   margin: 0 0 6px 0;
   font-size: 0.85rem;
   line-height: 1.6;
-  color: #94a3b8;
+  color: #566971;
 }
 
 .ft-copyright {
@@ -151,7 +122,8 @@
   .ft-grid {
     grid-template-columns: 1fr 1fr;
     gap: 40px 32px;
-    padding: 48px 0 32px 0;
+    padding-top: 40px;
+    padding-bottom: 32px;
   }
 
   .ft-brand {
@@ -172,7 +144,8 @@
   .ft-grid {
     grid-template-columns: 1fr;
     gap: 32px;
-    padding: 40px 0 28px 0;
+    padding-top: 36px;
+    padding-bottom: 28px;
   }
 
   .ft-title {
@@ -183,3 +156,5 @@
     margin-bottom: 14px; /* μεγαλύτερη επιφάνεια αφής */
   }
 }
+
+.ft-brand-logo { display: block; width: 200px; max-width: 100%; height: auto; margin-bottom: 16px; }

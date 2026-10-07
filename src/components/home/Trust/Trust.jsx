@@ -1,42 +1,27 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './Trust.css';
 
-const Trust = () => {
+export default function Trust() {
   return (
-    <section className="trust-section">
+    <section className="trust-section" aria-labelledby="home-trust-title">
       <div className="container">
-        <div className="trust-grid-large">
-
-          <div className="trust-card-big">
-            <div className="trust-content">
-              <div className="trust-badge-label">ΙΔΙΩΤΙΚΟΤΗΤΑ</div>
-              <h3>Δεν ζητάμε περισσότερα από όσα χρειάζονται</h3>
-              <ul className="trust-bullets neutral">
-                <li>Δεν απαιτείται εγγραφή για τη δωρεάν εκτίμηση</li>
-                <li>Δεν ζητάμε ποτέ κωδικούς Taxisnet</li>
-                <li>Για τη δωρεάν εκτίμηση δεν απαιτούνται ΑΜΚΑ ή ΑΦΜ</li>
-                <li>Η έκθεση είναι διαθέσιμη online για 2 μήνες· τα αρχεία και η έκθεση διατηρούνται έως 1 έτος, με δυνατότητα νωρίτερης διαγραφής κατόπιν αιτήματος</li>
-              </ul>
-            </div>
+        <h2 id="home-trust-title">Ιδιωτικότητα και ασφάλεια</h2>
+        <div className="home-trust-columns">
+          <div>
+            <h3>Προσωπικά δεδομένα</h3>
+            <p>Ζητάμε μόνο τα στοιχεία που χρειάζονται για την υπηρεσία που χρησιμοποιείτε.</p>
           </div>
-
-          <div className="trust-card-big highlight">
-            <div className="trust-content">
-              <div className="trust-badge-label">ΚΑΘΟΔΗΓΗΣΗ</div>
-              <h3>Δεν χρειάζεται να βγάλετε άκρη μόνοι σας</h3>
-              <ul className="trust-bullets highlight-bullets">
-                <li>Δεν διαβάζετε εσείς γραμμή γραμμή το ιστορικό</li>
-                <li>Σας λέμε αν λείπουν στοιχεία και τι σημαίνει αυτό</li>
-                <li>Λαμβάνετε καθαρή εκτίμηση, όχι πίνακες με κωδικούς</li>
-                <li>Ρωτάτε ό,τι δεν καταλαβαίνετε</li>
-              </ul>
-            </div>
+          <div>
+            <h3>Χωρίς κωδικούς Taxisnet</h3>
+            <p>Δεν ζητάμε τους προσωπικούς σας κωδικούς Taxisnet.</p>
           </div>
-
+          <div>
+            <h3>Αποθήκευση και διαγραφή</h3>
+            <p>Στην <Link to="/privacy">Πολιτική Απορρήτου</Link> εξηγούμε ποια στοιχεία αποθηκεύονται και τι ισχύει για τη διαγραφή τους.</p>
+          </div>
         </div>
       </div>
     </section>
   );
-};
-
-export default Trust;
+}

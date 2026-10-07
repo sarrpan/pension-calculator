@@ -176,10 +176,10 @@ const ReportGuidePage = () => {
   return (
     <main className="rg-page">
       <div className="rg-container">
-        <aside className="rg-sidebar" aria-label="Οδηγός Αναλυτικού Report">
+        <aside className="rg-sidebar" aria-label="Οδηγός Αναλυτικής Έκθεσης">
           <div className="rg-sidebar-heading">
             <div className="rg-eyebrow">ΟΔΗΓΟΣ ΥΠΗΡΕΣΙΑΣ</div>
-            <p>Αναλυτικό Report</p>
+            <p>Αναλυτική Έκθεση</p>
           </div>
           <nav aria-label="Σε αυτή τη σελίδα">{navigationLinks()}</nav>
           <div className="rg-quick-access">
@@ -194,7 +194,7 @@ const ReportGuidePage = () => {
         <div className="rg-content">
           {!isPaidServiceLive && (
             <PaidServiceNotice>
-              Το Αναλυτικό Report δεν είναι ακόμη διαθέσιμο για online παραγγελία.
+              Η Αναλυτική Έκθεση δεν είναι ακόμη διαθέσιμη για online παραγγελία.
               Αν θέλετε να μας περιγράψετε την περίπτωσή σας ή να ενημερωθείτε για τη
               διαθεσιμότητα της υπηρεσίας, μπορείτε να επικοινωνήσετε μαζί μας.
             </PaidServiceNotice>
@@ -206,7 +206,7 @@ const ReportGuidePage = () => {
 
         {/* ---------------- HERO ---------------- */}
         <section className="rg-hero" id="episkopisi" tabIndex={-1}>
-          <div className="rg-eyebrow">ΑΝΑΛΥΤΙΚΟ REPORT</div>
+          <div className="rg-eyebrow">ΑΝΑΛΥΤΙΚΗ ΕΚΘΕΣΗ</div>
 
           <h1>Όταν το ασφαλιστικό ιστορικό δεν δείχνει όλη την εικόνα</h1>
 
@@ -295,7 +295,7 @@ const ReportGuidePage = () => {
           </div>
 
           <div className="rg-note">
-            Το Αναλυτικό Report αποτελεί εκτίμηση βάσει των στοιχείων και των παραδοχών που
+            Η Αναλυτική Έκθεση αποτελεί εκτίμηση βάσει των στοιχείων και των παραδοχών που
             χρησιμοποιήθηκαν και δεν υποκαθιστά επίσημη απόφαση του e-ΕΦΚΑ.
           </div>
 
@@ -420,7 +420,7 @@ const ReportGuidePage = () => {
         {/* ---------------- CTA ---------------- */}
         <section className="rg-cta">
           <div className="rg-eyebrow rg-eyebrow-light">ΕΠΟΜΕΝΟ ΒΗΜΑ</div>
-          <h2>{isPaidServiceLive ? 'Ξεκινήστε' : 'Ενδιαφέρεστε για το Αναλυτικό Report;'}</h2>
+          <h2>{isPaidServiceLive ? 'Ξεκινήστε' : 'Ενδιαφέρεστε για την Αναλυτική Έκθεση;'}</h2>
           <p>
             {isPaidServiceLive
               ? 'Συγκεντρώστε ό,τι έχετε και στείλτε το. Θα ελέγξουμε αν υπάρχουν τα απαραίτητα στοιχεία και θα σας ενημερώσουμε πριν από οποιαδήποτε πληρωμή.'

@@ -1,195 +1,90 @@
 import React from 'react';
-import { isPaidServiceLive } from '../../../config/paidService';
 import './Features.css';
 
-/* ══════════════════════════════════════════════════════════════
-   ΕΝΔΕΙΚΤΙΚΑ ΠΟΣΑ ΤΩΝ ΓΡΑΦΙΚΩΝ
-
-   Δεν προέρχονται από πραγματικό υπολογισμό. Είναι παράδειγμα
-   για να καταλάβει ο επισκέπτης τι θα δει. Αλλάζουν από εδώ.
-   ══════════════════════════════════════════════════════════════ */
-const SENARIA = [
-  { ilikia: '62', typos: 'Μειωμένη', poso: '1.077,18 €' },
-  { ilikia: '65', typos: 'Μειωμένη', poso: '1.152,79 €' },
-  { ilikia: '67', typos: 'Πλήρης', poso: '1.203,20 €' },
+const analysisCards = [
+  {
+    title: 'Χρόνος και αποδοχές',
+    description: 'Εξετάζουμε τα βασικά στοιχεία της ασφαλιστικής σας πορείας, που επηρεάζουν το εκτιμώμενο ποσό σύνταξης.',
+    points: ['Συνολικός χρόνος ασφάλισης', 'Συντάξιμες αποδοχές', 'Εισφορές και ασφαλιστικές περίοδοι'],
+    icon: 'calendar',
+  },
+  {
+    title: 'Σύνθετες περιπτώσεις',
+    description: 'Λαμβάνουμε υπόψη περιπτώσεις που χρειάζονται πιο αναλυτική εξέταση, ώστε η εκτίμηση να είναι όσο το δυνατόν πληρέστερη.',
+    points: ['Διαφορετικά ταμεία', 'Παράλληλη ή διαδοχική ασφάλιση', 'Ειδικές κατηγορίες (π.χ. ΒΑΕ)', 'Ειδικές παροχές όπου εφαρμόζονται'],
+    icon: 'document',
+  },
+  {
+    title: 'Σενάρια και χρόνος εξόδου',
+    description: 'Εξετάζουμε εναλλακτικές επιλογές, ώστε να δείτε πώς μπορεί να διαμορφωθεί η εκτίμηση σε διαφορετικά σενάρια.',
+    points: ['Πλήρης ή μειωμένη σύνταξη', 'Διαφορετικός χρόνος συνταξιοδότησης', 'Εναλλακτικά σενάρια', 'Μελλοντικές προβολές όταν αυτό είναι μέρος της υπηρεσίας'],
+    icon: 'sliders',
+  },
 ];
 
-const Features = () => {
+function AnalysisIcon({ name }) {
   return (
-    <section className="features-section">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {name === 'calendar' ? <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4m10-4v4M3 11h18m-14 4h3m4 0h3" /></>
+        : name === 'document' ? <><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8m-8 4h6" /></>
+          : <><path d="M4 6h4m4 0h8M4 12h10m4 0h2M4 18h2m4 0h10" /><circle cx="10" cy="6" r="2" /><circle cx="16" cy="12" r="2" /><circle cx="8" cy="18" r="2" /></>}
+    </svg>
+  );
+}
+
+export default function Features() {
+  return (
+    <section className="home-analysis" aria-labelledby="home-analysis-title">
       <div className="container">
-        <h2 className="section-title">Τι περιλαμβάνει το Αναλυτικό Report</h2>
-
-        {/* ROW 1: ΤΙ ΧΡΕΙΑΖΟΜΑΣΤΕ */}
-        <div className="feature-row">
-          <div className="feature-text">
-            <span className="step-label">ΤΙ ΧΡΕΙΑΖΟΜΑΣΤΕ ΑΠΟ ΕΣΑΣ</span>
-            <h3>Μόνο τα απαραίτητα στοιχεία</h3>
-            <p>Η διαδικασία ξεκινάει με τα δικά σας δεδομένα, χωρίς περιττές ερωτήσεις.</p>
-            <ul className="feature-bullets">
-              <li>Το ασφαλιστικό σας ιστορικό (PDF από τον e-ΕΦΚΑ)</li>
-              <li>Συμπλήρωση κενών, αν λείπουν παλιά έτη</li>
-              <li>Ηλικία και συνολικός χρόνος ασφάλισης</li>
-            </ul>
-          </div>
-          <div className="feature-visual">
-            {/* Απόσπασμα της πραγματικής φόρμας, όχι placeholder */}
-            <div className="ui-mockup mk-form">
-              <p className="mk-caption">Απόσπασμα της φόρμας</p>
-              <div className="mk-field">
-                <span className="mk-label">Έτος γέννησης</span>
-                <span className="mk-value">1964</span>
-              </div>
-              <div className="mk-field">
-                <span className="mk-label">Συνολικές ημέρες ασφάλισης</span>
-                <span className="mk-value">10.200</span>
-              </div>
-              <div className="mk-field">
-                <span className="mk-label">Ετήσιες μικτές αποδοχές 2024</span>
-                <span className="mk-value">25.200 €</span>
-              </div>
-              <div className="mk-field mk-field-empty">
-                <span className="mk-label">Ετήσιες μικτές αποδοχές 2025</span>
-                <span className="mk-cursor" />
-              </div>
-            </div>
-          </div>
+        <header className="home-analysis-heading">
+          <p className="home-analysis-eyebrow">ΑΝΑΛΥΤΙΚΗ ΠΡΟΣΕΓΓΙΣΗ</p>
+          <h2 id="home-analysis-title">Τι εξετάζουμε για τη δική σας περίπτωση</h2>
+          <p>Λαμβάνουμε υπόψη όλα τα διαθέσιμα στοιχεία και εξετάζουμε αναλυτικά την ασφαλιστική σας πορεία, ώστε να έχετε μια όσο το δυνατόν πιο πλήρη και ρεαλιστική εκτίμηση.</p>
+        </header>
+        <div className="home-analysis-cards">
+          {analysisCards.map(card => (
+            <article className="home-analysis-card" key={card.icon}>
+              <span className="home-analysis-icon"><AnalysisIcon name={card.icon} /></span>
+              <h3>{card.title}</h3>
+              <p>{card.description}</p>
+              <ul>{card.points.map(point => <li key={point}>{point}</li>)}</ul>
+            </article>
+          ))}
         </div>
-
-        {/* ROW 2: ΤΙ ΥΠΟΛΟΓΙΖΟΥΜΕ */}
-        <div className="feature-row">
-          <div className="feature-text">
-            <span className="step-label">ΤΙ ΥΠΟΛΟΓΙΖΟΥΜΕ</span>
-            <h3>Τα μεγέθη που διαμορφώνουν τη σύνταξη</h3>
-            <p>Αναλύουμε τα δεδομένα σας και δείχνουμε από τι αποτελείται το εκτιμώμενο ποσό.</p>
-            <ul className="feature-bullets">
-              <li>Εθνική και ανταποδοτική σύνταξη</li>
-              <li>Επικουρική σύνταξη, αν υπάρχει</li>
-              <li>Ασφαλιστικές κρατήσεις</li>
-              <li>Εκτιμώμενο καθαρό ποσό</li>
+        <div className="home-analysis-delivery">
+          <section className="home-analysis-example" aria-labelledby="home-example-title">
+            <h3 id="home-example-title">Τι θα δείτε στην Αναλυτική Έκθεση</h3>
+            <p>Θα λάβετε μια πλήρη και αναλυτική έκθεση με τα αποτελέσματα της εκτίμησης, σε εύκολη και κατανοητή μορφή.</p>
+            {/* Static presentation amounts, independent of all calculation rules and user data. */}
+            <table className="home-analysis-amounts" aria-describedby="home-example-note">
+              <caption>Ενδεικτικό παράδειγμα</caption>
+              <tbody>
+                <tr><th scope="row">Εθνική σύνταξη</th><td>446,87 €</td></tr>
+                <tr><th scope="row">Ανταποδοτική σύνταξη</th><td>573,13 €</td></tr>
+                <tr><th scope="row">Επικουρική σύνταξη</th><td>260,00 €</td></tr>
+                <tr><th scope="row">Κρατήσεις</th><td>−76,80 €</td></tr>
+              </tbody>
+              <tfoot><tr><th scope="row">Εκτιμώμενο καθαρό ποσό</th><td>1.203,20 €</td></tr></tfoot>
+            </table>
+            <p className="home-analysis-example-note" id="home-example-note">Ενδεικτικά ποσά για την παρουσίαση της μορφής της Έκθεσης. Δεν αποτελούν πραγματική εκτίμηση συγκεκριμένου προσώπου.</p>
+          </section>
+          <section className="home-analysis-extras" aria-labelledby="home-extras-title">
+            <h3 id="home-extras-title">Επιπλέον, στην Έκθεση θα βρείτε:</h3>
+            <ul>
+              <li>Αναλυτική παρουσίαση υπολογισμών</li>
+              <li>Επεξηγήσεις με απλή γλώσσα</li>
+              <li>Συμπεράσματα και πρακτικές επισημάνσεις</li>
+              <li>Εκτίμηση ποσού και, όπου έχει νόημα, εκτίμηση χρόνου συνταξιοδότησης</li>
             </ul>
-          </div>
-          <div className="feature-visual">
-            <div className="ui-mockup mk-stats">
-              <p className="mk-caption">Ενδεικτική ανάλυση ποσού</p>
-              <div className="stat-chip">
-                <span>Εθνική</span>
-                <span>446,87 €</span>
-              </div>
-              <div className="stat-chip">
-                <span>Ανταποδοτική</span>
-                <span>573,13 €</span>
-              </div>
-              <div className="stat-chip">
-                <span>Επικουρική</span>
-                <span>260,00 €</span>
-              </div>
-              <div className="stat-chip deduction">
-                <span>Κρατήσεις</span>
-                <span>− 76,80 €</span>
-              </div>
-              <div className="stat-total">
-                <span>Εκτιμώμενο καθαρό ποσό</span>
-                <span>1.203,20 €</span>
-              </div>
+          </section>
+          <aside className="home-analysis-important" aria-labelledby="home-important-title">
+            <div>
+              <h3 id="home-important-title">Σημαντικό</h3>
+              <p>Η εκτίμηση δεν αποτελεί επίσημη απόφαση του e-ΕΦΚΑ. Τα αποτελέσματα βασίζονται στα διαθέσιμα έγγραφα, στα στοιχεία που μας δηλώνετε και στις παραδοχές που αναφέρονται στην Έκθεση.</p>
             </div>
-          </div>
+          </aside>
         </div>
-
-        {/* ROW 3: ΣΕΝΑΡΙΑ ΕΞΟΔΟΥ */}
-        <div className="feature-row">
-          <div className="feature-text">
-            <span className="step-label">ΤΙ ΣΕΝΑΡΙΑ ΕΞΕΤΑΖΟΥΜΕ</span>
-            <h3>Πώς αλλάζει η εκτίμηση σε διαφορετικά σενάρια εξόδου</h3>
-            <p>
-              Η εκτίμηση μπορεί να συγκρίνει διαφορετικά σενάρια συνταξιοδότησης και τη διαφορά στο ποσό για κάθε ηλικία εξόδου.
-            </p>
-            <ul className="feature-bullets">
-              <li>Εκτίμηση πρώτου δυνατού σημείου εξόδου</li>
-              <li>Μειωμένη έναντι πλήρους σύνταξης</li>
-              <li>Τι κερδίζετε αν μείνετε περισσότερο</li>
-            </ul>
-          </div>
-          <div className="feature-visual">
-            {/* Αντικαθιστά το κρυπτικό «62 ↔ 67 ↔ +5 ΕΤΗ» */}
-            <div className="ui-mockup mk-scenarios">
-              <p className="mk-caption">Ενδεικτική σύγκριση σεναρίων</p>
-              {SENARIA.map(({ ilikia, typos, poso }) => (
-                <div className="mk-scenario" key={ilikia}>
-                  <span className="mk-age">{ilikia} ετών</span>
-                  <span className="mk-type">{typos}</span>
-                  <span className="mk-amount">{poso}</span>
-                </div>
-              ))}
-              <p className="mk-note">Ίδιος ασφαλισμένος, τρεις ηλικίες εξόδου.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ROW 4: Η ΑΞΙΑ ΤΗΣ ΥΠΗΡΕΣΙΑΣ */}
-        <div className="feature-row feature-row-last">
-          <div className="feature-text">
-            <span className="step-label">Η ΑΞΙΑ ΤΗΣ ΥΠΗΡΕΣΙΑΣ</span>
-
-            <h3>
-              {isPaidServiceLive
-                ? 'Ξεκάθαρη εκτίμηση, με 20 €'
-                : 'Ξεκάθαρη εκτίμηση, με εφάπαξ χρέωση'}
-            </h3>
-
-            {!isPaidServiceLive && <p>Χωρίς συνδρομή.</p>}
-
-            <div className="feature-projection">
-              <span className="feature-projection-label">ΜΕΛΛΟΝΤΙΚΗ ΠΡΟΒΟΛΗ</span>
-              <p className="feature-projection-text">
-                Όπου η περίπτωση το επιτρέπει, εξετάζουμε και μελλοντικά
-                σενάρια συνταξιοδότησης.
-              </p>
-            </div>
-
-            <p>
-              Η ανάγνωση του ασφαλιστικού ιστορικού θέλει εξειδίκευση.
-              Την αναλαμβάνουμε εμείς.
-            </p>
-
-            <ul className="feature-bullets">
-              <li>Γλιτώνετε χρόνο και ταλαιπωρία</li>
-              <li>Συγκρίνετε διαφορετικά σενάρια εξόδου</li>
-              <li>Έχετε οργανωμένη επεξεργασία των στοιχείων σας</li>
-              <li>Λαμβάνετε αρχείο PDF στο email σας</li>
-            </ul>
-          </div>
-
-          <div className="feature-visual">
-            <div className="ui-mockup mk-report">
-              <p className="mk-caption">Ενδεικτικό απόσπασμα της έκθεσης</p>
-              <p className="mk-report-title">Έκθεση εκτίμησης σύνταξης</p>
-
-              <div className="mk-report-row">
-                <span>Μελλοντικό σενάριο εξόδου</span>
-                <strong>Μάρτιος 2029</strong>
-              </div>
-
-              <div className="mk-report-row">
-                <span>Χρόνος ασφάλισης στο σενάριο</span>
-                <strong>36 έτη, 4 μήνες</strong>
-              </div>
-
-              <div className="mk-report-row">
-                <span>Εκτιμώμενο πληρωτέο ποσό πριν από φόρο</span>
-                <strong>1.285,00 €</strong>
-              </div>
-
-              <p className="mk-note">
-                Το πλήρες αρχείο περιλαμβάνει και τη σύγκριση διαφορετικών σεναρίων.
-              </p>
-            </div>
-          </div>
-        </div>
-
       </div>
     </section>
   );
-};
-
-export default Features;
+}

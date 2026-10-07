@@ -28,6 +28,10 @@
 .as-option:hover { background: #fafbfc; }
 .as-option-selected, .as-option-selected:hover { border-color: #b5410b; background: #fff8f2; }
 .as-option input { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 4px; accent-color: #b5410b; cursor: pointer; }
+.as-pension-year legend { margin-bottom: 8px; }
+.as-year-options { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 360px; margin-top: 16px; }
+.as-year-options .as-option { align-items: center; }
+.as-year-options input { margin: 0; }
 .as-years-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 12px; }
 .as-years-heading h2 { margin: 0; }
 .as-year-range { padding: 4px 12px; border-radius: 8px; background: #eaf0f7; color: var(--primary, #0f172a); font-size: 0.85rem; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -44,7 +48,7 @@
 
 .as-table { width: 100%; margin-top: 24px; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 0.9rem; }
 .as-table th, .as-table td { padding: 10px 16px; border-bottom: 1px solid var(--as-border); text-align: left; vertical-align: top; }
-.as-table thead th { position: sticky; top: 72px; z-index: 2; padding-top: 14px; padding-bottom: 14px; border-bottom-color: #354055; background: var(--primary, #0f172a); color: #fff; font-size: 0.8rem; font-weight: 600; line-height: 1.5; }
+.as-table thead th { position: sticky; top: var(--sticky-offset, 116px); z-index: 2; padding-top: 14px; padding-bottom: 14px; border-bottom-color: #354055; background: var(--primary, #0f172a); color: #fff; font-size: 0.8rem; font-weight: 600; line-height: 1.5; }
 .as-table thead th:first-child { width: 15%; border-radius: 10px 0 0 0; }
 .as-table thead th:nth-child(2) { width: 53%; }
 .as-table thead th:last-child { width: 32%; border-radius: 0 10px 0 0; }
@@ -84,7 +88,7 @@
   .as-table tbody th { font-size: 1rem; }
   .as-mobile-year { display: inline; }
   .as-mobile-label { display: block; margin-bottom: 6px; color: var(--as-muted); font-size: 0.82rem; font-weight: 600; line-height: 1.5; }
-  .as-table input { min-height: 48px; font-size: 16px; scroll-margin-top: 100px; }
+  .as-table input { min-height: 48px; font-size: 16px; scroll-margin-top: calc(var(--sticky-offset) + 16px); }
   .as-amount-input > span { top: 12px; }
   .as-submit { width: 100%; }
   .as-result { padding: 20px; }

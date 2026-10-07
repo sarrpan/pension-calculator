@@ -174,7 +174,7 @@ const FreeGuidePage = () => {
                   <li>Έχετε παράλληλη ασφάλιση.</li>
                   <li>Θέλετε να εξεταστούν μελλοντικά έτη.</li>
                 </ul>
-                <Link to="/report-guide" className="fg-text-link">Δείτε το Αναλυτικό Report <GuideIcon name="arrow" /></Link>
+                <Link to="/report-guide" className="fg-text-link">Δείτε την Αναλυτική Έκθεση <GuideIcon name="arrow" /></Link>
               </div>
             </div>
             <aside className="fg-notice" aria-labelledby="fg-entitlement-title">
@@ -320,8 +320,8 @@ const FreeGuidePage = () => {
               ))}
             </ul>
             <div className="fg-report-prompt">
-              <p>Αν η περίπτωσή σας χρειάζεται κάποιο από τα παραπάνω, δείτε το Αναλυτικό Report.</p>
-              <Link to="/report-guide" className="fg-text-link">Δείτε το Αναλυτικό Report <GuideIcon name="arrow" /></Link>
+              <p>Αν η περίπτωσή σας χρειάζεται κάποιο από τα παραπάνω, δείτε την Αναλυτική Έκθεση.</p>
+              <Link to="/report-guide" className="fg-text-link">Δείτε την Αναλυτική Έκθεση <GuideIcon name="arrow" /></Link>
             </div>
           </section>
 

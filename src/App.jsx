@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import './index.css';
 import Navbar from './components/layout/Navbar';
@@ -22,6 +22,11 @@ import AdminDashboard from './pages/AdminDashboard';
 
 import PensionFormPage from './pages/pension-form/PensionFormPage';
 
+const ReplacementRatePage = lazy(() => import('./pages/ReplacementRatePage'));
+const InformationPage = lazy(() => import('./pages/information/InformationPage'));
+const CollaborationPage = lazy(() => import('./pages/CollaborationPage'));
+const publicPageLoading = <p className="container" role="status" style={{ paddingTop: 32, paddingBottom: 32 }}>Φόρτωση σελίδας…</p>;
+
 function App() {
   return (
     <div className="App">
@@ -38,7 +43,10 @@ function App() {
           <Route path="/free-guide" element={<FreeGuidePage />} />
           <Route path="/free-estimation" element={<FreeEstimationPage />} />
           <Route path="/average-salary" element={<AverageSalaryPage />} />
+          <Route path="/replacement-rate" element={<Suspense fallback={publicPageLoading}><ReplacementRatePage /></Suspense>} />
           <Route path="/report-guide" element={<ReportGuidePage />} />
+          <Route path="/enimerosi/*" element={<Suspense fallback={publicPageLoading}><InformationPage /></Suspense>} />
+          <Route path="/synergasies" element={<Suspense fallback={publicPageLoading}><CollaborationPage /></Suspense>} />
 
           <Route path="/calculator" element={<PensionFormPage calculatorEdition="free" />} />
 

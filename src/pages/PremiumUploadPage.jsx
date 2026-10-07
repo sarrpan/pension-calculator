@@ -510,7 +510,7 @@ const PremiumUploadPage = () => {
         <section className="pu-card pu-order">
           <div className="pu-order-head">
             <div>
-              <h2 className="pu-order-title">Αναλυτικό Report</h2>
+              <h2 className="pu-order-title">Αναλυτική Έκθεση</h2>
               <p className="pu-order-sub">Πληρωμή αφού ελεγχθεί ο φάκελός σας</p>
             </div>
             <div className="pu-price">

@@ -10,7 +10,7 @@ export default function PaidServiceNotice({ title = 'Σύντομα διαθέσ
       <p>{children}</p>
       <div className="paid-service-notice-actions">
         <Link to={recovery ? '/report-guide' : '/contact'} className="paid-service-notice-primary">
-          {recovery ? 'Δείτε το Αναλυτικό Report' : 'Επικοινωνήστε μαζί μας'}
+          {recovery ? 'Δείτε την Αναλυτική Έκθεση' : 'Επικοινωνήστε μαζί μας'}
         </Link>
         {page && (
           <Link to={recovery ? '/contact' : '/free-guide'}>
@@ -25,8 +25,8 @@ export default function PaidServiceNotice({ title = 'Σύντομα διαθέσ
 
 export function UploadPrelaunchPage() {
   return (
-    <PaidServiceNotice page title="Αναλυτικό Report — σύντομα διαθέσιμο">
-      Η online αποστολή εγγράφων για το Αναλυτικό Report δεν είναι ακόμη ενεργή.
+    <PaidServiceNotice page title="Αναλυτική Έκθεση — σύντομα διαθέσιμη">
+      Η online αποστολή εγγράφων για την Αναλυτική Έκθεση δεν είναι ακόμη ενεργή.
       Αν θέλετε να μας περιγράψετε την περίπτωσή σας ή να ρωτήσετε για τη διαθεσιμότητα
       της υπηρεσίας, επικοινωνήστε μαζί μας.
     </PaidServiceNotice>
@@ -35,8 +35,8 @@ export function UploadPrelaunchPage() {
 
 export function RecoveryPrelaunchPage() {
   return (
-    <PaidServiceNotice page recovery title="Αναλυτικό Report — σύντομα διαθέσιμο">
-      Η online υπηρεσία Αναλυτικού Report δεν έχει ακόμη ξεκινήσει.
+    <PaidServiceNotice page recovery title="Αναλυτική Έκθεση — σύντομα διαθέσιμη">
+      Η online υπηρεσία Αναλυτικής Έκθεσης δεν έχει ακόμη ξεκινήσει.
       Μπορείτε να μάθετε πώς θα λειτουργεί ή να επικοινωνήσετε μαζί μας.
     </PaidServiceNotice>
   );

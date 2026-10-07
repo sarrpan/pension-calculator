@@ -81,7 +81,7 @@ const THEMATA = [
   },
   {
     Icon: IconReport,
-    titlos: 'Αναλυτικό Report',
+    titlos: 'Αναλυτική Έκθεση',
     keimeno: 'Τι ακριβώς περιλαμβάνει, πόσο κοστίζει και πώς παραδίδεται.',
   },
   {
@@ -265,7 +265,7 @@ const ContactPage = () => {
               <p className="ct-side-note">
                 {isPaidServiceLive
                   ? <>Για έγγραφα χρησιμοποιήστε τη σελίδα <Link to="/premium-upload">Αποστολή εγγράφων</Link>.</>
-                  : 'Η online αποστολή εγγράφων για το Αναλυτικό Report δεν είναι ακόμη ενεργή.'}
+                  : 'Η online αποστολή εγγράφων για την Αναλυτική Έκθεση δεν είναι ακόμη ενεργή.'}
                 {' '}Δείτε την <Link to="/privacy">Πολιτική Απορρήτου</Link>.
               </p>
             </div>

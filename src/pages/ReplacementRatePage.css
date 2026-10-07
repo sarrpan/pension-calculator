@@ -1,0 +1,15 @@
+.rr-page { --accent: #167487; }
+.rr-page .as-eyebrow { color: #167487; }
+.rr-page .rr-explanation { margin-top: 16px; font-size: .92rem; }
+.rr-modes { min-width: 0; border: 0; padding: 0; margin: 0 0 24px; }
+.rr-segments { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid #dce5e8; border-radius: 12px; background: #f8fafc; }
+.rr-segments label { display: flex; align-items: center; gap: 8px; flex: 1 1 220px; padding: 10px 12px; border-radius: 8px; font-size: .9rem; cursor: pointer; }
+.rr-segments .rr-selected { background: #e9f4f5; color: #125d6c; }
+.rr-segments input { accent-color: #167487; }
+.rr-duration { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.rr-field { display: grid; gap: 8px; min-width: 0; font-size: .94rem; font-weight: 600; }
+.rr-field input { width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid #94a3b8; border-radius: 8px; font: inherit; font-size: 16px; background: #fff; }
+.rr-page .as-submit-area p { margin-top: 12px; }
+.rr-page h1 { scroll-margin-top: calc(var(--sticky-offset) + 16px); }
+.rr-page h1:focus { outline: none; }
+@media (max-width: 400px) { .rr-duration { grid-template-columns: 1fr; gap: 12px; } }

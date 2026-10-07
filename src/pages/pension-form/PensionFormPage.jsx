@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./PensionFormPage.css";
+import ToolsBar from "../../components/layout/ToolsBar";
+import { toolPaths } from "../../config/toolsNavigation";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { freeEstimationCategories } from "../../config/freeEstimationCategories";
 
@@ -1033,17 +1035,17 @@ useEffect(() => {
   }
 
   return (
+    <>
+      {isFreeAppearance && <ToolsBar contextual>
+        <Link className="tools-back" to={toolPaths["free-estimation"]}
+          state={Object.keys(categoryReturnState).length ? categoryReturnState : null}>
+          <span className="tools-back-long">← Αλλαγή ασφαλιστικής κατηγορίας</span>
+          <span className="tools-back-short">← Αλλαγή κατηγορίας</span>
+        </Link>
+      </ToolsBar>}
     <div className={isFreeAppearance ? "pf-page" : undefined}
       style={isFreeAppearance ? undefined : { padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
       <div className={isFreeAppearance ? "pf-container" : undefined}>
-      {isFreeAppearance && (
-        <nav className="pf-category-nav" aria-label="Ασφαλιστική κατηγορία">
-        <Link className="pf-category-back" to="/free-estimation"
-          state={Object.keys(categoryReturnState).length ? categoryReturnState : null}>
-          ← Αλλαγή ασφαλιστικής κατηγορίας
-        </Link>
-        </nav>
-      )}
       <h1>Υπολογισμός σύνταξης</h1>
 
       {canShowDiagnostics && (
@@ -1548,6 +1550,7 @@ useEffect(() => {
       )}
       </div>
     </div>
+    </>
   );
 }
 

@@ -1,146 +1,133 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import './Navbar.css';
+import { supportingTools, toolPaths } from '../../config/toolsNavigation';
 import { isPaidServiceLive } from '../../config/paidService';
+import './Navbar.css';
 
-/* ============================================================
-   ΜΠΑΡΑ ΠΛΟΗΓΗΣΗΣ
-
-   Η δομή του μενού καθρεφτίζει τα δύο προϊόντα:
-   μία δωρεάν επιλογή και μία επί πληρωμή.
-
-   Αρχική · Δωρεάν Εκτίμηση · Αναλυτικό Report · Επικοινωνία
-   και δεξιά, χωρισμένα με γραμμή:
-   Αποστολή εγγράφων · Παρακολούθηση αίτησης + κουμπί Ξεκινήστε δωρεάν.
-   ============================================================ */
-
-/* Όλες οι διευθύνσεις μαζεμένες εδώ.
-   Αν αλλάξει κάποια στο App.jsx, αλλάζει μόνο σε αυτό το σημείο. */
-const DIADROMES = {
-  arxiki:         '/',
-  dorean:         '/free-guide',
-  report:         '/report-guide',
-  epikoinonia:    '/contact',
-  apostoli:       '/premium-upload',
-  parakolouthisi: '/report-recovery',
-  ypologismos:    '/free-estimation',
-};
-
-const Navbar = () => {
+export default function Navbar() {
   const location = useLocation();
-  const [anoiktoMenu, setAnoiktoMenu] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const menuButton = useRef(null);
+  const toolsButton = useRef(null);
+  const navbar = useRef(null);
+  const toolsGroup = useRef(null);
+  const active = path => location.pathname === path
+    || (path === '/enimerosi' && location.pathname.startsWith('/enimerosi/'));
 
-  // Μας λέει αν βρισκόμαστε ήδη σε αυτή τη σελίδα
-  const einaiEnergi = (diadromi) => location.pathname === diadromi;
+  const closeMenus = () => { setMenuOpen(false); setToolsOpen(false); };
+  useEffect(closeMenus, [location.pathname, location.search, location.key]);
 
-  // Κάθε φορά που αλλάζει σελίδα, το μενού του κινητού κλείνει μόνο του
   useEffect(() => {
-    setAnoiktoMenu(false);
-  }, [location.pathname]);
-
-  // Όσο το μενού του κινητού είναι ανοιχτό, η σελίδα από πίσω δεν κυλάει
-  useEffect(() => {
-    document.body.style.overflow = anoiktoMenu ? 'hidden' : '';
+    const onOutsideClick = event => {
+      if (!navbar.current?.contains(event.target)) closeMenus();
+      else if (!toolsGroup.current?.contains(event.target)) setToolsOpen(false);
+    };
+    // Clear mobile menu state when switching between mobile and desktop layouts.
+    const breakpoint = window.matchMedia('(max-width: 1199px)');
+    breakpoint.addEventListener('change', closeMenus);
+    document.addEventListener('pointerdown', onOutsideClick);
     return () => {
-      document.body.style.overflow = '';
+      breakpoint.removeEventListener('change', closeMenus);
+      document.removeEventListener('pointerdown', onOutsideClick);
     };
-  }, [anoiktoMenu]);
-
-  // Το πλήκτρο Escape κλείνει το μενού
-  useEffect(() => {
-    const otanPatithei = (e) => {
-      if (e.key === 'Escape') setAnoiktoMenu(false);
-    };
-    window.addEventListener('keydown', otanPatithei);
-    return () => window.removeEventListener('keydown', otanPatithei);
   }, []);
 
-  /* Μικρή βοηθητική, για να μη γράφουμε τις ίδιες γραμμές τέσσερις φορές */
-  const syndesmos = (diadromi, keimeno) => (
-    <li key={diadromi}>
-      <Link
-        to={diadromi}
-        className={`nv-link ${einaiEnergi(diadromi) ? 'nv-active' : ''}`}
-        aria-current={einaiEnergi(diadromi) ? 'page' : undefined}
-      >
-        {keimeno}
-      </Link>
-    </li>
+  // Existing sticky consumers need the total header height, including live actions.
+  useEffect(() => {
+    const root = document.documentElement;
+    const previousHeight = root.style.getPropertyValue('--navbar-height');
+    const updateHeight = () => root.style.setProperty('--navbar-height', `${Math.ceil(navbar.current.getBoundingClientRect().height)}px`);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(navbar.current);
+    return () => {
+      observer.disconnect();
+      if (previousHeight) root.style.setProperty('--navbar-height', previousHeight);
+      else root.style.removeProperty('--navbar-height');
+    };
+  }, []);
+
+  const navLink = (path, label, className = 'nv-link', accessibleLabel) => (
+    <Link to={path} className={className} onClick={closeMenus}
+      aria-label={accessibleLabel}
+      aria-current={active(path) ? 'page' : undefined}>{label}</Link>
+  );
+
+  const guideLink = (path, shortLabel, fullLabel) => navLink(path, <>
+    <span className="nv-guide-short">{shortLabel}</span>
+    <span className="nv-guide-full">{fullLabel}</span>
+  </>, 'nv-link', fullLabel);
+
+  const clientActions = variant => (
+    <div className={`nv-client-actions ${variant}`}>
+      <div className="container nv-client-container">
+        {navLink('/report-recovery', 'Παρακολούθηση αίτησης', 'nv-client-link')}
+        <span className="nv-client-separator" aria-hidden="true">|</span>
+        {navLink('/premium-upload', 'Αποστολή εγγράφων', 'nv-client-link')}
+      </div>
+    </div>
   );
 
   return (
-    <nav className="navbar" aria-label="Κύρια πλοήγηση">
+    <nav ref={navbar} className={`navbar${isPaidServiceLive ? ' nv-paid-live' : ''}`} aria-label="Κύρια πλοήγηση"
+      onKeyDown={event => {
+        if (event.key !== 'Escape') return;
+        if (toolsOpen) { setToolsOpen(false); toolsButton.current?.focus(); }
+        else if (menuOpen) { setMenuOpen(false); menuButton.current?.focus(); }
+      }}
+      onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) closeMenus(); }}>
+      {isPaidServiceLive && clientActions('nv-client-desktop')}
       <div className="container nv-container">
-
-        {/* --- Λογότυπο: πηγαίνει στην Αρχική --- */}
-        <Link to={DIADROMES.arxiki} className="nv-logo">
+        <Link to="/" className="nv-logo" aria-label="Sintaximou — Αρχική" onClick={closeMenus}>
           <img src="/brand/sintaximou-logo-horizontal.svg" alt="Sintaximou" width="385" height="82" />
         </Link>
 
-        {/* --- Κουμπί μενού, φαίνεται μόνο σε μικρές οθόνες --- */}
-        <button
-          type="button"
-          className={`nv-burger ${anoiktoMenu ? 'nv-burger-open' : ''}`}
-          onClick={() => setAnoiktoMenu(!anoiktoMenu)}
-          aria-label={anoiktoMenu ? 'Κλείσιμο μενού' : 'Άνοιγμα μενού'}
-          aria-expanded={anoiktoMenu}
-        >
-          <span></span>
-          <span></span>
-          <span></span>
+        <button ref={menuButton} type="button" className="nv-menu-toggle" aria-expanded={menuOpen}
+          aria-controls="nv-navigation" onClick={() => setMenuOpen(value => !value)}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+            <path d={menuOpen ? 'm6 6 12 12M6 18 18 6' : 'M4 6h16M4 12h16M4 18h16'} />
+          </svg>
+          {menuOpen ? 'Κλείσιμο' : 'Μενού'}
         </button>
 
-        {/* --- Το δεξί μέρος. Σε κινητό γίνεται το πτυσσόμενο μενού --- */}
-        <div className={`nv-right ${anoiktoMenu ? 'nv-open' : ''}`}>
-
+        <div className="nv-main-options">
+        <div id="nv-navigation" className={`nv-navigation${menuOpen ? ' nv-open' : ''}`}>
           <ul className="nv-links">
-            {syndesmos(DIADROMES.arxiki, 'Αρχική')}
-            {syndesmos(DIADROMES.dorean, 'Δωρεάν Εκτίμηση')}
-            {syndesmos(DIADROMES.report, 'Αναλυτικό Report')}
-            {syndesmos(DIADROMES.epikoinonia, 'Επικοινωνία')}
-
-            {/*
-              Η Αποστολή εγγράφων δεν είναι εδώ. Βρίσκεται στη δεξιά ομάδα,
-              μαζί με την Παρακολούθηση αίτησης: και οι δύο απευθύνονται σε όποιον
-              είναι ήδη μέσα στη διαδικασία, όχι σε νέο επισκέπτη.
-            */}
+            <li className="nv-guides">
+              <span className="nv-guides-title">Οδηγοί</span>
+              <div className="nv-guide-links">
+                {guideLink('/free-guide', 'Δωρεάν εκτίμηση', 'Οδηγός δωρεάν εκτίμησης')}
+                {guideLink('/report-guide', 'Αναλυτική έκθεση', 'Οδηγός αναλυτικής έκθεσης')}
+              </div>
+            </li>
+            <li ref={toolsGroup} className="nv-tools" onBlur={event => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setToolsOpen(false);
+            }}>
+              <button ref={toolsButton} type="button" className="nv-tools-toggle"
+                aria-expanded={toolsOpen} aria-controls="nv-tools-links"
+                onClick={() => setToolsOpen(value => !value)}>
+                Εργαλεία
+                <svg className="nv-tools-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+              <span className="nv-mobile-label">Εργαλεία</span>
+              <ul id="nv-tools-links" className={`nv-tools-links${toolsOpen ? ' nv-tools-open' : ''}`}>
+                {supportingTools.map(tool => <li key={tool.id}>{navLink(tool.path, tool.label)}</li>)}
+              </ul>
+            </li>
+            <li>{navLink('/enimerosi', 'Ενημέρωση')}</li>
+            <li>{navLink('/contact', 'Επικοινωνία')}</li>
           </ul>
+        </div>
 
-          {/* --- Δευτερεύουσα ομάδα: Αποστολή εγγράφων + παρακολούθηση αίτησης + κουμπί δράσης --- */}
-          <div className="nv-secondary">
-            {isPaidServiceLive && <>
-            <Link
-              to={DIADROMES.apostoli}
-              className={`nv-track ${einaiEnergi(DIADROMES.apostoli) ? 'nv-active' : ''}`}
-              aria-current={einaiEnergi(DIADROMES.apostoli) ? 'page' : undefined}
-            >
-              Αποστολή εγγράφων
-            </Link>
-
-            <Link
-              to={DIADROMES.parakolouthisi}
-              className={`nv-track ${einaiEnergi(DIADROMES.parakolouthisi) ? 'nv-active' : ''}`}
-              aria-current={einaiEnergi(DIADROMES.parakolouthisi) ? 'page' : undefined}
-            >
-              Παρακολούθηση αίτησης
-            </Link>
-
-            </>}
-            {location.pathname === '/free-estimation' ? (
-              <span className="nv-cta nv-cta-current" aria-current="page">
-                Ξεκινήστε δωρεάν
-              </span>
-            ) : (
-              <Link to={DIADROMES.ypologismos} className="nv-cta">
-                Ξεκινήστε δωρεάν
-              </Link>
-            )}
-          </div>
-
+        {active(toolPaths['free-estimation']) ? (
+          <span className="nv-cta nv-cta-current" aria-current="page">Κάντε δωρεάν εκτίμηση</span>
+        ) : navLink(toolPaths['free-estimation'], 'Κάντε δωρεάν εκτίμηση', 'nv-cta')}
         </div>
       </div>
+      {isPaidServiceLive && clientActions('nv-client-mobile')}
     </nav>
   );
-};
-
-export default Navbar;
+}

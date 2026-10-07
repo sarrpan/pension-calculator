@@ -64,6 +64,9 @@
   margin-top: 2.75rem;
 }
 
+/* The short introduction and the two tools now precede the original services. */
+.hero-services .hero-cards-row { margin-top: 0; }
+
 .hero-plus-between {
   display: flex;
   align-items: center;
@@ -435,4 +438,32 @@
   line-height: 1.5;
   text-align: center;
   text-underline-offset: 3px;
+}
+
+/* Service cards only: retain the existing tool cards and global button styles. */
+.hero-services { background: #fff; color: #243f48; }
+.hero-services .hero-vertical-layout { align-items: stretch; max-width: 1184px; padding-left: 32px; padding-right: 32px; }
+.hero-services-title { margin: 0 0 24px; font-size: clamp(1.35rem, 2vw, 1.65rem); line-height: 1.35; }
+.hero-services .hero-cards-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: none; }
+.hero-services .option-card { min-width: 0; max-width: none; padding: 28px; border: 1px solid #e0e7e9; border-radius: 14px; box-shadow: 0 3px 6px #193f4903; }
+.hero-services .option-card:hover { transform: none; }
+.hero-services .card-header { gap: 12px; flex-wrap: wrap; align-items: center; }
+.hero-services .card-header h3 { color: #243f48; font-size: 1.2rem; line-height: 1.4; padding: 0; }
+.hero-services .option-intro, .hero-services .option-card li { color: #566971; line-height: 1.7; }
+.hero-services .option-card li::before, .hero-services .price-free, .hero-services .service-coming-soon { color: #146b79; }
+.hero-services .service-coming-soon { max-width: none; text-align: left; }
+.hero-service-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.hero-services .option-card ul { flex-grow: 0; margin-bottom: 0; }
+.hero-services .option-card li:last-child { margin-bottom: 0; }
+.hero-service-button { display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 20px; border: 1px solid transparent; border-radius: 8px; font-size: .94rem; font-weight: 700; line-height: 1.5; text-align: center; text-decoration: none; }
+.hero-service-free { background: var(--accent, #ea580c); color: #fff; }
+.hero-service-free:hover { background: #cf4e18; }
+.hero-service-report { background: #146b79; color: #fff; }
+.hero-service-report:hover { background: #0e5360; }
+.hero-service-link { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; color: #146b79; font-size: .88rem; line-height: 1.6; text-align: center; text-decoration: underline; text-underline-offset: 3px; }
+.hero-services a:focus-visible { outline: 3px solid #328d9c; outline-offset: 4px; }
+@media (max-width: 900px) { .hero-services .hero-cards-row { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+  .hero-services .hero-vertical-layout { padding-left: 20px; padding-right: 20px; }
+  .hero-services .option-card { padding: 24px; }
 }
