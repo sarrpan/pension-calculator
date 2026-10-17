@@ -65,13 +65,16 @@ export default function Navbar() {
       <div className="container nv-client-container">
         {navLink('/report-recovery', 'Παρακολούθηση αίτησης', 'nv-client-link')}
         <span className="nv-client-separator" aria-hidden="true">|</span>
-        {navLink('/premium-upload', 'Αίτηση για Αναλυτική Έκθεση', 'nv-client-link')}
+        {navLink('/premium-upload', <>
+          <span className="nv-client-full">Αίτηση για Αναλυτική Έκθεση</span>
+          <span className="nv-client-short">Αίτηση Έκθεσης</span>
+        </>, 'nv-client-link', 'Αίτηση για Αναλυτική Έκθεση')}
       </div>
     </div>
   );
 
   return (
-    <nav ref={navbar} className={`navbar${isPaidServiceLive ? ' nv-paid-live' : ''}${inFreeFlow ? ' nv-in-free-flow' : ''}`} aria-label="Κύρια πλοήγηση"
+    <nav ref={navbar} className={`navbar${location.pathname === '/' ? ' nv-home' : ''}${isPaidServiceLive ? ' nv-paid-live' : ''}${inFreeFlow ? ' nv-in-free-flow' : ''}`} aria-label="Κύρια πλοήγηση"
       onKeyDown={event => {
         if (event.key !== 'Escape') return;
         if (toolsOpen) { setToolsOpen(false); toolsButton.current?.focus(); }
@@ -85,11 +88,12 @@ export default function Navbar() {
         </Link>
 
         <button ref={menuButton} type="button" className="nv-menu-toggle" aria-expanded={menuOpen}
+          aria-label={menuOpen ? 'Κλείσιμο μενού' : 'Μενού'}
           aria-controls="nv-navigation" onClick={() => setMenuOpen(value => !value)}>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
             <path d={menuOpen ? 'm6 6 12 12M6 18 18 6' : 'M4 6h16M4 12h16M4 18h16'} />
           </svg>
-          {menuOpen ? 'Κλείσιμο' : 'Μενού'}
+          <span className="nv-menu-label">{menuOpen ? 'Κλείσιμο' : 'Μενού'}</span>
         </button>
 
         <div className="nv-main-options">
@@ -124,7 +128,10 @@ export default function Navbar() {
           </ul>
         </div>
 
-        {!inFreeFlow && navLink(toolPaths['free-estimation'], 'Κάντε δωρεάν εκτίμηση', 'nv-cta')}
+        {!inFreeFlow && navLink(toolPaths['free-estimation'], <>
+          <span className="nv-cta-full">Κάντε δωρεάν εκτίμηση</span>
+          <span className="nv-cta-short">Δωρεάν εκτίμηση</span>
+        </>, 'nv-cta')}
         </div>
       </div>
       {isPaidServiceLive && clientActions('nv-client-mobile')}

@@ -56,7 +56,7 @@ for (const mode of [undefined, 'prelaunch', 'LIVE', 'true', 'live']) {
       assert.doesNotMatch(html, /price-paid|Ξεκάθαρη εκτίμηση, με 20 €|Αγορά|Πληρωμή/);
     }
     for (const markup of [nav]) {
-      const starts = [...markup.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>\s*Κάντε δωρεάν εκτίμηση/g)];
+      const starts = [...markup.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>\s*<span class="nv-cta-full">Κάντε δωρεάν εκτίμηση<\/span><span class="nv-cta-short">Δωρεάν εκτίμηση<\/span>/g)];
       assert.ok(starts.length);
       starts.forEach(match => assert.equal(match[1], '/free-estimation'));
     }
