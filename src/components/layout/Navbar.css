@@ -74,32 +74,26 @@
   .nv-tools-toggle { display: none; }
   .nv-tools-links { display: grid; position: static; min-width: 0; padding: 0 0 14px; margin-bottom: 10px; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; box-shadow: none; }
   .nv-tools-links .nv-link { padding: 12px; white-space: normal; }
-  .nv-home .nv-menu-toggle { order: 2; width: 44px; padding: 8px; flex-shrink: 0; }
-  .nv-home .nv-cta { order: 1; }
-  .nv-home .nv-menu-label, .nv-home .nv-cta-full { display: none; }
-  .nv-home .nv-cta-short { display: inline; }
+  .nv-menu-toggle { width: 44px; padding: 8px; flex-shrink: 0; }
+  .nv-menu-label, .nv-cta-full { display: none; }
+  .nv-cta-short { display: inline; }
 }
 
 @media (max-width: 600px) {
-  :root { --navbar-height: 116px; }
-  .navbar { --nv-main-height: 116px; }
-  .navbar.nv-in-free-flow { --nv-main-height: 64px; }
-  .nv-container { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 8px 20px; }
-  .nv-logo img { width: 158px; }
-  .nv-menu-toggle { font-size: .85rem; padding: 8px 10px; }
-  .nv-cta { grid-column: 1 / -1; margin-left: 0; padding: 10px 14px; }
+  :root { --navbar-height: 64px; }
+  .nv-menu-toggle { font-size: .85rem; }
   .nv-navigation { padding: 10px 20px 20px; }
   .nv-client-container { padding-left: 8px; padding-right: 8px; justify-content: space-between; }
   .nv-client-link { flex: 0 0 auto; padding: 8px 2px; font-size: .8125rem; text-align: center; white-space: nowrap; }
   .nv-client-separator { padding: 0 2px; }
 
-  /* Compact homepage row; preserve the header on other pages. */
-  .navbar.nv-home { --nv-main-height: 64px; }
-  .nv-home .nv-container { grid-template-columns: minmax(0, 1fr) auto 44px; gap: 8px; padding: 8px 12px; }
-  .nv-home .nv-logo img { width: 158px; max-width: 100%; }
-  .nv-home .nv-logo { min-width: 0; }
-  .nv-home .nv-menu-toggle { grid-column: 3; grid-row: 1; width: 44px; padding: 8px; }
-  .nv-home .nv-cta { grid-column: 2; grid-row: 1; padding: 10px; white-space: nowrap; }
+  /* Shared compact row, with an optional estimate action. */
+  .navbar { --nv-main-height: 64px; }
+  .nv-container { display: grid; grid-template-columns: minmax(0, 1fr) auto 44px; gap: 8px; padding: 8px 12px; }
+  .nv-logo img { width: 158px; max-width: 100%; }
+  .nv-logo { min-width: 0; }
+  .nv-menu-toggle { grid-column: 3; grid-row: 1; width: 44px; padding: 8px; }
+  .nv-cta { grid-column: 2; grid-row: 1; padding: 10px; white-space: nowrap; }
 }
 
 /* Keep comfortable controls when a single row would crowd the logo. */
@@ -108,8 +102,14 @@
   .nv-client-short { display: inline; }
 }
 @media (max-width: 359px) {
-  .navbar.nv-home { --nv-main-height: 116px; }
-  .nv-home .nv-container { grid-template-columns: minmax(0, 1fr) 44px; }
-  .nv-home .nv-menu-toggle { grid-column: 2; }
-  .nv-home .nv-cta { grid-column: 1 / -1; grid-row: 2; }
+  .navbar { --nv-main-height: 116px; }
+  .nv-container { grid-template-columns: minmax(0, 1fr) 44px; }
+  .nv-menu-toggle { grid-column: 2; }
+  .nv-cta { grid-column: 1 / -1; grid-row: 2; }
+}
+
+@media (max-width: 600px) {
+  .navbar.nv-in-free-flow { --nv-main-height: 64px; }
+  .nv-in-free-flow .nv-container { grid-template-columns: minmax(0, 1fr) 44px; }
+  .nv-in-free-flow .nv-menu-toggle { grid-column: 2; }
 }

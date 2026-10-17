@@ -8,6 +8,8 @@ export default function Navbar() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [compact, setCompact] = useState(() => typeof window !== 'undefined'
+    && window.matchMedia('(max-width: 1199px)').matches);
   const menuButton = useRef(null);
   const toolsButton = useRef(null);
   const navbar = useRef(null);
@@ -26,10 +28,11 @@ export default function Navbar() {
     };
     // Clear mobile menu state when switching between mobile and desktop layouts.
     const breakpoint = window.matchMedia('(max-width: 1199px)');
-    breakpoint.addEventListener('change', closeMenus);
+    const onBreakpointChange = () => { setCompact(breakpoint.matches); closeMenus(); };
+    breakpoint.addEventListener('change', onBreakpointChange);
     document.addEventListener('pointerdown', onOutsideClick);
     return () => {
-      breakpoint.removeEventListener('change', closeMenus);
+      breakpoint.removeEventListener('change', onBreakpointChange);
       document.removeEventListener('pointerdown', onOutsideClick);
     };
   }, []);
@@ -73,8 +76,41 @@ export default function Navbar() {
     </div>
   );
 
+  const navigation = (
+    <div id="nv-navigation" className={`nv-navigation${menuOpen ? ' nv-open' : ''}`}>
+      <ul className="nv-links">
+        <li className="nv-guides">
+          <span className="nv-guides-title">Οδηγοί</span>
+          <div className="nv-guide-links">
+            {guideLink('/free-guide', 'Δωρεάν εκτίμηση', 'Οδηγός δωρεάν εκτίμησης')}
+            {guideLink('/report-guide', 'Αναλυτική έκθεση', 'Οδηγός αναλυτικής έκθεσης')}
+          </div>
+        </li>
+        <li ref={toolsGroup} className="nv-tools" onBlur={event => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setToolsOpen(false);
+        }}>
+          <button ref={toolsButton} type="button" className="nv-tools-toggle"
+            aria-expanded={toolsOpen} aria-controls="nv-tools-links"
+            onClick={() => setToolsOpen(value => !value)}>
+            Εργαλεία
+            <svg className="nv-tools-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          <span className="nv-mobile-label">Εργαλεία</span>
+          <ul id="nv-tools-links" className={`nv-tools-links${toolsOpen ? ' nv-tools-open' : ''}`}>
+            {supportingTools.map(tool => <li key={tool.id}>{navLink(tool.path, tool.label)}</li>)}
+            <li className="nv-tools-helper">{navLink('/pdf-guide', 'Λήψη ασφαλιστικού ιστορικού PDF')}</li>
+          </ul>
+        </li>
+        <li>{navLink('/enimerosi', 'Ενημέρωση')}</li>
+        <li>{navLink('/contact', 'Επικοινωνία')}</li>
+      </ul>
+    </div>
+  );
+
   return (
-    <nav ref={navbar} className={`navbar${location.pathname === '/' ? ' nv-home' : ''}${isPaidServiceLive ? ' nv-paid-live' : ''}${inFreeFlow ? ' nv-in-free-flow' : ''}`} aria-label="Κύρια πλοήγηση"
+    <nav ref={navbar} className={`navbar${isPaidServiceLive ? ' nv-paid-live' : ''}${inFreeFlow ? ' nv-in-free-flow' : ''}`} aria-label="Κύρια πλοήγηση"
       onKeyDown={event => {
         if (event.key !== 'Escape') return;
         if (toolsOpen) { setToolsOpen(false); toolsButton.current?.focus(); }
@@ -87,6 +123,12 @@ export default function Navbar() {
           <img src="/brand/sintaximou-logo-horizontal.svg" alt="Sintaximou" width="385" height="82" />
         </Link>
 
+        <div className="nv-main-options">
+        {!compact && navigation}
+        {!inFreeFlow && navLink(toolPaths['free-estimation'], <>
+          <span className="nv-cta-full">Κάντε δωρεάν εκτίμηση</span>
+          <span className="nv-cta-short">Δωρεάν εκτίμηση</span>
+        </>, 'nv-cta')}
         <button ref={menuButton} type="button" className="nv-menu-toggle" aria-expanded={menuOpen}
           aria-label={menuOpen ? 'Κλείσιμο μενού' : 'Μενού'}
           aria-controls="nv-navigation" onClick={() => setMenuOpen(value => !value)}>
@@ -96,42 +138,7 @@ export default function Navbar() {
           <span className="nv-menu-label">{menuOpen ? 'Κλείσιμο' : 'Μενού'}</span>
         </button>
 
-        <div className="nv-main-options">
-        <div id="nv-navigation" className={`nv-navigation${menuOpen ? ' nv-open' : ''}`}>
-          <ul className="nv-links">
-            <li className="nv-guides">
-              <span className="nv-guides-title">Οδηγοί</span>
-              <div className="nv-guide-links">
-                {guideLink('/free-guide', 'Δωρεάν εκτίμηση', 'Οδηγός δωρεάν εκτίμησης')}
-                {guideLink('/report-guide', 'Αναλυτική έκθεση', 'Οδηγός αναλυτικής έκθεσης')}
-              </div>
-            </li>
-            <li ref={toolsGroup} className="nv-tools" onBlur={event => {
-              if (!event.currentTarget.contains(event.relatedTarget)) setToolsOpen(false);
-            }}>
-              <button ref={toolsButton} type="button" className="nv-tools-toggle"
-                aria-expanded={toolsOpen} aria-controls="nv-tools-links"
-                onClick={() => setToolsOpen(value => !value)}>
-                Εργαλεία
-                <svg className="nv-tools-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
-              <span className="nv-mobile-label">Εργαλεία</span>
-              <ul id="nv-tools-links" className={`nv-tools-links${toolsOpen ? ' nv-tools-open' : ''}`}>
-                {supportingTools.map(tool => <li key={tool.id}>{navLink(tool.path, tool.label)}</li>)}
-                <li className="nv-tools-helper">{navLink('/pdf-guide', 'Λήψη ασφαλιστικού ιστορικού PDF')}</li>
-              </ul>
-            </li>
-            <li>{navLink('/enimerosi', 'Ενημέρωση')}</li>
-            <li>{navLink('/contact', 'Επικοινωνία')}</li>
-          </ul>
-        </div>
-
-        {!inFreeFlow && navLink(toolPaths['free-estimation'], <>
-          <span className="nv-cta-full">Κάντε δωρεάν εκτίμηση</span>
-          <span className="nv-cta-short">Δωρεάν εκτίμηση</span>
-        </>, 'nv-cta')}
+        {compact && navigation}
         </div>
       </div>
       {isPaidServiceLive && clientActions('nv-client-mobile')}
